@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Ur III Empire</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark:    #0d0b07;
+      --bg-mid:     #161209;
+      --bg-card:    #1e1710;
+      --gold:       #c9933a;
+      --gold-light: #e8b85c;
+      --gold-dim:   #7a5820;
+      --text:       #e8dcc8;
+      --text-muted: #9e9080;
+      --border:     #3a2e1a;
+      --accent:     #8b1a1a;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      line-height: 1.7;
+    }
+
+    /* ── Utility ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    section { padding: 5rem 0; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(13, 11, 7, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      font-size: 1rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-left: 2rem;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--gold-light); }
+
+    /* ── Hero ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      padding-top: 5rem;
+    }
+
+    /* Cuneiform-like decorative background pattern */
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 50%, rgba(201,147,58,0.07) 0%, transparent 70%),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 48px,
+          rgba(58,46,26,0.25) 48px,
+          rgba(58,46,26,0.25) 49px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 48px,
+          rgba(58,46,26,0.15) 48px,
+          rgba(58,46,26,0.15) 49px
+        );
+      pointer-events: none;
+    }
+
+    .hero-inner { position: relative; z-index: 1; }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+      padding: 0.35rem 1.2rem;
+      border-radius: 2px;
+      margin-bottom: 2rem;
+    }
+
+    .hero-title {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      color: #fff;
+      text-shadow: 0 2px 40px rgba(201,147,58,0.3);
+      margin-bottom: 1.2rem;
+    }
+
+    .hero-title span { color: var(--gold-light); }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 2.8rem;
+      font-style: italic;
+    }
+
+    .hero-cuneiform {
+      font-size: 2.2rem;
+      letter-spacing: 0.5rem;
+      color: var(--gold-dim);
+      margin-bottom: 3rem;
+      user-select: none;
+    }
+
+    .scroll-hint {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--gold-dim);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    .scroll-hint::after {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 40px;
+      background: linear-gradient(to bottom, var(--gold-dim), transparent);
+      margin-top: 0.4rem;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50%       { opacity: 1; }
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-dim));
+    }
+
+    .divider::after {
+      background: linear-gradient(to left, transparent, var(--gold-dim));
+    }
+
+    .divider-symbol {
+      color: var(--gold);
+      font-size: 1.2rem;
+    }
+
+    /* ── Section headings ── */
+    .section-label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.6rem;
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      color: #fff;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+    }
+
+    /* ── About section ── */
+    #about {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    @media (max-width: 720px) { .about-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
+
+    .about-text p {
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+    }
+
+    .about-text p:last-child { margin-bottom: 0; }
+
+    .about-text strong { color: var(--gold-light); }
+
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--gold);
+      padding: 2rem;
+      border-radius: 4px;
+    }
+
+    .stat-item {
+      padding: 1.2rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .stat-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .stat-item:first-child { padding-top: 0; }
+
+    .stat-value {
+      font-size: 1.9rem;
+      font-weight: bold;
+      color: var(--gold-light);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Key Themes ── */
+    #themes { background: var(--bg-dark); }
+
+    .themes-intro {
+      color: var(--text-muted);
+      max-width: 660px;
+      margin-bottom: 3.5rem;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s, border-color 0.25s;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold-dim);
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .card-number {
+      position: absolute;
+      top: 1.5rem; right: 1.5rem;
+      font-size: 3rem;
+      font-weight: bold;
+      color: rgba(201,147,58,0.08);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .card h3 {
+      font-size: 1.15rem;
+      color: var(--gold-light);
+      margin-bottom: 0.8rem;
+      line-height: 1.3;
+    }
+
+    .card p {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    .card-tag {
+      display: inline-block;
+      margin-top: 1.2rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border: 1px solid var(--gold-dim);
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      padding: 3rem 0;
+      text-align: center;
+    }
+
+    .footer-logo {
+      font-size: 1.5rem;
+      color: var(--gold);
+      letter-spacing: 0.2em;
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-tagline {
+      font-size: 0.8rem;
+      color: var(--gold-dim);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    .footer-divider {
+      width: 60px;
+      height: 1px;
+      background: var(--gold-dim);
+      margin: 0 auto 2rem;
+    }
+
+    .footer-name {
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    .footer-name strong { color: var(--gold-light); }
+
+    .footer-copy {
+      margin-top: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--gold-dim);
+    }
+
+    /* ── Scroll fade-in ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <span class="nav-brand">𒌷 Ur III</span>
+    <div>
+      <a href="#hero">Home</a>
+      <a href="#about">Research</a>
+      <a href="#themes">Themes</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section id="hero">
+    <div class="hero-inner">
+      <span class="hero-eyebrow">c. 2112 – 2004 BCE &nbsp;·&nbsp; Ancient Mesopotamia</span>
+      <h1 class="hero-title">The <span>Ur III</span> Empire</h1>
+      <p class="hero-subtitle">Decoding the world's oldest bureaucracy through the clay tablets it left behind.</p>
+      <div class="hero-cuneiform" title="Cuneiform symbols">𒀭𒂗𒍪 &nbsp; 𒄑𒂅𒆳 &nbsp; 𒌷𒀭𒋾</div>
+      <div class="scroll-hint">Explore</div>
+    </div>
+  </section>
+
+  <!-- ── About the Research ── -->
+  <section id="about">
+    <div class="container">
+      <div class="about-grid fade-in">
+        <div class="about-text">
+          <span class="section-label">About the Research</span>
+          <h2>Computational Analysis of Ancient Cuneiform Records</h2>
+          <div class="divider"><span class="divider-symbol">◆</span></div>
+          <p>
+            This project presents a <strong>computational analysis of cuneiform administrative tablets</strong>
+            drawn from the <strong>Cuneiform Digital Library Initiative (CDLI)</strong> dataset — the most
+            comprehensive digital archive of ancient Mesopotamian texts in existence.
+          </p>
+          <p>
+            The Ur III period (c. 2112–2004 BCE) generated an extraordinary volume of bureaucratic
+            documentation: ration lists, grain ledgers, labor allocations, and provincial tax records.
+            By applying natural-language and quantitative methods to these texts, we can reconstruct
+            how a pre-monetary economy managed the flow of resources across an empire.
+          </p>
+          <p>
+            The tablets span sites including <strong>Puzriš-Dagān</strong>, <strong>Umma</strong>,
+            and <strong>Girsu</strong>, each reflecting a distinct node in the royal redistribution network.
+          </p>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-item">
+            <span class="stat-value">~100K</span>
+            <span class="stat-label">Cuneiform tablets in CDLI corpus</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">~30K</span>
+            <span class="stat-label">Ur III administrative documents</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">21</span>
+            <span class="stat-label">Years of the Ur III dynasty (Šulgi's peak)</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">4,000+</span>
+            <span class="stat-label">Years since the last tablet was inscribed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Key Themes ── -->
+  <section id="themes">
+    <div class="container">
+      <div class="fade-in">
+        <span class="section-label">Key Themes</span>
+        <h2>What the Tablets Reveal</h2>
+        <div class="divider" style="max-width:400px"><span class="divider-symbol">◆</span></div>
+        <p class="themes-intro">
+          Three interconnected themes emerge from the administrative record, each illuminating a
+          different facet of how the Third Dynasty of Ur organized its world.
+        </p>
+      </div>
+
+      <div class="cards">
+
+        <div class="card fade-in">
+          <span class="card-number">01</span>
+          <span class="card-icon">🌾</span>
+          <h3>Grain Distribution & Ration Systems</h3>
+          <p>
+            Grain was the empire's currency of labor. Thousands of tablets record barley rations
+            (še) allocated by gender, age, and occupation — from weavers and millers to soldiers
+            and temple personnel. Computational analysis reveals how ration scales encoded
+            social hierarchy across different provinces and institutional households.
+          </p>
+          <span class="card-tag">Subsistence Economics</span>
+        </div>
+
+        <div class="card fade-in">
+          <span class="card-number">02</span>
+          <span class="card-icon">🏛️</span>
+          <h3>Provincial Administration & the Bala System</h3>
+          <p>
+            The <em>bala</em> (rotation) system required each province to supply goods to the
+            central royal storehouse at Puzriš-Dagān on a rotating schedule. Analysis of
+            these inter-provincial flows exposes which regions were net donors, which were
+            net recipients, and how the center maintained control over periphery.
+          </p>
+          <span class="card-tag">Political Geography</span>
+        </div>
+
+        <div class="card fade-in">
+          <span class="card-number">03</span>
+          <span class="card-icon">⚖️</span>
+          <h3>Command Economy vs. Local Autonomy</h3>
+          <p>
+            How much did local administrators actually follow royal directives? Comparing
+            tablet-level allocations against expected norms reveals systematic deviations —
+            signs of negotiation, fraud, or informal markets operating beneath the official
+            record. The tension between central mandates and local agency shapes the entire
+            administrative corpus.
+          </p>
+          <span class="card-tag">Institutional Analysis</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="container">
+      <div class="footer-logo">𒌷 Ur III Project</div>
+      <div class="footer-tagline">Reading the Ancient World Through Data</div>
+      <div class="footer-divider"></div>
+      <p class="footer-name">Created by <strong>Asaro Dan</strong></p>
+      <p class="footer-copy">&copy; 2024 &nbsp;·&nbsp; Cuneiform computational analysis research</p>
+    </div>
+  </footer>
+
+  <script>
+    // Intersection observer for fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          // Stagger children if it's a cards container
+          entry.target.querySelectorAll('.card').forEach((card, i) => {
+            card.style.transitionDelay = `${i * 0.12}s`;
+            card.classList.add('visible');
+          });
+        }
+      });
+    }, { threshold: 0.12 });
+
+    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+
+    // Navbar background on scroll
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      nav.style.borderBottomColor = window.scrollY > 40 ? 'var(--gold-dim)' : 'var(--border)';
+    });
+  </script>
+</body>
+</html>
