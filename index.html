@@ -1,581 +1,735 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Ur III Empire</title>
-  <style>
-    /* ── Reset & base ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg-dark:    #0d0b07;
-      --bg-mid:     #161209;
-      --bg-card:    #1e1710;
-      --gold:       #c9933a;
-      --gold-light: #e8b85c;
-      --gold-dim:   #7a5820;
-      --text:       #e8dcc8;
-      --text-muted: #9e9080;
-      --border:     #3a2e1a;
-      --accent:     #8b1a1a;
-    }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg-dark);
-      color: var(--text);
-      font-family: 'Georgia', 'Times New Roman', serif;
-      line-height: 1.7;
-    }
-
-    /* ── Utility ── */
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-
-    section { padding: 5rem 0; }
-
-    /* ── Nav ── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      background: rgba(13, 11, 7, 0.92);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .nav-brand {
-      font-size: 1rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--gold);
-      font-weight: bold;
-    }
-
-    nav a {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 0.85rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-left: 2rem;
-      transition: color 0.2s;
-    }
-
-    nav a:hover { color: var(--gold-light); }
-
-    /* ── Hero ── */
-    #hero {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-      padding-top: 5rem;
-    }
-
-    /* Cuneiform-like decorative background pattern */
-    #hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 50%, rgba(201,147,58,0.07) 0%, transparent 70%),
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 48px,
-          rgba(58,46,26,0.25) 48px,
-          rgba(58,46,26,0.25) 49px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          transparent,
-          transparent 48px,
-          rgba(58,46,26,0.15) 48px,
-          rgba(58,46,26,0.15) 49px
-        );
-      pointer-events: none;
-    }
-
-    .hero-inner { position: relative; z-index: 1; }
-
-    .hero-eyebrow {
-      display: inline-block;
-      font-size: 0.78rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--gold);
-      border: 1px solid var(--gold-dim);
-      padding: 0.35rem 1.2rem;
-      border-radius: 2px;
-      margin-bottom: 2rem;
-    }
-
-    .hero-title {
-      font-size: clamp(2.8rem, 7vw, 5.5rem);
-      font-weight: bold;
-      letter-spacing: 0.04em;
-      line-height: 1.1;
-      color: #fff;
-      text-shadow: 0 2px 40px rgba(201,147,58,0.3);
-      margin-bottom: 1.2rem;
-    }
-
-    .hero-title span { color: var(--gold-light); }
-
-    .hero-subtitle {
-      font-size: clamp(1rem, 2.2vw, 1.25rem);
-      color: var(--text-muted);
-      max-width: 620px;
-      margin: 0 auto 2.8rem;
-      font-style: italic;
-    }
-
-    .hero-cuneiform {
-      font-size: 2.2rem;
-      letter-spacing: 0.5rem;
-      color: var(--gold-dim);
-      margin-bottom: 3rem;
-      user-select: none;
-    }
-
-    .scroll-hint {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.4rem;
-      color: var(--gold-dim);
-      font-size: 0.75rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      animation: pulse 2.5s ease-in-out infinite;
-    }
-
-    .scroll-hint::after {
-      content: '';
-      display: block;
-      width: 1px;
-      height: 40px;
-      background: linear-gradient(to bottom, var(--gold-dim), transparent);
-      margin-top: 0.4rem;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; }
-      50%       { opacity: 1; }
-    }
-
-    /* ── Divider ── */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 3rem;
-    }
-
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--gold-dim));
-    }
-
-    .divider::after {
-      background: linear-gradient(to left, transparent, var(--gold-dim));
-    }
-
-    .divider-symbol {
-      color: var(--gold);
-      font-size: 1.2rem;
-    }
-
-    /* ── Section headings ── */
-    .section-label {
-      display: block;
-      font-size: 0.72rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 0.6rem;
-    }
-
-    h2 {
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      color: #fff;
-      margin-bottom: 1.5rem;
-      line-height: 1.2;
-    }
-
-    /* ── About section ── */
-    #about {
-      background: var(--bg-mid);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: center;
-    }
-
-    @media (max-width: 720px) { .about-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
-
-    .about-text p {
-      color: var(--text-muted);
-      margin-bottom: 1.2rem;
-    }
-
-    .about-text p:last-child { margin-bottom: 0; }
-
-    .about-text strong { color: var(--gold-light); }
-
-    .stat-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-top: 3px solid var(--gold);
-      padding: 2rem;
-      border-radius: 4px;
-    }
-
-    .stat-item {
-      padding: 1.2rem 0;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-    }
-
-    .stat-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .stat-item:first-child { padding-top: 0; }
-
-    .stat-value {
-      font-size: 1.9rem;
-      font-weight: bold;
-      color: var(--gold-light);
-      line-height: 1;
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    /* ── Key Themes ── */
-    #themes { background: var(--bg-dark); }
-
-    .themes-intro {
-      color: var(--text-muted);
-      max-width: 660px;
-      margin-bottom: 3.5rem;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-    }
-
-    @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 2rem;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.25s, border-color 0.25s;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--gold-dim), var(--gold));
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: var(--gold-dim);
-    }
-
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-      display: block;
-    }
-
-    .card-number {
-      position: absolute;
-      top: 1.5rem; right: 1.5rem;
-      font-size: 3rem;
-      font-weight: bold;
-      color: rgba(201,147,58,0.08);
-      line-height: 1;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    .card h3 {
-      font-size: 1.15rem;
-      color: var(--gold-light);
-      margin-bottom: 0.8rem;
-      line-height: 1.3;
-    }
-
-    .card p {
-      font-size: 0.92rem;
-      color: var(--text-muted);
-      line-height: 1.7;
-    }
-
-    .card-tag {
-      display: inline-block;
-      margin-top: 1.2rem;
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--gold-dim);
-      border: 1px solid var(--gold-dim);
-      padding: 0.2rem 0.6rem;
-      border-radius: 2px;
-    }
-
-    /* ── Footer ── */
-    footer {
-      background: var(--bg-mid);
-      border-top: 1px solid var(--border);
-      padding: 3rem 0;
-      text-align: center;
-    }
-
-    .footer-logo {
-      font-size: 1.5rem;
-      color: var(--gold);
-      letter-spacing: 0.2em;
-      margin-bottom: 0.5rem;
-    }
-
-    .footer-tagline {
-      font-size: 0.8rem;
-      color: var(--gold-dim);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-bottom: 2rem;
-    }
-
-    .footer-divider {
-      width: 60px;
-      height: 1px;
-      background: var(--gold-dim);
-      margin: 0 auto 2rem;
-    }
-
-    .footer-name {
-      font-size: 1rem;
-      color: var(--text-muted);
-    }
-
-    .footer-name strong { color: var(--gold-light); }
-
-    .footer-copy {
-      margin-top: 0.5rem;
-      font-size: 0.78rem;
-      color: var(--gold-dim);
-    }
-
-    /* ── Scroll fade-in ── */
-    .fade-in {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-
-    .fade-in.visible {
-      opacity: 1;
-      transform: none;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>SKYRIM - The Elder Scrolls V</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:Georgia,serif;user-select:none}
+#gc{position:relative}
+canvas{display:block;cursor:crosshair}
+#hud{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
+#stats{position:absolute;bottom:20px;left:20px;display:flex;flex-direction:column;gap:5px}
+.sbar{display:flex;align-items:center;gap:8px}
+.slabel{color:rgba(255,255,255,.6);font-size:11px;width:18px;text-align:right}
+.sbg{width:180px;height:9px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2)}
+.sfill{height:100%;transition:width .1s}
+#hf{background:#cc2222}#sf{background:#22aa44}#mf{background:#2244cc}
+#lvl{position:absolute;bottom:20px;right:20px;text-align:right;color:rgba(255,255,255,.8)}
+#lvlt{font-size:16px;font-weight:bold;color:#e8b85c}
+#xpb{width:130px;height:5px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);margin-top:4px;margin-left:auto}
+#xpf{height:100%;background:#e8b85c;transition:width .3s}
+#compass{position:absolute;top:0;left:50%;transform:translateX(-50%);width:320px;height:32px;background:rgba(0,0,0,.7);border-bottom:2px solid rgba(200,180,120,.4);display:flex;align-items:center;justify-content:center;color:#e8dcc8;font-size:11px;letter-spacing:2px;overflow:hidden}
+#notifs{position:absolute;top:40px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;width:420px}
+.notif{color:#e8dcc8;font-size:13px;padding:3px 10px;background:rgba(0,0,0,.6);border-left:3px solid #c9933a;margin-bottom:3px;animation:fn 3s forwards}
+@keyframes fn{0%{opacity:0;transform:translateY(-8px)}10%{opacity:1;transform:translateY(0)}70%{opacity:1}100%{opacity:0}}
+#shouts{position:absolute;bottom:55px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.ss{width:48px;height:48px;border:1px solid rgba(200,180,120,.4);background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.si{font-size:18px}.sn{font-size:8px;color:#c9933a;margin-top:1px}
+.scd{position:absolute;bottom:0;left:0;right:0;height:3px;background:#4488ff;transition:width .1s}
+.sk{position:absolute;top:1px;right:2px;font-size:8px;color:#777}
+#shoutTxt{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);color:#ff6622;font-size:36px;font-weight:bold;letter-spacing:5px;text-shadow:0 0 20px rgba(255,100,34,.8);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+#gold{position:absolute;top:38px;right:20px;color:#e8b85c;font-size:14px}
+#ctrl{position:absolute;top:38px;left:10px;color:rgba(255,255,255,.35);font-size:10px;line-height:1.9}
+#startScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#e8dcc8}
+#startScreen h1{font-size:72px;color:#e8b85c;text-shadow:0 0 40px rgba(232,184,92,.4);letter-spacing:10px;margin-bottom:6px}
+#startScreen h2{font-size:18px;color:#9e9080;letter-spacing:5px;margin-bottom:50px}
+#startScreen p{color:#c9933a;font-size:13px;letter-spacing:2px;animation:pl 2s infinite}
+@keyframes pl{0%,100%{opacity:.5}50%{opacity:1}}
+#deathScreen{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(80,0,0,.8);display:none;flex-direction:column;align-items:center;justify-content:center;color:#e8dcc8}
+#deathScreen h2{font-size:52px;color:#cc2222;margin-bottom:15px;letter-spacing:4px}
+#deathScreen p{color:#9e9080;margin-bottom:30px}
+#deathScreen button{padding:10px 28px;background:transparent;border:2px solid #c9933a;color:#c9933a;font-size:14px;cursor:pointer;letter-spacing:2px;pointer-events:all}
+#deathScreen button:hover{background:rgba(201,147,58,.2)}
+#inv{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:380px;background:rgba(10,8,5,.97);border:2px solid rgba(200,180,120,.35);color:#e8dcc8;padding:18px;display:none;pointer-events:all}
+#inv h3{color:#e8b85c;margin-bottom:12px;letter-spacing:3px;border-bottom:1px solid rgba(200,180,120,.25);padding-bottom:8px}
+.ii{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;cursor:pointer;font-size:12px}
+.ii:hover{background:rgba(200,180,120,.1)}
+.iv{color:#e8b85c;font-size:11px}
+#inv .ic{text-align:center;margin-top:12px;color:#666;font-size:11px}
+#bossHp{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:300px;display:none;text-align:center}
+#bossLabel{color:#e8b85c;font-size:12px;letter-spacing:2px;margin-bottom:4px}
+#bossBg{width:100%;height:12px;background:rgba(0,0,0,.7);border:1px solid rgba(200,50,50,.5)}
+#bossFill{height:100%;background:#aa2200;transition:width .2s}
+</style>
 </head>
 <body>
+<div id="gc">
+<canvas id="game"></canvas>
+<div id="hud">
+  <div id="startScreen">
+    <h1>SKYRIM</h1>
+    <h2>THE ELDER SCROLLS V</h2>
+    <p>PRESS ANY KEY OR CLICK TO BEGIN</p>
+  </div>
+  <div id="deathScreen">
+    <h2>YOU DIED</h2>
+    <p>The Dragonborn falls... but legends never truly die.</p>
+    <button onclick="location.reload()">LOAD LAST SAVE</button>
+  </div>
+  <div id="compass"><span id="compassTxt"></span></div>
+  <div id="notifs"></div>
+  <div id="shoutTxt"></div>
+  <div id="bossHp"><div id="bossLabel">ALDUIN — WORLD EATER</div><div id="bossBg"><div id="bossFill"></div></div></div>
+  <div id="stats">
+    <div class="sbar"><span class="slabel">HP</span><div class="sbg"><div class="sfill" id="hf" style="width:100%"></div></div></div>
+    <div class="sbar"><span class="slabel">ST</span><div class="sbg"><div class="sfill" id="sf" style="width:100%"></div></div></div>
+    <div class="sbar"><span class="slabel">MP</span><div class="sbg"><div class="sfill" id="mf" style="width:100%"></div></div></div>
+  </div>
+  <div id="shouts">
+    <div class="ss"><div class="si">🔥</div><div class="sn">YOL</div><div class="scd" id="sc0" style="width:0%"></div><span class="sk">[Z]</span></div>
+    <div class="ss"><div class="si">❄️</div><div class="sn">IIZ</div><div class="scd" id="sc1" style="width:0%"></div><span class="sk">[X]</span></div>
+    <div class="ss"><div class="si">💨</div><div class="sn">FUS</div><div class="scd" id="sc2" style="width:0%"></div><span class="sk">[C]</span></div>
+  </div>
+  <div id="lvl"><div id="lvlt">LEVEL 1</div><div id="xpb"><div id="xpf" style="width:0%"></div></div></div>
+  <div id="gold">&#x1F4B0; <span id="goldTxt">0</span></div>
+  <div id="ctrl">WASD &middot; Move<br>Click &middot; Attack<br>Z &middot; Fire Breath<br>X &middot; Ice Form<br>C &middot; Fus Ro Dah<br>Tab &middot; Inventory<br>E &middot; Use Potion</div>
+  <div id="inv"><h3>&#x2694; INVENTORY</h3><div id="invItems"></div><p class="ic">[TAB] to close &middot; click item to use</p></div>
+</div>
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 900, H = 580;
+canvas.width = W; canvas.height = H;
+document.getElementById('gc').style.cssText = 'width:'+W+'px;height:'+H+'px';
 
-  <!-- Nav -->
-  <nav>
-    <span class="nav-brand">𒌷 Ur III</span>
-    <div>
-      <a href="#hero">Home</a>
-      <a href="#about">Research</a>
-      <a href="#themes">Themes</a>
-    </div>
-  </nav>
+// Tile constants
+const TS = 40;
+const MC = 70, MR = 70;
+const T = {GRASS:0,SNOW:1,ROCK:2,WATER:3,TREE:4,MOUNTAIN:5,DF:6,DW:7,ROAD:8,CHEST:9};
 
-  <!-- ── Hero ── -->
-  <section id="hero">
-    <div class="hero-inner">
-      <span class="hero-eyebrow">c. 2112 – 2004 BCE &nbsp;·&nbsp; Ancient Mesopotamia</span>
-      <h1 class="hero-title">The <span>Ur III</span> Empire</h1>
-      <p class="hero-subtitle">Decoding the world's oldest bureaucracy through the clay tablets it left behind.</p>
-      <div class="hero-cuneiform" title="Cuneiform symbols">𒀭𒂗𒍪 &nbsp; 𒄑𒂅𒆳 &nbsp; 𒌷𒀭𒋾</div>
-      <div class="scroll-hint">Explore</div>
-    </div>
-  </section>
+function drawTile(t,x,y) {
+  switch(t) {
+    case T.GRASS:
+      ctx.fillStyle='#3a6b3f'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#2d5432';
+      ctx.fillRect(x+6,y+8,2,3); ctx.fillRect(x+18,y+14,2,3); ctx.fillRect(x+30,y+6,2,3);
+      break;
+    case T.SNOW:
+      ctx.fillStyle='#c8d8dc'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='rgba(255,255,255,.5)';
+      ctx.fillRect(x+4,y+4,4,2); ctx.fillRect(x+22,y+16,3,2); ctx.fillRect(x+10,y+28,5,2);
+      break;
+    case T.ROCK:
+      ctx.fillStyle='#4a4440'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#3a3430'; ctx.fillRect(x+3,y+3,TS-6,TS-6);
+      ctx.fillStyle='#5a5450'; ctx.fillRect(x+8,y+8,6,6);
+      break;
+    case T.WATER:
+      ctx.fillStyle='#1a3a6a'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='rgba(80,140,210,.25)';
+      ctx.fillRect(x,y+8,TS,6); ctx.fillRect(x,y+24,TS,6);
+      break;
+    case T.TREE:
+      ctx.fillStyle='#2d5432'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#1a3d20';
+      ctx.beginPath(); ctx.arc(x+TS/2,y+TS/2,TS/2-2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#4a7a42';
+      ctx.beginPath(); ctx.arc(x+TS/2,y+TS/2,TS/3,0,Math.PI*2); ctx.fill();
+      break;
+    case T.MOUNTAIN:
+      ctx.fillStyle='#2a2520'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#4a4540';
+      ctx.beginPath(); ctx.moveTo(x+TS/2,y+4); ctx.lineTo(x+TS-4,y+TS-4); ctx.lineTo(x+4,y+TS-4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#c8d8dc';
+      ctx.beginPath(); ctx.moveTo(x+TS/2,y+4); ctx.lineTo(x+TS/2+9,y+18); ctx.lineTo(x+TS/2-9,y+18); ctx.closePath(); ctx.fill();
+      break;
+    case T.DF:
+      ctx.fillStyle='#241e18'; ctx.fillRect(x,y,TS,TS);
+      ctx.strokeStyle='#1a1510'; ctx.lineWidth=1; ctx.strokeRect(x,y,TS,TS);
+      break;
+    case T.DW:
+      ctx.fillStyle='#18130e'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#221c16';
+      ctx.fillRect(x+2,y+2,TS/2-3,TS/2-3);
+      ctx.fillRect(x+TS/2+1,y+TS/2+1,TS/2-3,TS/2-3);
+      break;
+    case T.ROAD:
+      ctx.fillStyle='#5a4e3c'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#4a3e2c'; ctx.fillRect(x+2,y+2,TS-4,TS-4);
+      break;
+    case T.CHEST:
+      ctx.fillStyle='#241e18'; ctx.fillRect(x,y,TS,TS);
+      ctx.fillStyle='#7a5010'; ctx.fillRect(x+6,y+12,TS-12,TS-18);
+      ctx.fillStyle='#c9933a'; ctx.fillRect(x+TS/2-5,y+TS/2-2,10,7);
+      ctx.strokeStyle='#8a6010'; ctx.lineWidth=1; ctx.strokeRect(x+6,y+12,TS-12,TS-18);
+      break;
+  }
+}
 
-  <!-- ── About the Research ── -->
-  <section id="about">
-    <div class="container">
-      <div class="about-grid fade-in">
-        <div class="about-text">
-          <span class="section-label">About the Research</span>
-          <h2>Computational Analysis of Ancient Cuneiform Records</h2>
-          <div class="divider"><span class="divider-symbol">◆</span></div>
-          <p>
-            This project presents a <strong>computational analysis of cuneiform administrative tablets</strong>
-            drawn from the <strong>Cuneiform Digital Library Initiative (CDLI)</strong> dataset — the most
-            comprehensive digital archive of ancient Mesopotamian texts in existence.
-          </p>
-          <p>
-            The Ur III period (c. 2112–2004 BCE) generated an extraordinary volume of bureaucratic
-            documentation: ration lists, grain ledgers, labor allocations, and provincial tax records.
-            By applying natural-language and quantitative methods to these texts, we can reconstruct
-            how a pre-monetary economy managed the flow of resources across an empire.
-          </p>
-          <p>
-            The tablets span sites including <strong>Puzriš-Dagān</strong>, <strong>Umma</strong>,
-            and <strong>Girsu</strong>, each reflecting a distinct node in the royal redistribution network.
-          </p>
-        </div>
+// World generation
+function genWorld() {
+  const map = [];
+  for(let r=0;r<MR;r++) {
+    map[r]=[];
+    for(let c=0;c<MC;c++) {
+      const nx=c/MC, ny=r/MR;
+      const n = Math.sin(nx*7.3+1.3)*Math.cos(ny*6.1+2.1)*0.5
+              + Math.sin(nx*14+3.7)*Math.cos(ny*11.3+4.9)*0.3
+              + Math.sin(nx*31+6.1)*Math.cos(ny*29.7+8.3)*0.2;
+      const dx=(c-MC/2)/(MC/2), dy=(r-MR/2)/(MR/2);
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist>0.88){map[r][c]=T.MOUNTAIN;continue;}
+      if(n>0.45){map[r][c]=T.ROCK;continue;}
+      if(n<-0.42){map[r][c]=T.WATER;continue;}
+      const yf=r/MR;
+      if(yf<0.28) map[r][c]= n>0.1?T.MOUNTAIN:T.SNOW;
+      else if(yf>0.68) map[r][c]= n>0.2?T.ROCK:T.GRASS;
+      else map[r][c]= n>0.22?T.TREE:T.GRASS;
+    }
+  }
+  const dc=Math.floor(MC/2), dr=Math.floor(MR/2);
+  for(let r=dr-9;r<=dr+9;r++) for(let c=dc-9;c<=dc+9;c++) {
+    if(r<0||r>=MR||c<0||c>=MC) continue;
+    map[r][c]=(r===dr-9||r===dr+9||c===dc-9||c===dc+9)?T.DW:T.DF;
+  }
+  map[dr+9][dc]=T.DF; map[dr+9][dc+1]=T.DF;
+  map[dr-6][dc-6]=T.CHEST; map[dr-6][dc+6]=T.CHEST;
+  for(let r=dr+10;r<MR-3;r++){map[r][dc]=T.ROAD;map[r][dc+1]=T.ROAD;}
+  return map;
+}
 
-        <div class="stat-box">
-          <div class="stat-item">
-            <span class="stat-value">~100K</span>
-            <span class="stat-label">Cuneiform tablets in CDLI corpus</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">~30K</span>
-            <span class="stat-label">Ur III administrative documents</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">21</span>
-            <span class="stat-label">Years of the Ur III dynasty (Šulgi's peak)</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">4,000+</span>
-            <span class="stat-label">Years since the last tablet was inscribed</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+const world = genWorld();
+const DC=Math.floor(MC/2), DR=Math.floor(MR/2);
 
-  <!-- ── Key Themes ── -->
-  <section id="themes">
-    <div class="container">
-      <div class="fade-in">
-        <span class="section-label">Key Themes</span>
-        <h2>What the Tablets Reveal</h2>
-        <div class="divider" style="max-width:400px"><span class="divider-symbol">◆</span></div>
-        <p class="themes-intro">
-          Three interconnected themes emerge from the administrative record, each illuminating a
-          different facet of how the Third Dynasty of Ur organized its world.
-        </p>
-      </div>
+function passable(c,r){
+  if(c<0||c>=MC||r<0||r>=MR) return false;
+  const t=world[r][c];
+  return t!==T.WATER&&t!==T.MOUNTAIN&&t!==T.DW&&t!==T.ROCK&&t!==T.TREE;
+}
 
-      <div class="cards">
+// Player
+const player = {
+  x:DC*TS, y:(MR-8)*TS, w:22, h:22, speed:185,
+  hp:100,maxHp:100, st:100,maxSt:100, mp:100,maxMp:100,
+  lvl:1,xp:0,xpNext:100, gold:0, dmg:15, def:2,
+  atkCd:0, atkRange:52, invuln:0,
+  facing:{x:0,y:-1},
+  shouts:[
+    {name:'Fire Breath',cd:0,maxCd:8, text:'YOL TOOR SHUL!'},
+    {name:'Ice Form',   cd:0,maxCd:12,text:'IIZ SLEN NUS!'},
+    {name:'Fus Ro Dah', cd:0,maxCd:5, text:'FUS RO DAH!'},
+  ],
+  inv:[], atkFlash:0, interactCd:0,
+};
 
-        <div class="card fade-in">
-          <span class="card-number">01</span>
-          <span class="card-icon">🌾</span>
-          <h3>Grain Distribution & Ration Systems</h3>
-          <p>
-            Grain was the empire's currency of labor. Thousands of tablets record barley rations
-            (še) allocated by gender, age, and occupation — from weavers and millers to soldiers
-            and temple personnel. Computational analysis reveals how ration scales encoded
-            social hierarchy across different provinces and institutional households.
-          </p>
-          <span class="card-tag">Subsistence Economics</span>
-        </div>
+// Enemy class
+function Enemy(x,y,type) {
+  this.x=x; this.y=y; this.type=type;
+  var S={
+    draugr:{hp:45,dmg:8,spd:65,xp:25,gold:[5,15],w:22,h:22,col:'#4a7a6a'},
+    bandit:{hp:65,dmg:12,spd:95,xp:40,gold:[10,30],w:22,h:22,col:'#8a6a3a'},
+    troll: {hp:130,dmg:18,spd:55,xp:80,gold:[15,40],w:28,h:28,col:'#5a7a3a'},
+    alduin:{hp:500,dmg:28,spd:75,xp:800,gold:[200,300],w:64,h:64,col:'#8a3a1a'},
+  }[type];
+  this.maxHp=S.hp;this.hp=S.hp;this.dmg=S.dmg;this.spd=S.spd;
+  this.xpRew=S.xp;this.goldR=S.gold;this.w=S.w;this.h=S.h;this.col=S.col;
+  this.state='patrol';this.patrolTimer=0;this.patrolDx=1;this.patrolDy=0;
+  this.atkCd=0;this.frozenT=0;this.flashT=0;this.vx=0;this.vy=0;this.dead=false;
+  this.aggroR=type==='alduin'?320:190;
+  this.atkR=type==='alduin'?90:48;
+}
 
-        <div class="card fade-in">
-          <span class="card-number">02</span>
-          <span class="card-icon">🏛️</span>
-          <h3>Provincial Administration & the Bala System</h3>
-          <p>
-            The <em>bala</em> (rotation) system required each province to supply goods to the
-            central royal storehouse at Puzriš-Dagān on a rotating schedule. Analysis of
-            these inter-provincial flows exposes which regions were net donors, which were
-            net recipients, and how the center maintained control over periphery.
-          </p>
-          <span class="card-tag">Political Geography</span>
-        </div>
+// Projectile
+function Proj(x,y,vx,vy,dmg,type,owner){
+  this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.dmg=dmg;this.type=type;this.owner=owner;
+  this.life=2.2;this.hit=false;
+}
 
-        <div class="card fade-in">
-          <span class="card-number">03</span>
-          <span class="card-icon">⚖️</span>
-          <h3>Command Economy vs. Local Autonomy</h3>
-          <p>
-            How much did local administrators actually follow royal directives? Comparing
-            tablet-level allocations against expected norms reveals systematic deviations —
-            signs of negotiation, fraud, or informal markets operating beneath the official
-            record. The tension between central mandates and local agency shapes the entire
-            administrative corpus.
-          </p>
-          <span class="card-tag">Institutional Analysis</span>
-        </div>
+// Particle
+function Particle(x,y,vx,vy,col,life,sz){
+  this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.col=col;this.life=life;this.maxLife=life;this.sz=sz||4;
+}
 
-      </div>
-    </div>
-  </section>
+// Loot
+function Loot(x,y,type,amount){this.x=x;this.y=y;this.type=type;this.amount=amount||0;this.done=false;}
 
-  <!-- ── Footer ── -->
-  <footer>
-    <div class="container">
-      <div class="footer-logo">𒌷 Ur III Project</div>
-      <div class="footer-tagline">Reading the Ancient World Through Data</div>
-      <div class="footer-divider"></div>
-      <p class="footer-name">Created by <strong>Asaro Dan</strong></p>
-      <p class="footer-copy">&copy; 2024 &nbsp;·&nbsp; Cuneiform computational analysis research</p>
-    </div>
-  </footer>
+var enemies=[], projs=[], parts=[], lootList=[];
 
-  <script>
-    // Intersection observer for fade-in animations
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          // Stagger children if it's a cards container
-          entry.target.querySelectorAll('.card').forEach((card, i) => {
-            card.style.transitionDelay = `${i * 0.12}s`;
-            card.classList.add('visible');
-          });
+function spawnAll(){
+  for(var i=0;i<9;i++){
+    var ex=(DC+(Math.random()*12-6))*TS, ey=(DR+(Math.random()*10-5))*TS;
+    enemies.push(new Enemy(ex,ey,'draugr'));
+  }
+  for(var i=0;i<12;i++){
+    var ec=10+Math.floor(Math.random()*50), er=15+Math.floor(Math.random()*45);
+    if(passable(ec,er)) enemies.push(new Enemy(ec*TS,er*TS,'bandit'));
+  }
+  for(var i=0;i<5;i++){
+    var ec=5+Math.floor(Math.random()*60), er=5+Math.floor(Math.random()*60);
+    if(passable(ec,er)) enemies.push(new Enemy(ec*TS,er*TS,'troll'));
+  }
+  enemies.push(new Enemy((DC-1)*TS,(DR-4)*TS,'alduin'));
+  lootList.push(new Loot((DC-6)*TS+TS/2,(DR-6)*TS+TS/2,'potion'));
+  lootList.push(new Loot((DC+6)*TS+TS/2,(DR-6)*TS+TS/2,'sword'));
+}
+spawnAll();
+
+var cam={x:0,y:0};
+var keys={};
+var mouse={x:W/2,y:H/2,down:false};
+var gs='start';
+
+function notify(msg){
+  var el=document.createElement('div');
+  el.className='notif'; el.textContent=msg;
+  document.getElementById('notifs').appendChild(el);
+  setTimeout(function(){el.remove();},3100);
+}
+
+var stEl=document.getElementById('shoutTxt');
+function showShout(txt){
+  stEl.textContent=txt; stEl.style.opacity='1';
+  clearTimeout(stEl._t);
+  stEl._t=setTimeout(function(){stEl.style.opacity='0';},1600);
+}
+
+function burst(x,y,col,n,spd){
+  spd=spd||80;
+  for(var i=0;i<n;i++){
+    var a=Math.random()*Math.PI*2, s=Math.random()*spd+20;
+    parts.push(new Particle(x,y,Math.cos(a)*s,Math.sin(a)*s,col,Math.random()*.5+.15,Math.random()*4+2));
+  }
+}
+
+function killEnemy(e){
+  if(e.dead) return;
+  e.dead=true; e.state='dead'; e.hp=0;
+  player.xp+=e.xpRew;
+  var g=e.goldR[0]+Math.floor(Math.random()*(e.goldR[1]-e.goldR[0]));
+  lootList.push(new Loot(e.x+e.w/2,e.y+e.h/2,'gold',g));
+  if(Math.random()<.3) lootList.push(new Loot(e.x+e.w/2+18,e.y+e.h/2,'potion'));
+  burst(e.x+e.w/2,e.y+e.h/2,'#cc4422',20);
+  notify('+'+e.xpRew+' XP');
+  if(e.type==='alduin'){
+    notify('ALDUIN IS DEFEATED! The Dragonborn prevails!');
+    document.getElementById('bossHp').style.display='none';
+    setTimeout(function(){notify('You are DOVAHKIIN - the World-Eater is no more!');},1500);
+  }
+  checkLevel();
+}
+
+function checkLevel(){
+  while(player.xp>=player.xpNext){
+    player.xp-=player.xpNext; player.lvl++;
+    player.xpNext=player.lvl*100;
+    player.maxHp+=15; player.hp=player.maxHp;
+    player.maxSt+=10; player.st=player.maxSt;
+    player.maxMp+=10; player.mp=player.maxMp;
+    player.dmg+=3;
+    notify('LEVEL UP! You are now Level '+player.lvl+'!');
+  }
+}
+
+function playerAttack(){
+  if(player.atkCd>0) return;
+  if(player.st<8){notify('Too tired!');return;}
+  player.atkCd=0.38; player.st=Math.max(0,player.st-8); player.atkFlash=0.15;
+  var ax=player.x+player.w/2+player.facing.x*player.atkRange;
+  var ay=player.y+player.h/2+player.facing.y*player.atkRange;
+  for(var i=0;i<enemies.length;i++){
+    var e=enemies[i]; if(e.dead) continue;
+    var ex=e.x+e.w/2, ey=e.y+e.h/2;
+    if(Math.sqrt((ex-ax)*(ex-ax)+(ey-ay)*(ey-ay))<player.atkRange+e.w/2){
+      var d=player.dmg+Math.floor(Math.random()*6);
+      e.hp-=d; e.flashT=0.15;
+      burst(ex,ey,'#cc3311',7);
+      if(e.hp<=0) killEnemy(e);
+    }
+  }
+  burst(player.x+player.w/2+player.facing.x*28,player.y+player.h/2+player.facing.y*28,'#ffcc44',5);
+}
+
+function castShout(i){
+  var s=player.shouts[i];
+  if(s.cd>0){notify('Shout cooling down...');return;}
+  if(player.mp<18){notify('Not enough Magicka!');return;}
+  s.cd=s.maxCd; player.mp=Math.max(0,player.mp-18);
+  showShout(s.text);
+  var fx=player.facing.x, fy=player.facing.y;
+  if(i===0){
+    for(var a=-.3;a<=.3;a+=.12){
+      var c=Math.cos(a), si=Math.sin(a);
+      var vx=fx*c-fy*si, vy=fx*si+fy*c;
+      projs.push(new Proj(player.x+player.w/2,player.y+player.h/2,vx*420,vy*420,32,'fire','player'));
+    }
+  } else if(i===1){
+    for(var j=0;j<enemies.length;j++){
+      var e=enemies[j]; if(e.dead) continue;
+      if(Math.sqrt((e.x-player.x)*(e.x-player.x)+(e.y-player.y)*(e.y-player.y))<210){
+        e.state='frozen'; e.frozenT=4;
+        burst(e.x+e.w/2,e.y+e.h/2,'#88aaff',18);
+      }
+    }
+  } else {
+    for(var j=0;j<enemies.length;j++){
+      var e=enemies[j]; if(e.dead) continue;
+      var dx=e.x-player.x, dy=e.y-player.y;
+      var dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<260){
+        e.vx=dx/dist*520; e.vy=dy/dist*520;
+        e.hp=Math.max(0,e.hp-22);
+        burst(e.x+e.w/2,e.y+e.h/2,'#aaccff',14);
+        if(e.hp<=0) killEnemy(e);
+      }
+    }
+    burst(player.x+player.w/2,player.y+player.h/2,'#aaccee',35,120);
+  }
+}
+
+function collectLoot(){
+  var px=player.x+player.w/2, py=player.y+player.h/2;
+  for(var i=0;i<lootList.length;i++){
+    var l=lootList[i]; if(l.done) continue;
+    if(Math.sqrt((px-l.x)*(px-l.x)+(py-l.y)*(py-l.y))<28){
+      l.done=true;
+      if(l.type==='gold'){player.gold+=l.amount;notify('+'+l.amount+' Gold');}
+      else if(l.type==='potion'){player.inv.push({name:'Health Potion',type:'potion',icon:'🧪'});notify('Picked up Health Potion');}
+      else if(l.type==='sword'){player.inv.push({name:'Iron Sword',type:'weapon',icon:'⚔'});player.dmg+=12;notify('Equipped Iron Sword (+12 damage)!');}
+      burst(px,py,'#e8b85c',10);
+    }
+  }
+}
+
+function useItem(i){
+  var it=player.inv[i]; if(!it) return;
+  if(it.type==='potion'){
+    player.hp=Math.min(player.maxHp,player.hp+55);
+    player.inv.splice(i,1);
+    notify('Used Health Potion (+55 HP)');
+    burst(player.x+player.w/2,player.y+player.h/2,'#ff44aa',15);
+  }
+}
+
+function renderInv(){
+  var el=document.getElementById('invItems'); el.innerHTML='';
+  if(!player.inv.length){el.innerHTML='<div class="ii"><span style="color:#555">Empty</span></div>';return;}
+  player.inv.forEach(function(it,i){
+    var d=document.createElement('div'); d.className='ii';
+    d.innerHTML='<span>'+it.icon+' '+it.name+'</span><span class="iv">[use]</span>';
+    d.onclick=function(){useItem(i);renderInv();};
+    el.appendChild(d);
+  });
+}
+
+function updateHUD(){
+  document.getElementById('hf').style.width=(player.hp/player.maxHp*100)+'%';
+  document.getElementById('sf').style.width=(player.st/player.maxSt*100)+'%';
+  document.getElementById('mf').style.width=(player.mp/player.maxMp*100)+'%';
+  document.getElementById('lvlt').textContent='LEVEL '+player.lvl;
+  document.getElementById('xpf').style.width=(player.xp/player.xpNext*100)+'%';
+  document.getElementById('goldTxt').textContent=player.gold;
+  player.shouts.forEach(function(s,i){
+    document.getElementById('sc'+i).style.width=(s.cd/s.maxCd*100)+'%';
+  });
+  var alduin=null;
+  for(var i=0;i<enemies.length;i++){if(enemies[i].type==='alduin'){alduin=enemies[i];break;}}
+  if(alduin&&!alduin.dead){
+    document.getElementById('bossHp').style.display='block';
+    document.getElementById('bossFill').style.width=(alduin.hp/alduin.maxHp*100)+'%';
+  }
+}
+
+var cStr='N.........NE.........E.........SE.........S.........SW.........W.........NW.........N.........NE.........E.........';
+function updateCompass(){
+  var a=Math.atan2(player.facing.y,player.facing.x);
+  var deg=((a*180/Math.PI)+360+90)%360;
+  var off=Math.floor(deg/360*50);
+  document.getElementById('compassTxt').textContent=cStr.substring(off,off+42);
+}
+
+function updatePlayer(dt){
+  if(player.invuln>0) player.invuln-=dt;
+  if(player.atkCd>0) player.atkCd-=dt;
+  if(player.atkFlash>0) player.atkFlash-=dt;
+  if(player.interactCd>0) player.interactCd-=dt;
+  for(var i=0;i<player.shouts.length;i++){var s=player.shouts[i];if(s.cd>0)s.cd=Math.max(0,s.cd-dt);}
+  player.st=Math.min(player.maxSt,player.st+dt*9);
+  player.mp=Math.min(player.maxMp,player.mp+dt*6);
+  var mx=0, my=0;
+  if(keys['KeyW']||keys['ArrowUp']) my=-1;
+  if(keys['KeyS']||keys['ArrowDown']) my=1;
+  if(keys['KeyA']||keys['ArrowLeft']) mx=-1;
+  if(keys['KeyD']||keys['ArrowRight']) mx=1;
+  if(mx&&my){mx*=.707;my*=.707;}
+  if(mx||my){
+    player.st=Math.max(0,player.st-dt*2.5);
+    var spd=player.speed;
+    var nx=player.x+mx*spd*dt, ny=player.y+my*spd*dt;
+    if(passable(Math.floor((nx+player.w/2)/TS),Math.floor((player.y+player.h/2)/TS))) player.x=nx;
+    if(passable(Math.floor((player.x+player.w/2)/TS),Math.floor((ny+player.h/2)/TS))) player.y=ny;
+  }
+  var wx=mouse.x+cam.x, wy=mouse.y+cam.y;
+  var fdx=wx-(player.x+player.w/2), fdy=wy-(player.y+player.h/2);
+  var fl=Math.sqrt(fdx*fdx+fdy*fdy);
+  if(fl>5){player.facing.x=fdx/fl;player.facing.y=fdy/fl;}
+  player.x=Math.max(0,Math.min(player.x,MC*TS-player.w));
+  player.y=Math.max(0,Math.min(player.y,MR*TS-player.h));
+  collectLoot();
+}
+
+function updateEnemies(dt){
+  for(var i=0;i<enemies.length;i++){
+    var e=enemies[i]; if(e.dead) continue;
+    if(e.flashT>0) e.flashT-=dt;
+    if(Math.abs(e.vx)>1||Math.abs(e.vy)>1){
+      e.x+=e.vx*dt; e.y+=e.vy*dt;
+      e.vx*=(1-dt*6); e.vy*=(1-dt*6);
+    }
+    if(e.state==='frozen'){e.frozenT-=dt;if(e.frozenT<=0)e.state='patrol';continue;}
+    var dx=player.x+player.w/2-(e.x+e.w/2);
+    var dy=player.y+player.h/2-(e.y+e.h/2);
+    var dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<e.aggroR&&e.state==='patrol') e.state='chase';
+    if(e.state==='patrol'){
+      e.patrolTimer-=dt;
+      if(e.patrolTimer<=0){
+        e.patrolTimer=1.5+Math.random()*2;
+        var a=Math.random()*Math.PI*2;
+        e.patrolDx=Math.cos(a); e.patrolDy=Math.sin(a);
+      }
+      var nx=e.x+e.patrolDx*e.spd*dt, ny=e.y+e.patrolDy*e.spd*dt;
+      if(passable(Math.floor((nx+e.w/2)/TS),Math.floor((e.y+e.h/2)/TS))) e.x=nx;
+      if(passable(Math.floor((e.x+e.w/2)/TS),Math.floor((ny+e.h/2)/TS))) e.y=ny;
+    } else if(e.state==='chase'){
+      if(dist>e.aggroR*1.6){e.state='patrol';continue;}
+      if(dist>e.atkR){
+        var nx=e.x+(dx/dist)*e.spd*dt, ny=e.y+(dy/dist)*e.spd*dt;
+        if(passable(Math.floor((nx+e.w/2)/TS),Math.floor((e.y+e.h/2)/TS))) e.x=nx;
+        if(passable(Math.floor((e.x+e.w/2)/TS),Math.floor((ny+e.h/2)/TS))) e.y=ny;
+      } else {
+        e.atkCd-=dt;
+        if(e.atkCd<=0){
+          e.atkCd=1.4;
+          if(player.invuln<=0){
+            var d=Math.max(1,e.dmg-player.def);
+            player.hp-=d; player.invuln=0.5;
+            burst(player.x+player.w/2,player.y+player.h/2,'#ff2222',10);
+            if(player.hp<=0){player.hp=0;gs='dead';document.getElementById('deathScreen').style.display='flex';}
+          }
+          if(e.type==='alduin'&&Math.random()<.45){
+            projs.push(new Proj(e.x+e.w/2,e.y+e.h/2,(dx/dist)*290,(dy/dist)*290,22,'fire','enemy'));
+          }
         }
-      });
-    }, { threshold: 0.12 });
+      }
+    }
+    e.x=Math.max(0,Math.min(e.x,MC*TS-e.w));
+    e.y=Math.max(0,Math.min(e.y,MR*TS-e.h));
+  }
+}
 
-    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+function updateProjs(dt){
+  for(var i=0;i<projs.length;i++){
+    var p=projs[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt;
+    if(!passable(Math.floor(p.x/TS),Math.floor(p.y/TS))){p.life=0;continue;}
+    var tc=p.type==='fire'?'#ff6622':(p.type==='ice'?'#88aaff':'#aaccff');
+    if(Math.random()<.5) parts.push(new Particle(p.x,p.y,0,0,tc,.18,3));
+    if(p.owner==='player'){
+      for(var j=0;j<enemies.length;j++){
+        var e=enemies[j]; if(e.dead||p.hit) continue;
+        if(p.x>e.x&&p.x<e.x+e.w&&p.y>e.y&&p.y<e.y+e.h){
+          e.hp-=p.dmg; e.flashT=0.15; p.hit=true; p.life=0;
+          burst(p.x,p.y,tc,12);
+          if(e.hp<=0) killEnemy(e);
+        }
+      }
+    } else {
+      if(!p.hit&&p.x>player.x&&p.x<player.x+player.w&&p.y>player.y&&p.y<player.y+player.h){
+        if(player.invuln<=0){
+          player.hp-=Math.max(1,p.dmg-player.def); player.invuln=0.5;
+          p.hit=true; p.life=0;
+          burst(p.x,p.y,'#ff2222',10);
+          if(player.hp<=0){player.hp=0;gs='dead';document.getElementById('deathScreen').style.display='flex';}
+        }
+      }
+    }
+  }
+  projs=projs.filter(function(p){return p.life>0&&!p.hit;});
+}
 
-    // Navbar background on scroll
-    const nav = document.querySelector('nav');
-    window.addEventListener('scroll', () => {
-      nav.style.borderBottomColor = window.scrollY > 40 ? 'var(--gold-dim)' : 'var(--border)';
-    });
-  </script>
+function updateParts(dt){
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i]; p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vx*=(1-dt*3); p.vy*=(1-dt*3); p.life-=dt;
+  }
+  parts=parts.filter(function(p){return p.life>0;});
+}
+
+function updateCam(){
+  var tx=player.x+player.w/2-W/2, ty=player.y+player.h/2-H/2;
+  cam.x+=(tx-cam.x)*.12; cam.y+=(ty-cam.y)*.12;
+  cam.x=Math.max(0,Math.min(cam.x,MC*TS-W));
+  cam.y=Math.max(0,Math.min(cam.y,MR*TS-H));
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(-Math.floor(cam.x),-Math.floor(cam.y));
+
+  var c0=Math.max(0,Math.floor(cam.x/TS)), c1=Math.min(MC,c0+Math.ceil(W/TS)+2);
+  var r0=Math.max(0,Math.floor(cam.y/TS)), r1=Math.min(MR,r0+Math.ceil(H/TS)+2);
+  for(var r=r0;r<r1;r++) for(var c=c0;c<c1;c++) drawTile(world[r][c],c*TS,r*TS);
+
+  var lootIcons={gold:'$',potion:'P',sword:'S'};
+  ctx.textAlign='center';
+  for(var i=0;i<lootList.length;i++){
+    var l=lootList[i]; if(l.done) continue;
+    ctx.fillStyle='rgba(0,0,0,.4)';
+    ctx.beginPath();ctx.ellipse(l.x,l.y+6,9,4,0,0,Math.PI*2);ctx.fill();
+    var icons={gold:'💰',potion:'🧪',sword:'⚔'};
+    ctx.font='16px serif'; ctx.fillText(icons[l.type]||'?',l.x,l.y+4);
+  }
+
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i];
+    var a=p.life/p.maxLife;
+    ctx.globalAlpha=a; ctx.fillStyle=p.col;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.sz*a,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  for(var i=0;i<enemies.length;i++){
+    var e=enemies[i];
+    if(e.dead){
+      ctx.globalAlpha=.25; ctx.fillStyle=e.col;
+      ctx.fillRect(e.x,e.y,e.w,e.h); ctx.globalAlpha=1; continue;
+    }
+    var fl=e.flashT>0, fz=e.state==='frozen';
+    ctx.globalAlpha=.35; ctx.fillStyle='#000';
+    ctx.beginPath();ctx.ellipse(e.x+e.w/2,e.y+e.h+2,e.w/2-2,e.h/6,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    if(e.type==='alduin'){
+      ctx.fillStyle=fl?'#fff':(fz?'#aabbdd':'#8a3a1a');
+      ctx.fillRect(e.x,e.y,e.w,e.h);
+      ctx.fillStyle=fl?'#ffaaaa':'#aa2200';
+      ctx.fillRect(e.x+12,e.y-18,40,20);
+      ctx.fillStyle='rgba(90,20,5,.75)';
+      ctx.beginPath();ctx.moveTo(e.x+12,e.y+10);ctx.lineTo(e.x-25,e.y-8);ctx.lineTo(e.x+5,e.y+28);ctx.closePath();ctx.fill();
+      ctx.beginPath();ctx.moveTo(e.x+52,e.y+10);ctx.lineTo(e.x+89,e.y-8);ctx.lineTo(e.x+59,e.y+28);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#ff8800'; ctx.fillRect(e.x+16,e.y-12,4,4); ctx.fillRect(e.x+30,e.y-12,4,4);
+    } else {
+      ctx.fillStyle=fl?'#fff':(fz?'#aabbdd':e.col);
+      ctx.fillRect(e.x+4,e.y+2,e.w-8,e.h-6);
+      ctx.fillStyle=fl?'#fff':'#c8a888';
+      ctx.fillRect(e.x+6,e.y-10,e.w-12,12);
+      if(e.type==='draugr'){ctx.fillStyle='#5a6060';ctx.fillRect(e.x+5,e.y-12,e.w-10,7);}
+    }
+    if(e.hp<e.maxHp){
+      ctx.fillStyle='rgba(0,0,0,.7)'; ctx.fillRect(e.x,e.y-7,e.w,4);
+      ctx.fillStyle=e.type==='alduin'?'#ff4400':'#cc2222';
+      ctx.fillRect(e.x,e.y-7,e.w*(e.hp/e.maxHp),4);
+    }
+    if(fz){ctx.strokeStyle='#88aaff';ctx.lineWidth=2;ctx.strokeRect(e.x-1,e.y-1,e.w+2,e.h+2);ctx.lineWidth=1;}
+  }
+
+  // Player
+  ctx.globalAlpha=.3; ctx.fillStyle='#000';
+  ctx.beginPath();ctx.ellipse(player.x+player.w/2,player.y+player.h+2,player.w/2-2,player.h/7,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+  if(player.invuln>0&&Math.floor(player.invuln*12)%2===0) ctx.globalAlpha=.35;
+  ctx.fillStyle='#5a4030'; ctx.fillRect(player.x+2,player.y+5,player.w-4,player.h-5);
+  ctx.fillStyle='#7a6a50'; ctx.fillRect(player.x+4,player.y+9,player.w-8,player.h-13);
+  ctx.fillStyle='#c8a888'; ctx.fillRect(player.x+5,player.y-7,player.w-10,11);
+  ctx.fillStyle='#6a6050'; ctx.fillRect(player.x+4,player.y-9,player.w-8,6);
+  var sx=player.x+player.w/2, sy=player.y+player.h/2;
+  ctx.strokeStyle=player.atkFlash>0?'#ffffaa':'#b0b0b8';
+  ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(sx+player.facing.x*8,sy+player.facing.y*8);
+  ctx.lineTo(sx+player.facing.x*32,sy+player.facing.y*32);
+  ctx.stroke(); ctx.lineWidth=1;
+  ctx.globalAlpha=1;
+  if(player.atkFlash>0){
+    var ang=Math.atan2(player.facing.y,player.facing.x);
+    ctx.strokeStyle='rgba(255,220,80,.4)'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(sx,sy,player.atkRange,ang-.65,ang+.65);ctx.stroke();ctx.lineWidth=1;
+  }
+
+  for(var i=0;i<projs.length;i++){
+    var p=projs[i];
+    var col=p.type==='fire'?'#ff6622':(p.type==='ice'?'#88aaff':'#aaccff');
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.type==='fire'?6:4,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.3;ctx.beginPath();ctx.arc(p.x,p.y,p.type==='fire'?12:8,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
+  ctx.restore();
+  renderMinimap();
+}
+
+var tCol={};
+tCol[T.GRASS]='#2d5432'; tCol[T.SNOW]='#a0b4b8'; tCol[T.ROCK]='#4a4440';
+tCol[T.WATER]='#1a3a6a'; tCol[T.TREE]='#1a3d20'; tCol[T.MOUNTAIN]='#2a2520';
+tCol[T.DF]='#4a3a30'; tCol[T.DW]='#18130e'; tCol[T.ROAD]='#5a4e3c'; tCol[T.CHEST]='#c9933a';
+
+function renderMinimap(){
+  var mw=110,mh=110,mx=W-mw-8,my=8;
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(mx,my,mw,mh);
+  ctx.strokeStyle='rgba(200,180,120,.35)';ctx.strokeRect(mx,my,mw,mh);
+  var sx=mw/MC, sy=mh/MR;
+  for(var r=0;r<MR;r+=2) for(var c=0;c<MC;c+=2){
+    ctx.fillStyle=tCol[world[r][c]]||'#333';
+    ctx.fillRect(mx+c*sx,my+r*sy,sx*2+.5,sy*2+.5);
+  }
+  for(var i=0;i<enemies.length;i++){
+    var e=enemies[i]; if(e.dead) continue;
+    ctx.fillStyle=e.type==='alduin'?'#ff4400':'#cc3333';
+    ctx.fillRect(mx+e.x/TS*sx-1,my+e.y/TS*sy-1,3,3);
+  }
+  ctx.fillStyle='#e8b85c';
+  ctx.fillRect(mx+player.x/TS*sx-2,my+player.y/TS*sy-2,5,5);
+}
+
+var lastT=0;
+function loop(ts){
+  var dt=Math.min((ts-lastT)/1000,.05); lastT=ts;
+  if(gs==='playing'){
+    updatePlayer(dt); updateEnemies(dt); updateProjs(dt);
+    updateParts(dt); updateCam(); updateHUD(); updateCompass(); render();
+  }
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown',function(e){
+  keys[e.code]=true;
+  if(gs==='start'){
+    gs='playing';
+    document.getElementById('startScreen').style.display='none';
+    notify('You are DOVAHKIIN - Dragonborn!');
+    setTimeout(function(){notify('Find and slay Alduin in the dungeon at the map center.');},1200);
+    setTimeout(function(){notify('WASD move | Click attack | Z/X/C Dragon Shouts | E use potion');},2400);
+    return;
+  }
+  if(e.code==='Tab'){
+    e.preventDefault();
+    var inv=document.getElementById('inv');
+    if(gs==='playing'){gs='inv';inv.style.display='block';renderInv();}
+    else if(gs==='inv'){gs='playing';inv.style.display='none';}
+  }
+  if(gs!=='playing') return;
+  if(e.code==='KeyZ') castShout(0);
+  if(e.code==='KeyX') castShout(1);
+  if(e.code==='KeyC') castShout(2);
+  if(e.code==='KeyE'&&player.interactCd<=0){
+    var pi=-1;
+    for(var i=0;i<player.inv.length;i++){if(player.inv[i].type==='potion'){pi=i;break;}}
+    if(pi>=0){useItem(pi);player.interactCd=.5;}
+    else notify('No potions in inventory.');
+  }
+});
+document.addEventListener('keyup',function(e){keys[e.code]=false;});
+canvas.addEventListener('mousemove',function(e){
+  var r=canvas.getBoundingClientRect();
+  mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top;
+});
+canvas.addEventListener('mousedown',function(){mouse.down=true;if(gs==='playing')playerAttack();});
+canvas.addEventListener('mouseup',function(){mouse.down=false;});
+setInterval(function(){if(mouse.down&&gs==='playing')playerAttack();},380);
+
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
