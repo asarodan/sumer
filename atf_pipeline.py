@@ -10,13 +10,13 @@ CDLI year names:  https://cdli.mpiwg-berlin.mpg.de/
 BDTNS:            https://bdtns.filol.csic.es/
 """
 
+import copy
 import csv
 import logging
 import os
 import re
-from dataclasses import asdict, dataclass
-from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 
@@ -641,6 +641,17 @@ class ATFExtractor:
             line_ref=first_linenum,
         )
 
+    def _extract_tablet_issuer(self, lines: List[str]) -> Optional[str]:
+        """Pre-scan all tablet lines for the first ki-ablative issuer.
+        Used to propagate issuer context across @obverse/@reverse sections
+        when an issuer named on one face is not repeated on subsequent faces."""
+        for line in lines:
+            clean = normalize_atf(self._strip_linenum(line.strip()))
+            iss = self._extract_issuer(clean)
+            if iss:
+                return iss
+        return None
+
     def extract_transactions(
         self, lines: List[str], tablet_id: str
     ) -> List[Transaction]:
@@ -650,17 +661,20 @@ class ATFExtractor:
         """
         results: List[Transaction] = []
         try:
-            # Extract date context from the full tablet first so that mu/iti
-            # lines on @reverse are available as fallback for @obverse sections
-            # whose own slice contains no date lines.
+            # Extract date and issuer from the full tablet first so that
+            # mu/iti lines on @reverse and ki-ablative issuers are available
+            # as fallback for sections whose own slice lacks them.
             tablet_date, tablet_raw_mu = self._parse_date(lines)
+            tablet_issuer = self._extract_tablet_issuer(lines)
 
             for section in self._split_sections(lines):
                 tx = self._extract_from_section(section, tablet_id)
                 if tx is not None:
                     if tx.date is None and tablet_date is not None:
-                        tx.date    = tablet_date
+                        tx.date     = tablet_date
                         tx.raw_date = tablet_raw_mu
+                    if tx.issuer is None and tablet_issuer is not None:
+                        tx.issuer = tablet_issuer
                     results.append(tx)
         except Exception as exc:
             logger.warning("Error parsing tablet %s: %s", tablet_id, exc)
@@ -683,10 +697,15 @@ class Normalizer:
 
     Strategy:
       1. Exact lookup in compiled maps (fastest).
-      2. Substring scan: check if the input *contains* a known key as a
-         whole token — catches compound role strings like "Ur-Nanna šabra".
-      3. Fuzzy match via SequenceMatcher against all known keys (fallback).
-      4. Return a cleaned version of the original if no match found.
+      2. Token-bounded substring scan: check if the input *contains* a known
+         key as a whole whitespace-delimited token — catches compound role
+         strings like "Ur-Nanna šabra".
+      3. Flag as [UNRESOLVED] and record in self.unresolved for manual curation.
+
+    Fuzzy/similarity matching is intentionally absent.  Sumerian personal
+    names share significant character sequences by design; SequenceMatcher-
+    style resolution silently conflates distinct historical individuals.
+    All unresolved strings must be added to NAME_MAP or a name-authority CSV.
     """
 
     # Administrative titles and roles
@@ -795,15 +814,43 @@ class Normalizer:
         "lugal-sa6-ga":    "Lugal-saga",
     }
 
-    def __init__(self, fuzzy_threshold: float = 0.82) -> None:
-        self.fuzzy_threshold = fuzzy_threshold
-        # Flat lookup for exact / fuzzy matching (titles + institutions + names)
+    # Prefix applied to names that could not be resolved deterministically.
+    # These must be reviewed manually and added to NAME_MAP or a name-authority
+    # file before treating any network output as evidence.
+    UNRESOLVED_PREFIX = "[UNRESOLVED]"
+
+    def __init__(self) -> None:
+        # Merged lookup: titles + institutions + names (order matters for priority)
         self._all: Dict[str, str] = {}
         self._all.update(self.TITLE_MAP)
         self._all.update(self.INSTITUTION_MAP)
         self._all.update(self.NAME_MAP)
         # Memoization cache: cleaned string → canonical form
         self._cache: Dict[str, Optional[str]] = {}
+        # Track unresolved strings for export / manual curation
+        self.unresolved: Set[str] = set()
+
+    def load_name_authority(self, filepath: str) -> int:
+        """
+        Load additional name entries from a two-column CSV (atf_form, canonical).
+        Use this to import a BDTNS-derived prosopographical authority list.
+        Returns the number of entries loaded; clears the cache on success.
+        """
+        count = 0
+        try:
+            with open(filepath, newline="", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    key = self._clean(row["atf_form"])
+                    val = row["canonical"].strip()
+                    self.NAME_MAP[key] = val
+                    self._all[key] = val
+                    count += 1
+            self._cache.clear()
+            logger.info("Loaded %d name-authority entries from %s", count, filepath)
+        except (OSError, KeyError) as exc:
+            logger.error("Failed to load name authority %s: %s", filepath, exc)
+        return count
 
     # --- internal helpers ---------------------------------------------------
 
@@ -815,38 +862,25 @@ class Normalizer:
         name = re.sub(r"\s+", " ", name).strip()
         return name
 
-    def _fuzzy_match(self, name: str) -> Optional[str]:
-        """
-        Fuzzy match within each semantic category separately, in priority order:
-        personal names → institutions → titles.  Prevents cross-category
-        contamination (e.g. a personal name matching a generic title).
-        """
-        for category in (self.NAME_MAP, self.INSTITUTION_MAP, self.TITLE_MAP):
-            best_ratio = 0.0
-            best: Optional[str] = None
-            for key, canonical in category.items():
-                ratio = SequenceMatcher(None, name, key).ratio()
-                if ratio > best_ratio:
-                    best_ratio, best = ratio, canonical
-            if best_ratio >= self.fuzzy_threshold:
-                return best
-        return None
-
     # --- public interface ---------------------------------------------------
 
     def normalize_name(self, name: Optional[str]) -> Optional[str]:
         """
         Normalize a name or title string to a canonical form.
-        Returns None for None / empty input.
 
         Resolution order:
-          1. Cache hit (memoized from a prior call with the same cleaned string).
-          2. Exact lookup in merged map.
-          3. Token-bounded substring scan — key must appear as a complete
-             whitespace-delimited token, preventing e.g. "en" from matching
-             inside "enim" or "lugal" from silently consuming "lugal-ezen".
-          4. Fuzzy match within each semantic category (names → institutions → titles).
-          5. Return the cleaned original.
+          1. Cache hit.
+          2. Exact lookup in merged authority map.
+          3. Token-bounded substring scan (for compound strings like "Ur-Nanna šabra").
+
+        If no deterministic match is found the original cleaned string is
+        returned prefixed with UNRESOLVED_PREFIX and logged as a warning.
+        Fuzzy / SequenceMatcher matching is intentionally absent: Sumerian
+        personal names in the Umma archive are orthographically similar by
+        design (Ur-Nanna, Ur-Suen, Ur-Utu share significant character
+        sequences), making similarity-based resolution a source of silent
+        prosopographical conflation.  All unresolved strings should be
+        reviewed manually and added to NAME_MAP or a name-authority CSV.
         """
         if not name:
             return name
@@ -876,13 +910,17 @@ class Normalizer:
             if best_canon:
                 result = best_canon
 
-        # 4. Fuzzy match
+        # 4. Unresolved: flag for manual curation; do NOT guess via similarity.
+        # Sumerian personal names share significant character sequences by design
+        # (Ur-Nanna / Ur-Suen / Ur-Utu), making SequenceMatcher-style resolution
+        # a source of silent prosopographical conflation.  All unresolved strings
+        # must be reviewed manually and added to NAME_MAP or an authority CSV.
         if result is None:
-            result = self._fuzzy_match(cleaned)
-
-        # 5. Cleaned original
-        if result is None:
-            result = cleaned
+            self.unresolved.add(cleaned)
+            logger.warning(
+                "Unresolved name %r — add to NAME_MAP or authority CSV", cleaned
+            )
+            result = f"{self.UNRESOLVED_PREFIX} {cleaned}"
 
         self._cache[cleaned] = result
         return result
@@ -965,15 +1003,19 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
     """
     Export the transaction network to GEXF format for Gephi.
     Edge attributes 'weight' and 'count' are preserved.
+    The live graph G is never mutated — serialisation operates on a deep copy.
     """
     try:
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
-        G.graph["defaultedgetype"] = "directed"
+        # Deep-copy so that converting _tablets/_years sets to strings
+        # does not destroy provenance data on the caller's live graph.
+        G_export = copy.deepcopy(G)
+        G_export.graph["defaultedgetype"] = "directed"
 
         # Convert internal provenance sets to GEXF-serializable strings.
         # year_min / year_max are recognized by Gephi's Timeline plugin for
         # diachronic filtering; "tablets" provides full provenance tracing.
-        for _u, _v, d in G.edges(data=True):
+        for _u, _v, d in G_export.edges(data=True):
             tablets = sorted(d.pop("_tablets", set()))
             years   = sorted(d.pop("_years",   set()))
             d["tablets"]  = ",".join(tablets)
@@ -981,7 +1023,7 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
             d["year_max"] = years[-1] if years else ""
             d["years"]    = ",".join(str(y) for y in years)
 
-        nx.write_gexf(G, filepath)
+        nx.write_gexf(G_export, filepath)
         logger.info("Network exported to GEXF: %s", filepath)
     except OSError as exc:
         logger.error("Failed to write GEXF to %s: %s", filepath, exc)
@@ -1029,6 +1071,163 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
         logger.info("Transactions exported to CSV: %s (%d rows)", filepath, len(transactions))
     except OSError as exc:
         logger.error("Failed to write CSV to %s: %s", filepath, exc)
+
+
+# ---------------------------------------------------------------------------
+# Unresolved-name export
+# ---------------------------------------------------------------------------
+
+def export_unresolved_names(normalizer: Normalizer, filepath: str) -> None:
+    """
+    Write the set of names that could not be resolved deterministically,
+    one per line, sorted alphabetically.  Use this output to identify
+    candidates for NAME_MAP entries or an authority CSV before treating
+    any network output as scholarly evidence.
+    """
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        names = sorted(normalizer.unresolved)
+        with open(filepath, "w", encoding="utf-8") as fh:
+            for name in names:
+                fh.write(name + "\n")
+        logger.info("Exported %d unresolved names to %s", len(names), filepath)
+    except OSError as exc:
+        logger.error("Failed to write unresolved names to %s: %s", filepath, exc)
+
+
+# ---------------------------------------------------------------------------
+# Validator
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ValidationResult:
+    """Per-field precision/recall scores against a BDTNS gold-standard."""
+    field: str
+    true_positives:  int = 0
+    false_positives: int = 0
+    false_negatives: int = 0
+
+    @property
+    def precision(self) -> float:
+        denom = self.true_positives + self.false_positives
+        return self.true_positives / denom if denom else 0.0
+
+    @property
+    def recall(self) -> float:
+        denom = self.true_positives + self.false_negatives
+        return self.true_positives / denom if denom else 0.0
+
+    @property
+    def f1(self) -> float:
+        p, r = self.precision, self.recall
+        return 2 * p * r / (p + r) if (p + r) else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"{self.field}: P={self.precision:.3f} R={self.recall:.3f} "
+            f"F1={self.f1:.3f} "
+            f"(TP={self.true_positives} FP={self.false_positives} "
+            f"FN={self.false_negatives})"
+        )
+
+
+class Validator:
+    """
+    Measure extraction precision/recall against a BDTNS gold-standard CSV.
+
+    The gold CSV must have columns:
+      tablet_id, issuer, recipient, quantity, commodity, date_year_number
+
+    Empty cells mean "not evaluated" for that field.
+
+    Usage::
+        v = Validator("gold_standard.csv")
+        results = v.evaluate(transactions)
+        for r in results.values():
+            print(r)
+    """
+
+    FIELDS: Tuple[str, ...] = (
+        "issuer", "recipient", "quantity", "commodity", "date_year_number"
+    )
+
+    def __init__(self, gold_filepath: str) -> None:
+        self._gold: Dict[str, Dict] = {}
+        self._load(gold_filepath)
+
+    def _load(self, filepath: str) -> None:
+        try:
+            with open(filepath, newline="", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    tid = row.get("tablet_id", "").strip()
+                    if tid:
+                        self._gold[tid] = {k: v.strip() for k, v in row.items()}
+            logger.info(
+                "Validator loaded %d gold-standard records from %s",
+                len(self._gold), filepath,
+            )
+        except (OSError, KeyError) as exc:
+            logger.error("Failed to load gold standard %s: %s", filepath, exc)
+
+    def evaluate(
+        self, transactions: List[Transaction]
+    ) -> Dict[str, ValidationResult]:
+        """
+        Compare extracted transactions against the gold standard.
+        Returns one ValidationResult per evaluated field.
+        """
+        results: Dict[str, ValidationResult] = {
+            f: ValidationResult(field=f) for f in self.FIELDS
+        }
+        seen_tids: Set[str] = set()
+
+        for tx in transactions:
+            gold = self._gold.get(tx.tablet_id)
+            if gold is None:
+                continue
+            seen_tids.add(tx.tablet_id)
+            self._compare_tx(tx, gold, results)
+
+        # Any gold tablet not seen in extracted output is a false negative
+        for tid, gold in self._gold.items():
+            if tid not in seen_tids:
+                for f in self.FIELDS:
+                    if gold.get(f, ""):
+                        results[f].false_negatives += 1
+
+        return results
+
+    @staticmethod
+    def _norm(v: Optional[object]) -> str:
+        return str(v).strip().lower() if v is not None else ""
+
+    def _compare_tx(
+        self,
+        tx: Transaction,
+        gold: Dict,
+        results: Dict[str, ValidationResult],
+    ) -> None:
+        extracted_vals = {
+            "issuer":           tx.issuer,
+            "recipient":        tx.recipient,
+            "quantity":         tx.quantity,
+            "commodity":        tx.commodity,
+            "date_year_number": tx.date.year_number if tx.date else None,
+        }
+        for f, extracted in extracted_vals.items():
+            gold_val = gold.get(f, "").strip()
+            if not gold_val:
+                continue  # field not evaluated for this record
+            ext_str  = self._norm(extracted)
+            gold_str = self._norm(gold_val)
+            r = results[f]
+            if ext_str and ext_str == gold_str:
+                r.true_positives  += 1
+            elif ext_str and ext_str != gold_str:
+                r.false_positives += 1
+            else:
+                r.false_negatives += 1
 
 
 # ---------------------------------------------------------------------------
@@ -1104,6 +1303,10 @@ def main() -> None:
             sulgi_slice,
             os.path.join(output_dir, "transactions_sulgi_45-48.csv"),
         )
+    export_unresolved_names(
+        normalizer,
+        os.path.join(output_dir, "unresolved_names.txt"),
+    )
 
 
 if __name__ == "__main__":
