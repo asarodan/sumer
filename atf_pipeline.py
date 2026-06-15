@@ -224,6 +224,9 @@ class ATFExtractor:
     _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-ti(?:\s+\S+)?\s*(?:#.*)?$")
     # Standalone šu ba-ti / šu ba-an-ti line
     _RE_SHU_ALONE = re.compile(r"^šu\s+ba-(?:an-)?ti\s*(?:#.*)?$")
+    # i3-dab5 ("took in custody / received") — high-frequency Umma receipt verb
+    _RE_I3_DAB5       = re.compile(r"^(.*?)\s+i3-dab5\s*(?:#.*)?$")
+    _RE_I3_DAB5_ALONE = re.compile(r"^i3-dab5\s*(?:#.*)?$")
     # Dative postposition: name ends in -ra
     _RE_DATIVE_RA = re.compile(r"^(.+?)-ra\s*(?:#.*)?$")
     # "was given": ba-an-šum2 / ba-an-šum
@@ -312,14 +315,25 @@ class ATFExtractor:
         return None
 
     def _extract_recipient_inline(self, clean: str) -> Optional[str]:
-        """Return name from 'NAME šu ba-ti' on the same line."""
-        m = self._RE_SHU_BATI.match(clean)
-        if m:
-            r = m.group(1).strip()
-            # Strip trailing dative -ra if present
-            r = re.sub(r"-ra$", "", r)
-            return r if len(r) >= 2 else None
+        """
+        Return name from same-line receipt formulas:
+          - 'NAME šu ba-ti'  (received)
+          - 'NAME i3-dab5'   (took in custody)
+        """
+        for pattern in (self._RE_SHU_BATI, self._RE_I3_DAB5):
+            m = pattern.match(clean)
+            if m:
+                r = m.group(1).strip()
+                r = re.sub(r"-ra$", "", r)  # strip trailing dative
+                return r if len(r) >= 2 else None
         return None
+
+    def _is_standalone_receipt(self, clean: str) -> bool:
+        """True if the line is a bare receipt verb with no preceding name."""
+        return bool(
+            self._RE_SHU_ALONE.match(clean) or
+            self._RE_I3_DAB5_ALONE.match(clean)
+        )
 
     # --- date parsing -------------------------------------------------------
 
@@ -333,14 +347,26 @@ class ATFExtractor:
         """
         lower = year_str.lower()
 
+        # "Year After" marker: if present, only fragment sets that explicitly
+        # require it are eligible — prevents base-year misattribution where
+        # "mu ús2-sa ki-maški{ki} hu-ur5-ti{ki}" would otherwise match
+        # Šulgi 45 (whose fragments are a subset of the year-after formula).
+        has_usssa = "ús2-sa" in lower
+
+        def _match_year(frags: Dict[int, List[str]]) -> Optional[int]:
+            for yr_num, fragments in frags.items():
+                frags_lower = [f.lower() for f in fragments]
+                if has_usssa and not any("ús2-sa" in f for f in frags_lower):
+                    continue  # skip base-year entries when year-after marker present
+                if all(f in lower for f in frags_lower):
+                    return yr_num
+            return None
+
         # Pass 1: explicit king name in year string
         for key, (canonical, frags) in KING_YEAR_MAP.items():
             if key in lower:
                 date.king = canonical
-                for yr_num, fragments in frags.items():
-                    if all(frag.lower() in lower for frag in fragments):
-                        date.year_number = yr_num
-                        break
+                date.year_number = _match_year(frags)
                 return
 
         # Pass 2: assumed king from corpus context
@@ -349,10 +375,8 @@ class ATFExtractor:
             for key, (canonical, frags) in KING_YEAR_MAP.items():
                 if canonical != self._default_king:
                     continue
-                for yr_num, fragments in frags.items():
-                    if all(frag.lower() in lower for frag in fragments):
-                        date.year_number = yr_num
-                        return
+                date.year_number = _match_year(frags)
+                return
 
     def _parse_date(self, lines: List[str]) -> Tuple[Optional["UrIIIDate"], Optional[str]]:
         """Scan lines for date information; return (UrIIIDate, raw_mu_string)."""
@@ -442,10 +466,12 @@ class ATFExtractor:
                 if m:
                     first_linenum = m.group(1)
 
-            # Quantity / commodity
+            # Quantity / commodity — accumulate all allocation lines
             q, u = self.extract_quantity(clean)
-            if q is not None and quantity is None:
-                quantity, unit = q, u
+            if q is not None:
+                quantity = (quantity or 0.0) + q
+                if unit is None:
+                    unit = u  # record primary unit from first quantity line
 
             c = self._detect_commodity(clean)
             if c and commodity is None:
@@ -462,8 +488,9 @@ class ATFExtractor:
                 recipient = rec
                 pending_dative = None
 
-            # Recipient: standalone "šu ba-ti" line → previous dative name
-            elif self._RE_SHU_ALONE.match(clean) and pending_dative and recipient is None:
+            # Recipient: standalone receipt verb → previous dative name
+            # Covers both "šu ba-ti" and "i3-dab5"
+            elif self._is_standalone_receipt(clean) and pending_dative and recipient is None:
                 recipient = pending_dative
                 pending_dative = None
 
@@ -480,8 +507,7 @@ class ATFExtractor:
                     pending_dative = cand
                 else:
                     pending_dative = None
-            elif not (self._RE_SHU_ALONE.match(clean) or self._RE_BA_AN_SUM.search(clean)):
-                # Reset pending dative if line is unrelated
+            elif not (self._is_standalone_receipt(clean) or self._RE_BA_AN_SUM.search(clean)):
                 if not m_dat:
                     pending_dative = None
 
@@ -668,13 +694,21 @@ class Normalizer:
         return name
 
     def _fuzzy_match(self, name: str) -> Optional[str]:
-        best_ratio = 0.0
-        best: Optional[str] = None
-        for key, canonical in self._all.items():
-            ratio = SequenceMatcher(None, name, key).ratio()
-            if ratio > best_ratio:
-                best_ratio, best = ratio, canonical
-        return best if best_ratio >= self.fuzzy_threshold else None
+        """
+        Fuzzy match within each semantic category separately, in priority order:
+        personal names → institutions → titles.  Prevents cross-category
+        contamination (e.g. a personal name matching a generic title).
+        """
+        for category in (self.NAME_MAP, self.INSTITUTION_MAP, self.TITLE_MAP):
+            best_ratio = 0.0
+            best: Optional[str] = None
+            for key, canonical in category.items():
+                ratio = SequenceMatcher(None, name, key).ratio()
+                if ratio > best_ratio:
+                    best_ratio, best = ratio, canonical
+            if best_ratio >= self.fuzzy_threshold:
+                return best
+        return None
 
     # --- public interface ---------------------------------------------------
 
