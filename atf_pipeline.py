@@ -39,12 +39,12 @@ _URNAMMA_FRAGS: Dict[int, List[str]] = {
 _ŠULGI_FRAGS: Dict[int, List[str]] = {
     1:  ["lugal-uri5{ki}-ma"],
     3:  ["en-{d}inanna"],
-    44: ["bad3 mar-tu ba-du3"],
     # Years 45-48 are the primary target range for Umma barley records
     45: ["ki-maški{ki}", "hu-ur5-ti{ki}"],
     46: ["ús2-sa ki-maški{ki}"],
     47: ["har-ši{ki}"],
     48: ["ús2-sa har-ši{ki}"],
+    # NOTE: bad3 mar-tu ba-du3 is Šu-Suen 4, not Šulgi 44 — see _ŠUSUEN_FRAGS
 }
 
 _AMARSUEN_FRAGS: Dict[int, List[str]] = {
@@ -57,7 +57,8 @@ _AMARSUEN_FRAGS: Dict[int, List[str]] = {
 _ŠUSUEN_FRAGS: Dict[int, List[str]] = {
     1:  ["ma2 {d}en-zu"],
     3:  ["šu-{d}suen bad3"],
-    4:  ["za-ab-ša-li{ki}"],
+    4:  ["bad3 mar-tu ba-du3"],   # Amorite wall built (moved from erroneous Šulgi 44)
+    6:  ["za-ab-ša-li{ki}"],      # Zabšali campaign (moved from erroneous SS 4)
 }
 
 # Maps lowercase ATF king-name variant → (canonical display name, year-frag dict)
@@ -76,6 +77,28 @@ KING_YEAR_MAP: Dict[str, Tuple[str, Dict[int, List[str]]]] = {
     "ibbi-suen":     ("Ibbi-Suen",  {}),
     "ibi-{d}suen":   ("Ibbi-Suen",  {}),
 }
+
+
+# ---------------------------------------------------------------------------
+# Transliteration normalisation
+# ---------------------------------------------------------------------------
+
+def normalize_atf(line: str) -> str:
+    """
+    Convert CDLI legacy ASCII transliteration digraphs to Unicode equivalents
+    so that standard text-dump exports are handled identically to Unicode ATF.
+
+    Conversions applied (case-preserving):
+      sz / SZ  →  š / Š   (CDLI ASCII representation of esh/shin)
+
+    Called on every input line before pattern matching and on every name
+    string before normalisation lookups, ensuring ASCII corpus downloads
+    do not silently bypass regex filters or fragment matching.
+    """
+    # sz is exclusively used as the ASCII digraph for š in Sumerian ATF;
+    # no independent s+z sequence exists in standard CDLI transliteration.
+    line = line.replace("SZ", "Š").replace("sz", "š")
+    return line
 
 
 # ---------------------------------------------------------------------------
@@ -384,7 +407,7 @@ class ATFExtractor:
         raw_mu: Optional[str] = None
 
         for line in lines:
-            clean = self._strip_linenum(line.strip())
+            clean = normalize_atf(self._strip_linenum(line.strip()))
 
             m = self._RE_ITI.match(clean)
             if m:
@@ -459,7 +482,7 @@ class ATFExtractor:
             return None
 
         for i, line in enumerate(content):
-            clean = self._strip_linenum(line)
+            clean = normalize_atf(self._strip_linenum(line))
 
             if first_linenum is None:
                 m = re.match(r"(\d+[a-z]?[!?*]?)\.", line)
@@ -686,8 +709,8 @@ class Normalizer:
     # --- internal helpers ---------------------------------------------------
 
     def _clean(self, name: str) -> str:
-        """Lowercase, remove damage markers and broken-text brackets."""
-        name = name.lower().strip()
+        """Lowercase, normalize ASCII transliteration, remove damage markers."""
+        name = normalize_atf(name).lower().strip()
         name = re.sub(r"[!?*]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
         name = re.sub(r"\s+", " ", name).strip()
