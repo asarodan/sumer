@@ -102,6 +102,39 @@ def normalize_atf(line: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Metrological systems
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MetrologicalSystem:
+    """
+    Grain capacity conversion table from unit names to sila3 equivalents.
+    Pass a custom instance to ATFExtractor to handle regional archive
+    variants (e.g. a 240-sila3 gur or non-standard barig subdivisions).
+    """
+    name: str
+    to_sila3: Dict[str, float]
+
+    def convert(self, unit: str, amount: float) -> float:
+        return amount * self.to_sila3.get(unit.lower(), 1.0)
+
+
+# Nippur grain capacity standard — dominant in Ur III administrative texts.
+# 1 gur = 5 barig = 300 sila3 | 1 barig = 6 ban2 = 60 sila3 | 1 ban2 = 10 sila3
+UR_III_GRAIN = MetrologicalSystem(
+    name="Ur III grain (Nippur standard)",
+    to_sila3={
+        "gur":   300.0,
+        "barig":  60.0,
+        "ban2":   10.0,
+        "sila3":   1.0,
+        "sila":    1.0,
+        "gin2":    1.0 / 60,   # rare in grain contexts; included for completeness
+    },
+)
+
+
+# ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
 
@@ -116,7 +149,7 @@ class UrIIIDate:
 
     def in_range(self, king: str, year_min: int, year_max: int) -> bool:
         """True if this date falls within [year_min, year_max] for the given king."""
-        if self.king and king.lower() not in self.king.lower():
+        if self.king and self.king.lower() != king.lower():
             return False
         if self.year_number is not None:
             return year_min <= self.year_number <= year_max
@@ -148,6 +181,7 @@ class Transaction:
     date: Optional[UrIIIDate] = None
     raw_date: Optional[str] = None     # verbatim mu-line from tablet
     line_ref: Optional[str] = None     # first content line number
+    tx_type: Optional[str] = None      # "receipt" | "disbursement" | "delivery"
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +267,7 @@ class ATFExtractor:
     )
 
     # Commodities
-    _RE_BARLEY = re.compile(r"\bše\b|she\b|\bbarley\b",  re.I)
+    _RE_BARLEY = re.compile(r"\bše(?:-\w+)?\b|\bshe(?:-\w+)?\b|\bbarley\b", re.I)
     _RE_EMMER  = re.compile(r"\bziz2\b|\bemmer\b",        re.I)
     _RE_DATES  = re.compile(r"\bzu2-lum\b|\bdates?\b",    re.I)
     _RE_FLOUR  = re.compile(r"\bzig3\b|\bflour\b",        re.I)
@@ -252,7 +286,7 @@ class ATFExtractor:
     )
 
     # Recipient: "NAME šu ba-ti" on same line
-    _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-ti(?:\s+\S+)?\s*(?:#.*)?$")
+    _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-(?:an-)?ti(?:\s+\S+)?\s*(?:#.*)?$")
     # Standalone šu ba-ti / šu ba-an-ti line
     _RE_SHU_ALONE = re.compile(r"^šu\s+ba-(?:an-)?ti\s*(?:#.*)?$")
     # i3-dab5 ("took in custody / received") — high-frequency Umma receipt verb
@@ -262,6 +296,9 @@ class ATFExtractor:
     _RE_DATIVE_RA = re.compile(r"^(.+?)-ra\s*(?:#.*)?$")
     # "was given": ba-an-šum2 / ba-an-šum
     _RE_BA_AN_SUM = re.compile(r"\bba-an-šum2?\b")
+    # Disbursement / delivery verbs (for transaction-type classification)
+    _RE_BA_ZI  = re.compile(r"\bba-zi\b")
+    _RE_MU_KUX = re.compile(r"\bmu-ku[x\d]+\b|\bmu-DU\b", re.I)
 
     # Date: month line  "iti [month]" optionally followed by "u4 N(-kam)"
     _RE_ITI = re.compile(
@@ -281,7 +318,11 @@ class ATFExtractor:
 
     # ---------------------------------------------------------------------------
 
-    def __init__(self, default_king: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        default_king: Optional[str] = None,
+        metrological_system: Optional["MetrologicalSystem"] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -290,8 +331,13 @@ class ATFExtractor:
             explicit royal name token.  Useful when parsing a corpus known
             to fall within a single reign, e.g. ``"Šulgi"`` for the core
             Umma archive.
+        metrological_system : MetrologicalSystem, optional
+            Conversion table for metrological units.  Defaults to the Nippur
+            standard (1 gur = 300 sila3).  Override for regional corpora that
+            use different unit equivalences.
         """
         self._default_king = default_king
+        self._metro = metrological_system or UR_III_GRAIN
 
     def _strip_linenum(self, line: str) -> str:
         return self._RE_LINENUM.sub("", line).strip()
@@ -312,9 +358,8 @@ class ATFExtractor:
         if cdli:
             total = 0.0
             first_unit = cdli[0][1].lower()
-            conversions = {"gur": 300.0, "barig": 60.0, "ban2": 10.0}
             for num_s, unit in cdli:
-                total += float(num_s) * conversions.get(unit.lower(), 1.0)
+                total += self._metro.convert(unit, float(num_s))
             return total, first_unit
 
         m = self._RE_QTY_PLAIN.search(line)
@@ -391,7 +436,12 @@ class ATFExtractor:
         Pass 2: if no king was found but self._default_king is set, use it and
                 try to match year fragments against that king's fragment dict.
         """
-        lower = year_str.lower()
+        # Strip damage markers and broken-text brackets before fragment matching
+        # so that e.g. "mu ki-maš[ki{ki}]" still matches the fragment "ki-maški{ki}".
+        clean_ys = re.sub(r"\[.*?\]", "", year_str)
+        clean_ys = re.sub(r"[!?*]", "", clean_ys)
+        clean_ys = re.sub(r"\s+", " ", clean_ys).strip()
+        lower = clean_ys.lower()
 
         # "Year After" marker: if present, only fragment sets that explicitly
         # require it are eligible — prevents base-year misattribution where
@@ -496,6 +546,7 @@ class ATFExtractor:
         quantity: Optional[float] = None
         unit: Optional[str] = None
         commodity: Optional[str] = None        # primary commodity (first detected)
+        tx_type: Optional[str] = None          # receipt | disbursement | delivery
         pending_dative: Optional[str] = None   # name from -ra line waiting for ba-ti/šum2
         first_linenum: Optional[str] = None
 
@@ -535,22 +586,30 @@ class ATFExtractor:
             if iss and issuer is None:
                 issuer = iss
 
-            # Recipient: inline "NAME šu ba-ti"
+            # Recipient: inline "NAME šu ba-ti" / "NAME i3-dab5"
             rec = self._extract_recipient_inline(clean)
             if rec and recipient is None:
                 recipient = rec
+                tx_type = tx_type or "receipt"
                 pending_dative = None
 
             # Recipient: standalone receipt verb → previous dative name
-            # Covers both "šu ba-ti" and "i3-dab5"
             elif self._is_standalone_receipt(clean) and pending_dative and recipient is None:
                 recipient = pending_dative
+                tx_type = tx_type or "receipt"
                 pending_dative = None
 
             # "was given" ba-an-šum2 → previous dative name
             elif self._RE_BA_AN_SUM.search(clean) and pending_dative and recipient is None:
                 recipient = pending_dative
+                tx_type = tx_type or "receipt"
                 pending_dative = None
+
+            # Disbursement / delivery verb detection (does not set recipient)
+            if self._RE_BA_ZI.search(clean):
+                tx_type = tx_type or "disbursement"
+            elif self._RE_MU_KUX.search(clean):
+                tx_type = tx_type or "delivery"
 
             # Track dative -ra name for next line
             m_dat = self._RE_DATIVE_RA.match(clean)
@@ -576,6 +635,7 @@ class ATFExtractor:
             quantity=quantity,
             unit=unit,
             commodity=commodity,
+            tx_type=tx_type,
             date=date,
             raw_date=raw_mu,
             line_ref=first_linenum,
@@ -742,6 +802,8 @@ class Normalizer:
         self._all.update(self.TITLE_MAP)
         self._all.update(self.INSTITUTION_MAP)
         self._all.update(self.NAME_MAP)
+        # Memoization cache: cleaned string → canonical form
+        self._cache: Dict[str, Optional[str]] = {}
 
     # --- internal helpers ---------------------------------------------------
 
@@ -776,33 +838,54 @@ class Normalizer:
         """
         Normalize a name or title string to a canonical form.
         Returns None for None / empty input.
+
+        Resolution order:
+          1. Cache hit (memoized from a prior call with the same cleaned string).
+          2. Exact lookup in merged map.
+          3. Token-bounded substring scan — key must appear as a complete
+             whitespace-delimited token, preventing e.g. "en" from matching
+             inside "enim" or "lugal" from silently consuming "lugal-ezen".
+          4. Fuzzy match within each semantic category (names → institutions → titles).
+          5. Return the cleaned original.
         """
         if not name:
             return name
 
         cleaned = self._clean(name)
 
-        # 1. Exact lookup
+        # 1. Cache
+        if cleaned in self._cache:
+            return self._cache[cleaned]
+
+        result: Optional[str] = None
+
+        # 2. Exact lookup
         if cleaned in self._all:
-            return self._all[cleaned]
+            result = self._all[cleaned]
 
-        # 2. Whole-token substring scan (handles "Ur-Nanna šabra"-style strings)
-        #    Prefer longest matching key to avoid short false positives.
-        best_key_len = 0
-        best_canon: Optional[str] = None
-        for key, canonical in self._all.items():
-            if key in cleaned and len(key) > best_key_len:
-                best_key_len, best_canon = len(key), canonical
-        if best_canon and best_key_len >= 3:
-            return best_canon
+        # 3. Token-bounded substring scan
+        if result is None:
+            best_key_len = 0
+            best_canon: Optional[str] = None
+            for key, canonical in self._all.items():
+                if len(key) < 3 or len(key) <= best_key_len:
+                    continue
+                # Match key only as a complete whitespace-delimited token
+                if re.search(r"(?:^|\s)" + re.escape(key) + r"(?:\s|$)", cleaned):
+                    best_key_len, best_canon = len(key), canonical
+            if best_canon:
+                result = best_canon
 
-        # 3. Fuzzy match
-        fuzzy = self._fuzzy_match(cleaned)
-        if fuzzy:
-            return fuzzy
+        # 4. Fuzzy match
+        if result is None:
+            result = self._fuzzy_match(cleaned)
 
-        # 4. Return cleaned original
-        return cleaned
+        # 5. Cleaned original
+        if result is None:
+            result = cleaned
+
+        self._cache[cleaned] = result
+        return result
 
     def normalize_transaction(self, tx: Transaction) -> Transaction:
         tx.issuer    = self.normalize_name(tx.issuer)
@@ -823,16 +906,25 @@ class NetworkBuilder:
     def add_transaction(self, tx: Transaction) -> None:
         if not tx.issuer or not tx.recipient:
             return
-        weight = tx.quantity if tx.quantity else 1.0
+        volume = tx.quantity if tx.quantity else 1.0
+        yr = tx.date.year_number if tx.date and tx.date.year_number else None
         if self.graph.has_edge(tx.issuer, tx.recipient):
-            self.graph[tx.issuer][tx.recipient]["weight"] += weight
-            self.graph[tx.issuer][tx.recipient]["count"]  += 1
+            e = self.graph[tx.issuer][tx.recipient]
+            e["weight"]  += volume   # cumulative sila3 (used by nx algorithms)
+            e["volume"]  += volume   # same, explicitly named for export clarity
+            e["count"]   += 1
+            e["_tablets"].add(tx.tablet_id)
+            if yr is not None:
+                e["_years"].add(yr)
         else:
             self.graph.add_edge(
                 tx.issuer,
                 tx.recipient,
-                weight=weight,
+                weight=volume,
+                volume=volume,
                 count=1,
+                _tablets={tx.tablet_id},
+                _years={yr} if yr is not None else set(),
             )
 
     def build(self, transactions: List[Transaction]) -> nx.DiGraph:
@@ -876,10 +968,19 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
     """
     try:
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
-        # Explicitly mark the edge type so Gephi imports it as a directed graph.
-        # Without this, some Gephi versions silently treat the file as undirected,
-        # destroying issuer→recipient flow directionality.
         G.graph["defaultedgetype"] = "directed"
+
+        # Convert internal provenance sets to GEXF-serializable strings.
+        # year_min / year_max are recognized by Gephi's Timeline plugin for
+        # diachronic filtering; "tablets" provides full provenance tracing.
+        for _u, _v, d in G.edges(data=True):
+            tablets = sorted(d.pop("_tablets", set()))
+            years   = sorted(d.pop("_years",   set()))
+            d["tablets"]  = ",".join(tablets)
+            d["year_min"] = years[0]  if years else ""
+            d["year_max"] = years[-1] if years else ""
+            d["years"]    = ",".join(str(y) for y in years)
+
         nx.write_gexf(G, filepath)
         logger.info("Network exported to GEXF: %s", filepath)
     except OSError as exc:
@@ -894,7 +995,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
 
     fieldnames = [
         "tablet_id", "issuer", "recipient",
-        "quantity", "unit", "commodity",
+        "quantity", "unit", "commodity", "tx_type",
         "date_king", "date_year_number", "date_year_name",
         "date_month", "date_day", "raw_date", "line_ref",
     ]
@@ -908,6 +1009,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
             "quantity":         tx.quantity if tx.quantity is not None else "",
             "unit":             tx.unit or "",
             "commodity":        tx.commodity or "",
+            "tx_type":          tx.tx_type or "",
             "date_king":        d.king if d else "",
             "date_year_number": d.year_number if d else "",
             "date_year_name":   d.year_name if d else "",
