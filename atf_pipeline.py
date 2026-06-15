@@ -240,8 +240,16 @@ class ATFExtractor:
 
     # Issuer: line ends with " ki" or " ki2" (ablative)
     _RE_KI_ABL = re.compile(r"^(.*?)\s+ki(?:2)?\s*(?:#.*)?$")
-    # Guard: reject if ki immediately follows closing brace (place determinative)
-    _RE_KI_DET = re.compile(r"\}\s*ki(?:2)?\s*(?:#.*)?$")
+    # Guard: reject lines where the final "ki" is a place-name determinative.
+    # Catches both "}ki" (embedded: uri5{ki}) and "{ki}" standing alone at
+    # line-end, as well as lines whose only content is the syllable "ki".
+    _RE_KI_DET = re.compile(
+        r"(?:"
+        r"\}\s*ki(?:2)?"        # place-det directly before ki: uri5{ki}[ ]ki
+        r"|"
+        r"\{ki\}"               # bare determinative at line-end: umma{ki}
+        r")\s*(?:#.*)?$"
+    )
 
     # Recipient: "NAME šu ba-ti" on same line
     _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-ti(?:\s+\S+)?\s*(?:#.*)?$")
@@ -333,7 +341,9 @@ class ATFExtractor:
         m = self._RE_KI_ABL.match(clean)
         if m:
             candidate = m.group(1).strip()
-            if len(candidate) >= 2 and not candidate.startswith(("$", "#")):
+            # Require ≥4 chars: excludes bare syllables ("ki", "ma") that are
+            # not issuer names, while still accepting short names like "dada".
+            if len(candidate) >= 4 and not candidate.startswith(("$", "#")):
                 return candidate
         return None
 
@@ -356,6 +366,19 @@ class ATFExtractor:
         return bool(
             self._RE_SHU_ALONE.match(clean) or
             self._RE_I3_DAB5_ALONE.match(clean)
+        )
+
+    def _is_dative_breaker(self, clean: str) -> bool:
+        """
+        True for lines that definitively end a dative-name→receipt sequence.
+        Commodity/quantity lines are NOT breakers — scribes routinely insert
+        them between a dative name and its receipt verb in multi-line entries.
+        """
+        return bool(
+            self._RE_ŠUNIGIN.match(clean) or   # total line starts a new sub-record
+            self._RE_KI_ABL.match(clean) or    # issuer line signals a new record
+            self._RE_ITI.match(clean) or       # month line is outside the name block
+            self._RE_MU.match(clean)           # year line is outside the name block
         )
 
     # --- date parsing -------------------------------------------------------
@@ -472,8 +495,8 @@ class ATFExtractor:
         recipient: Optional[str] = None
         quantity: Optional[float] = None
         unit: Optional[str] = None
-        commodity: Optional[str] = None
-        pending_dative: Optional[str] = None  # name from -ra line waiting for ba-ti/šum2
+        commodity: Optional[str] = None        # primary commodity (first detected)
+        pending_dative: Optional[str] = None   # name from -ra line waiting for ba-ti/šum2
         first_linenum: Optional[str] = None
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
@@ -489,16 +512,23 @@ class ATFExtractor:
                 if m:
                     first_linenum = m.group(1)
 
-            # Quantity / commodity — accumulate all allocation lines
-            q, u = self.extract_quantity(clean)
-            if q is not None:
-                quantity = (quantity or 0.0) + q
-                if unit is None:
-                    unit = u  # record primary unit from first quantity line
-
+            # Quantity / commodity — accumulate only lines that match the
+            # primary commodity.  A section with mixed barley + emmer quantities
+            # must not sum them together: only the first commodity's lines count.
             c = self._detect_commodity(clean)
             if c and commodity is None:
-                commodity = c
+                commodity = c   # lock primary commodity on first detection
+
+            q, u = self.extract_quantity(clean)
+            if q is not None:
+                line_commodity = c  # commodity on THIS line (may be None)
+                if line_commodity is None or line_commodity == commodity:
+                    # Accumulate: same commodity as primary, or no commodity tag
+                    # (continuation lines for the same entry)
+                    quantity = (quantity or 0.0) + q
+                    if unit is None:
+                        unit = u
+                # else: different commodity — skip to avoid cross-commodity corruption
 
             # Issuer
             iss = self._extract_issuer(clean)
@@ -526,13 +556,12 @@ class ATFExtractor:
             m_dat = self._RE_DATIVE_RA.match(clean)
             if m_dat and not rec and not iss:
                 cand = m_dat.group(1).strip()
-                if len(cand) >= 2:
-                    pending_dative = cand
-                else:
-                    pending_dative = None
-            elif not (self._is_standalone_receipt(clean) or self._RE_BA_AN_SUM.search(clean)):
-                if not m_dat:
-                    pending_dative = None
+                pending_dative = cand if len(cand) >= 2 else None
+            elif self._is_dative_breaker(clean):
+                # Structural boundary: give up on pending dative
+                pending_dative = None
+            # else: commodity/quantity/other lines between -ra and receipt verb
+            # are allowed — do NOT clear pending_dative here
 
         # Discard sections with no actionable data
         if quantity is None and issuer is None and recipient is None:
@@ -561,9 +590,17 @@ class ATFExtractor:
         """
         results: List[Transaction] = []
         try:
+            # Extract date context from the full tablet first so that mu/iti
+            # lines on @reverse are available as fallback for @obverse sections
+            # whose own slice contains no date lines.
+            tablet_date, tablet_raw_mu = self._parse_date(lines)
+
             for section in self._split_sections(lines):
                 tx = self._extract_from_section(section, tablet_id)
                 if tx is not None:
+                    if tx.date is None and tablet_date is not None:
+                        tx.date    = tablet_date
+                        tx.raw_date = tablet_raw_mu
                     results.append(tx)
         except Exception as exc:
             logger.warning("Error parsing tablet %s: %s", tablet_id, exc)
@@ -810,11 +847,19 @@ class NetworkBuilder:
 
 def compute_metrics(G: nx.DiGraph) -> Dict:
     """Return standard network metrics for a directed graph."""
+    n = G.number_of_nodes()
+    # k-sampled betweenness: exact for small graphs, approximated for large ones.
+    # k = sqrt(n)*4 balances accuracy and runtime; capped at n (exact) below 50
+    # nodes.  Without sampling, O(VE) becomes unusable at corpus scale (1 000+
+    # unique agents).
+    k_bc = n if n <= 50 else max(50, int(n ** 0.5 * 4))
     return {
         "degree_centrality":      nx.degree_centrality(G),
         "in_degree_centrality":   nx.in_degree_centrality(G),
         "out_degree_centrality":  nx.out_degree_centrality(G),
-        "betweenness_centrality": nx.betweenness_centrality(G, weight="weight"),
+        "betweenness_centrality": nx.betweenness_centrality(
+            G, weight="weight", k=k_bc, normalized=True,
+        ),
         "density":                nx.density(G),
         "num_weakly_connected_components": nx.number_weakly_connected_components(G),
     }
@@ -831,6 +876,10 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
     """
     try:
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        # Explicitly mark the edge type so Gephi imports it as a directed graph.
+        # Without this, some Gephi versions silently treat the file as undirected,
+        # destroying issuer→recipient flow directionality.
+        G.graph["defaultedgetype"] = "directed"
         nx.write_gexf(G, filepath)
         logger.info("Network exported to GEXF: %s", filepath)
     except OSError as exc:
