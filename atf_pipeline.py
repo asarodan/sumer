@@ -313,11 +313,29 @@ class ATFExtractor:
         "gesz2", "gesz'u", "geszu", "szar2",
     })
 
-    # Bare grain-unit words (not in N(unit) format) used as context markers
-    _RE_BARE_GUR = re.compile(r"(?:^|\s)gur\b", re.I)
+    # Bare unit context words (not in N(unit) format)
+    _RE_BARE_GUR   = re.compile(r"(?:^|\s)gur\b", re.I)
+    _RE_BARE_SILA3 = re.compile(r"(?:^|\s)sila3?\b", re.I)
+    _RE_BARE_GIN2  = re.compile(r"(?:^|\s)gin2\b", re.I)
+
+    # Animals — require the animal word to be bounded by whitespace (not hyphens),
+    # so names like "lugal-amar-ku3" or compounds "gu4-de3" never match.
+    _RE_ANIMAL     = re.compile(
+        r"(?:(?<=\s)|^)(?:gu4|udu|sila4|masz2?|ansze)(?=\s|$)", re.I
+    )
+    # Animal count token: N(unit) ANIMAL_WORD — unit must be a simple counting unit,
+    # NOT a grain-capacity indicator (asz/barig/ban2/gur/gesz2 won't reach this path
+    # because _GRAIN_IND guard fires first).
+    _RE_QTY_ANIMAL = re.compile(
+        r"(\d+(?:/\d+)?)\((\w+[2']?)\)\s+(?:gu4|udu|sila4|masz2?|ansze)(?=\s|$)", re.I
+    )
 
     # Labor/worker-day line indicators — these are NEVER grain quantities
     _RE_LABOR_LINE = re.compile(r"\bgurusz\b|\bgeme2\b", re.I)
+    # Labor total: szunigin N gurusz (total worker count)
+    _RE_LABOR_TOTAL = re.compile(
+        r"s[zž]u-?nigin2?\s+(.*?)\s+gurusz\b", re.I
+    )
 
     # Transfer-formula signals used for tablet-type classification
     _RE_TRANSFER_SIGNAL = re.compile(
@@ -362,14 +380,19 @@ class ATFExtractor:
     _RE_KISZIB_INLINE = re.compile(r"\bkiszib3#?\s+([a-z{}\-0-9\[\]]+(?:\s+[a-z{}\-0-9\[\]]+)*?)(?:\s+(?:kiszib3|giri3|mu|iti|u3)\b|$)", re.I)
 
     # --------------- Recipient patterns ---------------
-    # F: NAME szu/šu ba-ti on same line
+    # F: NAME szu/šu ba-ti on same line (allow bracket-damage on "an": ba-[an-ti])
     _RE_SHU_BATI  = re.compile(
-        r"^(.*?)\s+s[zž]u#?\s+ba-(?:an-|ab-)?ti(?:\s+\S+)?\s*(?:#.*)?$"
+        r"^(.*?)\s+s[zž]u#?\s+ba-(?:\[?an-\]?|ab-)?ti(?:\s+\S+)?\s*(?:#.*)?$"
     )
     # G: standalone szu/šu ba-ti (allow leading bracket damage like "[szu] ba-ti")
-    _RE_SHU_ALONE = re.compile(r"^\[?s[zž]u#?\]?\s+ba-(?:ab-|an-)?ti\s*(?:#.*)?$")
-    # H: NAME i3-dab5 / in-dab5 (received)
-    _RE_IDAB5     = re.compile(r"^(.*?)\s+i(?:3-|n-)dab5\b")
+    _RE_SHU_ALONE = re.compile(r"^\[?s[zž]u#?\]?\s+ba-(?:ab-|\[?an-\]?)?ti\s*(?:#.*)?$")
+    # H: NAME i3-dab5 / in-dab5 (received); allow bracket damage: i3-[dab5]
+    _RE_IDAB5     = re.compile(r"^(.*?)\s+i(?:3-|n-)(?:dab5|\[dab5\])\b")
+    # H2: N(asz) NAME – ration list without engar marker (multi-recipient tablet)
+    _RE_ASZ_NAME  = re.compile(
+        r"^(\d+(?:/\d+)?)\(asz\)\s+([a-z{}\-0-9\[\]]+(?:\s+[a-z{}\-0-9\[\]]+)*?)"
+        r"(?:\s*(?:#.*))?$", re.I
+    )
     # I: N(u) sze NAME – inline ration distribution
     _RE_U_SZE     = re.compile(
         r"^(\d+)\(u\)\s+sze\s+(.+?)(?:\s+dumu(?:-ni|-munus)?)?\s*(?:#.*)?$"
@@ -488,26 +511,48 @@ class ATFExtractor:
 
     def _parse_grain(self, line: str) -> Tuple[Optional[float], Optional[str]]:
         """
-        Parse grain quantity from a text fragment; return (value_in_sila3, unit).
+        Parse commodity quantity; return (value_in_native_unit, unit_name).
 
-        Handles the CDLI sexagesimal large-gur notation where counting units
-        (u=10, gesz2=60, etc.) are relative to a bare 'gur' at line end:
-          "5(u) sze gur"    → 50 gur  = 15,000 sila3
-          "2(gesz2) sze gur" → 120 gur = 36,000 sila3
+        Handles four quantity formats:
+          1. Standard CDLI grain: N(asz/barig/ban2/sila3) → sila3
+          2. Bare-gur context: N(u)/N(gesz2) sze gur → gur→sila3
+          3. Bare-sila3 context: N(disz) sila3 → sila3  (small ration tablets)
+          4. Bare-gin2 context: N(u)/N(disz) gin2 → gin2  (silver weight tablets)
+          5. Animal count: N(disz) gu4/udu/… → head
         """
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
-            units = {u.lower() for _, u in cdli}
-            bare_gur = bool(self._RE_BARE_GUR.search(line))
-            if not (units & self._GRAIN_IND) and not bare_gur:
+            units      = {u.lower() for _, u in cdli}
+            bare_gur   = bool(self._RE_BARE_GUR.search(line))
+            bare_sila3 = bool(self._RE_BARE_SILA3.search(line))
+            bare_gin2  = bool(self._RE_BARE_GIN2.search(line))
+            grain_ind  = bool(units & self._GRAIN_IND)
+            if not grain_ind and not bare_gur and not bare_sila3 and not bare_gin2:
+                # Not grain — check for animal count before giving up
+                m_anim = self._RE_QTY_ANIMAL.search(line)
+                if m_anim:
+                    coeff_s, _unit = m_anim.group(1), m_anim.group(2)
+                    if "/" in coeff_s:
+                        n, d = coeff_s.split("/", 1)
+                        return float(n) / float(d), "head"
+                    return float(coeff_s), "head"
                 return None, None
             total = 0.0
             first_unit = cdli[0][1].lower()
             for num_s, unit in cdli:
                 ul = unit.lower()
                 factor = self._GRAIN_CONV.get(ul)
-                if factor is None and bare_gur and ul == "u":
-                    factor = 10.0 * 300.0
+                if factor is None:
+                    if bare_gur and ul == "u":
+                        factor = 10.0 * 300.0      # 10 gur per u-unit
+                    elif bare_sila3 and ul == "u":
+                        factor = 10.0              # 10 sila3
+                    elif bare_sila3 and ul == "disz":
+                        factor = 1.0               # 1 sila3
+                    elif bare_gin2 and ul == "u":
+                        factor = 10.0              # 10 gin2
+                    elif bare_gin2 and ul == "disz":
+                        factor = 1.0               # 1 gin2
                 if factor is None:
                     continue
                 if "/" in num_s:
@@ -516,8 +561,22 @@ class ATFExtractor:
                 else:
                     coeff = float(num_s)
                 total += coeff * factor
-            reported_unit = "gur" if bare_gur else first_unit
+            if bare_gur:
+                reported_unit = "gur"
+            elif bare_gin2:
+                reported_unit = "gin2"
+            else:
+                reported_unit = "sila3" if bare_sila3 else first_unit
             return (total, reported_unit) if total > 0 else (None, None)
+
+        # No CDLI tokens — try animal count or plain numeric formats
+        m_anim = self._RE_QTY_ANIMAL.search(line)
+        if m_anim:
+            coeff_s = m_anim.group(1)
+            if "/" in coeff_s:
+                n, d = coeff_s.split("/", 1)
+                return float(n) / float(d), "head"
+            return float(coeff_s), "head"
 
         m = self._RE_QTY_PLAIN.search(line)
         if m:
@@ -560,8 +619,14 @@ class ATFExtractor:
         if self._RE_DATES.search(line):   return "dates"
         if self._RE_FLOUR.search(line):   return "flour"
         if self._RE_BEER.search(line):    return "beer"
+        # "i3" standalone = oil/fat; "i3-nun" = ghee — but exclude verbal compounds
+        # like i3-dab5 (received), i3-li2 (name), by requiring whitespace/end after
         if self._RE_OIL.search(line):     return "oil"
+        if re.search(r"(?:^|\s)i3(?:-nun)?(?=\s|$)", line, re.I): return "oil"
         if self._RE_SILVER.search(line):  return "silver"
+        if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
+        # Animal commodity is inferred from unit=="head" returned by _parse_grain,
+        # NOT from _detect_commodity, to avoid false positives on personal names.
         return None
 
     # --- issuer extraction --------------------------------------------------
@@ -783,6 +848,9 @@ class ATFExtractor:
             q, u = self.extract_quantity(clean)
             if q is not None and quantity is None:
                 quantity, unit = q, u
+                # Animal counts come back with unit="head"; propagate commodity
+                if u == "head" and commodity is None:
+                    commodity = "animal"
 
             c = self._detect_commodity(clean)
             if c and commodity is None:
@@ -1034,6 +1102,135 @@ class ATFExtractor:
 
         return results
 
+    # --- ration list extraction (N(asz) NAME without engar) ------------------
+
+    def _extract_ration_list(
+        self, lines: List[str], tablet_id: str
+    ) -> List[Transaction]:
+        """
+        Extract multi-recipient ration lists of the form:
+            N(asz) NAME
+            N(asz) NAME2
+            ...
+        where no 'engar' keyword appears (unlike allocation tablets).
+        Each quantity-name pair becomes one transaction.
+        """
+        date, raw_mu = self._parse_date(lines)
+        results: List[Transaction] = []
+        pending_qty: Optional[float] = None
+        pending_comm: Optional[str] = None
+
+        for line in lines:
+            s = line.strip()
+            if not self._is_content(s):
+                continue
+            clean = self._strip_linenum(s)
+
+            m = self._RE_ASZ_NAME.match(clean)
+            if m:
+                coeff_s, raw_name = m.group(1), m.group(2).strip()
+                name = self._clean_atf_name(raw_name)
+                if not self._looks_like_name(name):
+                    continue
+                coeff = float(coeff_s) if "/" not in coeff_s else (
+                    lambda p: float(p[0]) / float(p[1])
+                )(coeff_s.split("/", 1))
+                qty = coeff * 300.0  # asz = 1 gur = 300 sila3
+                comm = pending_comm or "barley"
+                results.append(Transaction(
+                    tablet_id=tablet_id,
+                    recipient=name,
+                    quantity=qty,
+                    unit="asz",
+                    commodity=comm,
+                    date=date,
+                    raw_date=raw_mu,
+                    tx_type="transfer",
+                ))
+                continue
+
+            # Commodity line that precedes the ration entries
+            comm = self._detect_commodity(clean)
+            if comm:
+                pending_comm = comm
+
+        return results if len(results) >= 2 else []
+
+    # --- labor transaction extraction ----------------------------------------
+
+    def _extract_labor_transactions(
+        self, lines: List[str], tablet_id: str
+    ) -> List[Transaction]:
+        """
+        Extract a single labor-summary transaction from labor/boat tablets.
+        Looks for szunigin N gurusz (total worker count) or sums gurusz lines.
+        Quantity is in worker-days (worker_count × day_count).
+        """
+        date, raw_mu = self._parse_date(lines)
+        agent: Optional[str] = None
+        total_workers = 0.0
+        day_count = 1.0
+        found_szunigin = False
+
+        for line in lines:
+            s = line.strip()
+            if not self._is_content(s):
+                continue
+            clean = self._strip_linenum(s)
+
+            # szunigin N gurusz = total worker count
+            m_tot = self._RE_LABOR_TOTAL.search(s)
+            if m_tot:
+                qty_str = m_tot.group(1)
+                q, _ = self._parse_grain(qty_str)
+                if q:
+                    total_workers = q
+                    found_szunigin = True
+                continue
+
+            # u4 N-sze3 = number of days
+            m_day = re.search(r"\bu4\s+(\d+(?:/\d+)?)\([^)]+\)-sze3\b", clean)
+            if m_day and day_count == 1.0:
+                day_s = m_day.group(1)
+                if "/" in day_s:
+                    n, d = day_s.split("/", 1)
+                    day_count = float(n) / float(d)
+                else:
+                    day_count = float(day_s)
+
+            # ugula NAME = supervising agent
+            m_ug = self._RE_UGULA.match(clean)
+            if m_ug and agent is None:
+                agent = self._clean_atf_name(m_ug.group(1).strip())
+
+            # Accumulate individual gurusz lines when no szunigin total
+            if not found_szunigin and self._RE_LABOR_LINE.search(clean):
+                parts = self._RE_LABOR_LINE.split(clean, 1)
+                worker_tokens = self._RE_QTY_CDLI.findall(parts[0])
+                for num_s, unit in worker_tokens:
+                    ul = unit.lower()
+                    factor = self._GRAIN_CONV.get(ul)
+                    if factor is None:
+                        continue
+                    total_workers += (
+                        float(num_s.split("/")[0]) / float(num_s.split("/")[1])
+                        if "/" in num_s else float(num_s)
+                    ) * factor
+
+        if total_workers <= 0:
+            return []
+        worker_days = total_workers * day_count
+        return [Transaction(
+            tablet_id=tablet_id,
+            agent=agent,
+            quantity=worker_days,
+            unit="worker-day",
+            commodity="labor",
+            date=date,
+            raw_date=raw_mu,
+            tx_type="labor",
+        )]
+
     # --- public interface ---------------------------------------------------
 
     def extract_transactions(
@@ -1063,6 +1260,22 @@ class ATFExtractor:
             results.extend(alloc)
         except Exception as exc:
             logger.warning("Error in allocation pass for %s: %s", tablet_id, exc)
+
+        # If still empty, try ration list (N(asz) NAME without engar)
+        if not results:
+            try:
+                rations = self._extract_ration_list(lines, tablet_id)
+                results.extend(rations)
+            except Exception as exc:
+                logger.warning("Error in ration-list pass for %s: %s", tablet_id, exc)
+
+        # If still empty and tablet is labor type, extract worker totals
+        if not results and tablet_type == "labor":
+            try:
+                labor = self._extract_labor_transactions(lines, tablet_id)
+                results.extend(labor)
+            except Exception as exc:
+                logger.warning("Error in labor pass for %s: %s", tablet_id, exc)
 
         return results
 
@@ -1379,7 +1592,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
             "recipient":        tx.recipient or "",
             "agent":            tx.agent or "",
             "quantity":         tx.quantity if tx.quantity is not None else "",
-            "unit":             "sila3" if tx.quantity is not None else "",
+            "unit":             (tx.unit or "sila3") if tx.quantity is not None else "",
             "commodity":        tx.commodity or "",
             "date_king":        d.king if d else "",
             "date_year_number": d.year_number if d else "",
@@ -1459,14 +1672,26 @@ def main() -> None:
     for comm, cnt in sorted(commodity_counts.items(), key=lambda x: -x[1]):
         print(f"  {comm:15s}: {cnt}")
 
+    # Volume by commodity — grain (sila3), silver (gin2), animals (head), labor (worker-day)
+    GRAIN_COMMS = {"barley", "emmer", "wheat", "flour", "beer", "oil", "dates"}
     by_comm: Dict[str, float] = {}
     for tx in all_transactions:
         if tx.quantity and tx.commodity:
             by_comm[tx.commodity] = by_comm.get(tx.commodity, 0) + tx.quantity
-    total_sila3 = sum(tx.quantity for tx in all_transactions if tx.quantity)
-    print(f"\nTotal sila3 across all tablets : {total_sila3:>20,.0f}")
+    grain_sila3 = sum(
+        v for c, v in by_comm.items() if c in GRAIN_COMMS
+    )
+    print(f"\nVolumes by commodity:")
+    print(f"  {'Grain total (sila3)':<20s}: {grain_sila3:>20,.0f}")
     for comm, vol in sorted(by_comm.items(), key=lambda x: -x[1]):
-        print(f"  {comm:<15s}             : {vol:>20,.0f}")
+        unit_label = (
+            "sila3" if comm in GRAIN_COMMS
+            else "gin2" if comm == "silver"
+            else "head" if comm == "animal"
+            else "worker-day" if comm == "labor"
+            else ""
+        )
+        print(f"  {comm:<20s}: {vol:>20,.0f}  {unit_label}")
 
     sulgi_slice = [
         tx for tx in barley_transactions
