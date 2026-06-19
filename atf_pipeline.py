@@ -972,9 +972,15 @@ class ATFExtractor:
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
             return []
+        # Count only personal ki NAME-ta issuers (patterns A-B), not
+        # institutional ablatives like "a-sza3 X-ta" or "e2-X-ta" which
+        # describe the source location but coexist with a personal ki-ta
+        # in the same sub-entry — counting them would falsely trigger the
+        # multi-entry split and tear apart a single transaction.
         n_issuers = sum(
             1 for l in content
-            if self._extract_issuer(self._strip_linenum(l)) is not None
+            if self._RE_KI_TA.match(self._strip_linenum(l))
+            or self._RE_KI_ONLY.match(self._strip_linenum(l))
         )
         if n_issuers > 1:
             chunks = self._split_sub_entries(content)
@@ -1003,12 +1009,17 @@ class ATFExtractor:
         """
         issuer:           Optional[str]   = None
         recipient:        Optional[str]   = None
-        agent:            Optional[str]   = None
-        pending_dative:   Optional[str]   = None
-        prev_name:        Optional[str]   = None
-        kiszib_name:      Optional[str]   = None
-        first_linenum:    Optional[str]   = None
-        pending_commodity: Optional[str]  = None
+        agent:             Optional[str]   = None
+        pending_dative:    Optional[str]   = None
+        prev_name:         Optional[str]   = None
+        kiszib_name:       Optional[str]   = None
+        first_linenum:     Optional[str]   = None
+        pending_commodity: Optional[str]   = None
+        # Personal ki NAME-ta issuer (patterns A-B) takes priority over
+        # institutional ablatives (e2-X-ta, a-sza3 X-ta — pattern D) which
+        # describe the source location rather than the responsible person.
+        personal_issuer:   Optional[str]   = None
+        any_issuer:        Optional[str]   = None
         # Each element: (quantity, unit, commodity_at_that_line)
         qty_entries: List[Tuple[float, str, Optional[str]]] = []
 
@@ -1051,10 +1062,19 @@ class ATFExtractor:
                 if len(cand) >= 2 and cand.lower() not in self._GRAIN_UNIT_WORDS:
                     kiszib_name = cand
 
-            # Patterns A-D: issuer
+            # Patterns A-D: issuer.
+            # Personal ki NAME-ta (patterns A-B) overrides an earlier
+            # institutional ablative (a-sza3 X-ta, e2-X-ta — pattern D)
+            # because the personal signer is the accountable party.
             iss = self._extract_issuer(clean)
-            if iss and issuer is None:
-                issuer = iss
+            if iss:
+                is_personal = bool(
+                    self._RE_KI_TA.match(clean) or self._RE_KI_ONLY.match(clean)
+                )
+                if is_personal and personal_issuer is None:
+                    personal_issuer = iss
+                if any_issuer is None:
+                    any_issuer = iss
                 continue
 
             # Agent (giri3 / ugula)
@@ -1125,7 +1145,8 @@ class ATFExtractor:
                       or self._RE_NOT_NAME.match(clean)):
                 prev_name = None
 
-        # Apply kiszib3 fallback for issuer (pattern E)
+        # Resolve issuer: personal ki-ta > any institutional > kiszib3 fallback
+        issuer = personal_issuer or any_issuer
         if issuer is None and kiszib_name:
             issuer = kiszib_name
 
