@@ -517,7 +517,8 @@ class ATFExtractor:
                 else:
                     coeff = float(num_s)
                 total += coeff * factor
-            return (total, first_unit) if total > 0 else (None, None)
+            reported_unit = "gur" if bare_gur else first_unit
+            return (total, reported_unit) if total > 0 else (None, None)
 
         m = self._RE_QTY_PLAIN.search(line)
         if m:
@@ -888,20 +889,15 @@ class ATFExtractor:
         Extract field-allocation transactions (szabra→engar grain distributions).
 
         Handles the deferred-label structure where the szabra (estate admin) is
-        announced AFTER the szunigin total that closes his group:
+        announced AFTER the szunigin total(s) that close his group.  Tablets with
+        multiple commodities (barley + emmer + wheat) produce multiple consecutive
+        szunigin lines before a single szabra label; the look-ahead scans up to
+        five groups forward to find it.
 
-          qty1 / NAME1 engar
-          qty2 / NAME2 engar
-          szunigin ...
-          ISSUER szabra       ← labels the group ABOVE
-          qty3 / NAME3 engar
-          ...
-
-        Also handles same-line qty+engar entries.
+        Each (szabra, engar, qty, commodity) tuple becomes one Transaction row.
         """
         date, raw_mu = self._parse_date(lines)
 
-        # Build a linear event stream from content lines
         events: List[Tuple[str, object]] = []
         for line in lines:
             s = line.strip()
@@ -909,39 +905,41 @@ class ATFExtractor:
                 continue
             clean = self._strip_linenum(s)
 
-            if self._RE_SZUNIGIN.match(clean):
+            # Use the raw stripped line (still has line number) for szunigin
+            # detection — _RE_SZUNIGIN requires a leading digit.
+            if self._RE_SZUNIGIN.match(s):
                 events.append(("total", None))
                 continue
 
             m_szabra = self._RE_SZABRA.match(clean)
             if m_szabra:
                 name = self._clean_atf_name(m_szabra.group(1))
-                events.append(("szabra", name))
+                if name:
+                    events.append(("szabra", name))
                 continue
 
-            # Engar line: may be plain "NAME engar" or "qty NAME engar"
             if re.search(r"\bengar\b", clean):
                 q_inline, u_inline = self.extract_quantity(clean)
+                comm_inline = self._detect_commodity(clean)
                 m_engar = self._RE_ENGAR.match(clean)
                 raw_name = m_engar.group(1) if m_engar else ""
-                # Strip leading qty tokens from the captured name
                 name = re.sub(
                     r"^(?:\d+(?:/\d+)?\(\w+[2']*\)\s*)+", "", raw_name
                 ).strip()
                 name = re.sub(r"\s*(?:sze|gur|ziz2|gig)\s*$", "", name).strip()
                 name = self._clean_atf_name(name)
-                events.append(("engar", (name, q_inline, u_inline)))
+                events.append(("engar", (name, q_inline, u_inline, comm_inline)))
                 continue
 
             q, u = self.extract_quantity(clean)
             if q is not None:
-                events.append(("qty", (q, u)))
+                comm = self._detect_commodity(clean)
+                events.append(("qty", (q, u, comm)))
 
-        # Need at least 2 engar events to be a field allocation tablet
         if sum(1 for e in events if e[0] == "engar") < 2:
             return []
 
-        # Split event stream into groups at 'total' (szunigin) boundaries
+        # Split into groups at szunigin boundaries
         groups: List[List[Tuple[str, object]]] = []
         current: List[Tuple[str, object]] = []
         for event in events:
@@ -956,13 +954,17 @@ class ATFExtractor:
         results: List[Transaction] = []
 
         for i, group in enumerate(groups):
-            # Issuer determination (deferred-label: check NEXT group's first event)
             issuer: Optional[str] = None
-            if i + 1 < len(groups) and groups[i + 1]:
-                nxt = groups[i + 1][0]
-                if nxt[0] == "szabra":
-                    issuer = nxt[1]  # type: ignore[assignment]
-            # Fallback: szabra within this group (leading-label or mid-group)
+
+            # Look ahead through up to 5 groups to find the deferred szabra.
+            # Tablets with multiple commodities have N consecutive szunigin
+            # lines before the single szabra that labels them all.
+            for j in range(i + 1, min(i + 6, len(groups))):
+                if groups[j] and groups[j][0][0] == "szabra":
+                    issuer = groups[j][0][1]  # type: ignore[assignment]
+                    break
+
+            # Fallback: szabra within this group (leading-label structure)
             if not issuer:
                 for etype, edata in group:
                     if etype == "szabra":
@@ -971,18 +973,20 @@ class ATFExtractor:
             if not issuer:
                 continue
 
-            pending_qty: Optional[float] = None
-            pending_unit: Optional[str] = None
+            pending_qty:  Optional[float] = None
+            pending_unit: Optional[str]  = None
+            pending_comm: Optional[str]  = None
 
             for etype, edata in group:
                 if etype == "szabra":
                     continue
                 if etype == "qty":
-                    pending_qty, pending_unit = edata  # type: ignore[misc]
+                    pending_qty, pending_unit, pending_comm = edata  # type: ignore[misc]
                 elif etype == "engar":
-                    name, q_inline, u_inline = edata  # type: ignore[misc]
-                    qty  = q_inline if q_inline is not None else pending_qty
-                    unit = u_inline if q_inline is not None else pending_unit
+                    name, q_inline, u_inline, comm_inline = edata  # type: ignore[misc]
+                    qty  = q_inline  if q_inline  is not None else pending_qty
+                    unit = u_inline  if q_inline  is not None else pending_unit
+                    comm = comm_inline or pending_comm or "barley"
                     if qty is not None and name and len(name) >= 2:
                         results.append(Transaction(
                             tablet_id=tablet_id,
@@ -990,7 +994,7 @@ class ATFExtractor:
                             recipient=name,
                             quantity=qty,
                             unit=unit,
-                            commodity="barley",
+                            commodity=comm,
                             date=date,
                             raw_date=raw_mu,
                             tx_type="allocation",
@@ -1009,19 +1013,21 @@ class ATFExtractor:
         results: List[Transaction] = []
         tablet_type = self._classify_tablet(lines)
 
-        # Pass 1: bilateral transfers / labor-wage records (section by section)
-        try:
-            for section in self._split_sections(lines):
-                tx = self._extract_from_section(section, tablet_id)
-                if tx is not None:
-                    # Allocation pass handles engar tablets; don't double-tag
-                    if tx.tx_type == "transfer":
-                        tx.tx_type = tablet_type
-                    results.append(tx)
-        except Exception as exc:
-            logger.warning("Error in transfer pass for %s: %s", tablet_id, exc)
+        # Allocation tablets: only run the allocation pass.
+        # Running the bilateral pass on them produces ghost transactions from
+        # szunigin total lines and double-counts individual engar entries.
+        if tablet_type != "allocation":
+            try:
+                for section in self._split_sections(lines):
+                    tx = self._extract_from_section(section, tablet_id)
+                    if tx is not None:
+                        if tx.tx_type == "transfer":
+                            tx.tx_type = tablet_type
+                        results.append(tx)
+            except Exception as exc:
+                logger.warning("Error in transfer pass for %s: %s", tablet_id, exc)
 
-        # Pass 2: field allocations (whole-tablet scan)
+        # Allocation pass (whole-tablet scan)
         try:
             alloc = self._extract_allocations(lines, tablet_id)
             results.extend(alloc)
