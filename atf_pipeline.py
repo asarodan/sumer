@@ -1542,12 +1542,167 @@ class ATFExtractor:
         ))
         return rec
 
+    def _scan_section_quantity_first(
+        self, section: List[str], tablet_id: str
+    ) -> Optional[TabletRecord]:
+        """
+        Quantity-first section scan.
+
+        Every line that yields a quantity becomes a separate RecordEntry,
+        regardless of whether named actors are present.  A section with
+        barley + emmer + wheat on three consecutive lines produces three
+        entries under one record, instead of collapsing to the first.
+
+        Named actors (issuer, recipient, agent) are collected and attached
+        to the record as context; they are NOT a prerequisite for entry
+        creation.
+        """
+        content = [l.strip() for l in section if self._is_content(l.strip())]
+        if not content:
+            return None
+
+        issuer:         Optional[str] = None
+        recipient:      Optional[str] = None
+        agent:          Optional[str] = None
+        kiszib_name:    Optional[str] = None
+        pending_dative: Optional[str] = None
+        prev_name:      Optional[str] = None
+        pending_comm:   Optional[str] = None   # last commodity seen on any line
+        entries: List[RecordEntry] = []
+
+        date, raw_mu = self._parse_date(section)
+
+        for line in content:
+            clean = self._strip_linenum(line)
+
+            # Commodity detection runs on every line so it can carry forward
+            # to the next quantity line (commodity and quantity sometimes
+            # appear on adjacent lines rather than the same line).
+            c = self._detect_commodity(clean)
+            if c:
+                pending_comm = c
+
+            # Issuer patterns (ki NAME-ta, institution-ta, etc.)
+            iss = self._extract_issuer(clean)
+            if iss and issuer is None:
+                issuer = iss
+                continue
+
+            # Agent
+            ag = self._extract_agent(clean)
+            if ag and agent is None:
+                agent = ag
+
+            # Kiszib fallback issuer
+            m_k = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
+            if m_k and kiszib_name is None:
+                cand = self._clean_atf_name(m_k.group(1))
+                if len(cand) >= 2:
+                    kiszib_name = cand
+
+            # Recipient — inline szu ba-ti
+            rec_f = self._extract_recipient_inline(clean)
+            if rec_f and recipient is None:
+                recipient = rec_f
+                prev_name = None
+                continue
+
+            # Recipient — standalone szu ba-ti
+            if self._RE_SHU_ALONE.match(clean) and recipient is None:
+                recipient = prev_name or pending_dative
+                prev_name = None
+                continue
+
+            # Recipient — i3-dab5
+            rec_h = self._extract_recipient_idab5(clean)
+            if rec_h and recipient is None:
+                recipient = rec_h
+                continue
+
+            # Inline ration: N(u) sze NAME → entry with its own recipient
+            rec_i, qty_i = self._extract_recipient_u_sze(clean)
+            if rec_i:
+                entries.append(RecordEntry(
+                    entry_idx=0,
+                    recipient=rec_i,
+                    quantity=qty_i,
+                    unit="u",
+                    commodity=pending_comm or "barley",
+                ))
+                prev_name = None
+                continue
+
+            # ba-an-szum2 with pending dative recipient
+            if self._RE_BA_AN_SUM.search(clean) and recipient is None:
+                if pending_dative:
+                    recipient = pending_dative
+                continue
+
+            # Track dative -ra for ba-an-szum2
+            m_dat = self._RE_DATIVE_RA.match(clean)
+            if m_dat:
+                cand = self._clean_atf_name(m_dat.group(1).strip())
+                if self._looks_like_name(cand):
+                    pending_dative = cand
+
+            # *** QUANTITY-FIRST: every quantity line → one RecordEntry ***
+            q, u = self.extract_quantity(clean)
+            if q is not None:
+                comm = c or pending_comm   # same-line commodity preferred
+                if u == "head" and comm is None:
+                    comm = "animal"
+                entries.append(RecordEntry(
+                    entry_idx=0,
+                    quantity=q,
+                    unit=u,
+                    commodity=comm,
+                ))
+                continue
+
+            # Track previous name-like line (for standalone szu ba-ti)
+            if self._looks_like_name(clean):
+                prev_name = self._clean_atf_name(clean)
+            elif not (self._RE_SHU_ALONE.match(clean)
+                      or self._RE_BA_AN_SUM.search(clean)
+                      or m_dat
+                      or self._RE_NOT_NAME.match(clean)):
+                prev_name = None
+
+        if issuer is None and kiszib_name:
+            issuer = kiszib_name
+
+        # Nothing at all — skip
+        if not entries and issuer is None and recipient is None:
+            return None
+
+        if issuer and recipient:
+            rtype = "transfer"
+        elif recipient:
+            rtype = "receipt"
+        else:
+            rtype = "record"
+
+        rec = TabletRecord(
+            record_idx=0,
+            record_type=rtype,
+            issuer=issuer,
+            agent=agent,
+            date=date,
+            raw_date=raw_mu,
+            entries=entries,
+        )
+        return rec
+
     def extract_records(
         self, lines: List[str], tablet_id: str
     ) -> TabletSummary:
         """
         Main hierarchical extraction entry point.
         Returns a TabletSummary (tablet → records → entries).
+
+        Uses quantity-first scanning for transfer/receipt/record tablets so
+        that every commodity line in a section becomes a distinct entry —
+        a section with barley + emmer + wheat yields three entries, not one.
         """
         tablet_type = self._classify_tablet(lines)
         records: List[TabletRecord] = []
@@ -1561,13 +1716,12 @@ class ATFExtractor:
         else:
             for section in self._split_sections(lines):
                 try:
-                    rec = self._transfer_record_from_section(section, tablet_id)
+                    rec = self._scan_section_quantity_first(section, tablet_id)
                     if rec is not None:
                         records.append(rec)
                 except Exception as exc:
                     logger.warning("Record extraction error %s: %s", tablet_id, exc)
 
-        # Fallbacks when primary pass found nothing
         if not records:
             rr = self._ration_record_from_lines(lines, tablet_id)
             if rr:
@@ -1577,7 +1731,6 @@ class ATFExtractor:
             if lr:
                 records = [lr]
 
-        # Stamp sequential indices
         for i, rec in enumerate(records, 1):
             rec.record_idx = i
             for j, entry in enumerate(rec.entries, 1):
