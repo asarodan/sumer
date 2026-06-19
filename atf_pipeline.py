@@ -371,10 +371,13 @@ class ATFExtractor:
         "gesz2", "gesz'u", "geszu", "szar2",
     })
 
-    # Bare unit context words (not in N(unit) format)
-    _RE_BARE_GUR   = re.compile(r"(?:^|\s)gur\b", re.I)
-    _RE_BARE_SILA3 = re.compile(r"(?:^|\s)sila3?\b", re.I)
-    _RE_BARE_GIN2  = re.compile(r"(?:^|\s)gin2\b", re.I)
+    # Bare unit context words (not in N(unit) format).
+    # Allow "[" before the unit — CDLI uses [gur] when the sign is damaged
+    # but the reading is certain.  Without this, "[gur]" fails to signal gur
+    # context and collapses the whole entry to sila3 scale.
+    _RE_BARE_GUR   = re.compile(r"(?:^|\s|\[)gur\b", re.I)
+    _RE_BARE_SILA3 = re.compile(r"(?:^|\s|\[)sila3?\b", re.I)
+    _RE_BARE_GIN2  = re.compile(r"(?:^|\s|\[)gin2\b", re.I)
 
     # Animals — require the animal word to be bounded by whitespace (not hyphens),
     # so names like "lugal-amar-ku3" or compounds "gu4-de3" never match.
@@ -561,8 +564,12 @@ class ATFExtractor:
         name = re.sub(r"\[.*?\]", "", name)
         name = re.sub(r"-ta\s*$", "", name)
         name = re.sub(r"-sze3\s*$", "", name)        # terminative suffix — never part of a stored name
-        # Strip Sumerian conjunction "and" when it prefixes a name: "u3 NAME" → "NAME"
+        # Dangling hyphen left when a damaged bracket like "[ta]" is stripped:
+        # "dub-sar-[ta]" → after bracket strip → "dub-sar-" → strip trailing "-"
+        name = re.sub(r"-\s*$", "", name)
+        # Strip Sumerian conjunction "and" at either end: "u3 NAME" or "NAME u3"
         name = re.sub(r"^u3\s+", "", name, flags=re.I)
+        name = re.sub(r"\s+u3\s*$", "", name, flags=re.I)
         # Strip genealogy suffix: "NAME dumu FATHER" → "NAME"
         name = re.sub(r"\s+dumu(?:-munus)?\b.+$", "", name, flags=re.I)
         # Strip leading title when followed by space: "nu-banda3 NAME" → "NAME"
@@ -915,7 +922,76 @@ class ATFExtractor:
 
     # --- bilateral transaction extraction -----------------------------------
 
+    def _split_sub_entries(self, content: List[str]) -> List[List[str]]:
+        """
+        Split a multi-issuer section's content lines into per-sub-entry chunks.
+
+        Each chunk contains the lines that belong to one (quantity, ki NAME-ta)
+        pair.  The szunigin closing-total line is excluded because its quantity
+        would otherwise trigger a spurious new chunk.
+        """
+        filtered = [
+            l for l in content
+            if not self._RE_SZUNIGIN.match(l.strip())
+        ]
+        chunks: List[List[str]] = []
+        current: List[str] = []
+        has_qty    = False
+        has_issuer = False
+        for line in filtered:
+            clean = self._strip_linenum(line)
+            q, _  = self.extract_quantity(clean)
+            iss   = self._extract_issuer(clean)
+            # When current chunk already has both qty AND issuer, a new qty or
+            # issuer signals the start of the next sub-entry — flush first.
+            if has_qty and has_issuer and (q is not None or iss):
+                chunks.append(current)
+                current    = []
+                has_qty    = False
+                has_issuer = False
+            current.append(line)
+            if q is not None:
+                has_qty    = True
+            if iss:
+                has_issuer = True
+        if current:
+            chunks.append(current)
+        return chunks
+
     def _extract_from_section(
+        self, section: List[str], tablet_id: str
+    ) -> List[Transaction]:
+        """
+        Extract bilateral transactions from a section.
+
+        Returns a list because a section may contain multiple ki NAME-ta
+        sub-entries (e.g. three separate receipts under one szunigin total).
+        Each sub-entry produces its own Transaction instead of the first one
+        swallowing the whole section.
+        """
+        content = [l.strip() for l in section if self._is_content(l.strip())]
+        if not content:
+            return []
+        n_issuers = sum(
+            1 for l in content
+            if self._extract_issuer(self._strip_linenum(l)) is not None
+        )
+        if n_issuers > 1:
+            chunks = self._split_sub_entries(content)
+            date, raw_mu = self._parse_date(section)
+            results: List[Transaction] = []
+            for chunk in chunks:
+                tx = self._extract_single_tx(chunk, tablet_id)
+                if tx is not None:
+                    if tx.date is None and date is not None:
+                        tx.date    = date
+                        tx.raw_date = raw_mu
+                    results.append(tx)
+            return results
+        tx = self._extract_single_tx(section, tablet_id)
+        return [tx] if tx is not None else []
+
+    def _extract_single_tx(
         self, section: List[str], tablet_id: str
     ) -> Optional[Transaction]:
         """
@@ -1347,8 +1423,7 @@ class ATFExtractor:
         if tablet_type != "allocation":
             try:
                 for section in self._split_sections(lines):
-                    tx = self._extract_from_section(section, tablet_id)
-                    if tx is not None:
+                    for tx in self._extract_from_section(section, tablet_id):
                         if tx.tx_type == "transfer":
                             tx.tx_type = tablet_type
                         results.append(tx)
@@ -1399,9 +1474,10 @@ class ATFExtractor:
           recipient only    → "receipt"
           issuer only / qty only → "record"  (static entry)
         """
-        tx = self._extract_from_section(section, tablet_id)
-        if tx is None:
+        txs = self._extract_from_section(section, tablet_id)
+        if not txs:
             return None
+        tx = txs[0]
 
         if tx.issuer and tx.recipient:
             rtype = "transfer"
