@@ -364,11 +364,23 @@ class ATFExtractor:
         "sila3":         1.0,
         "sila":          1.0,
     }
-    # Units that definitively mark a grain/capacity measurement
-    # gesz2/gesz'u/szar2 are large sexagesimal grain units — unambiguous even alone
+    # Pure sexagesimal counter for workers and other non-grain quantities:
+    # gesz2 = 60, u = 10, disz = 1 (not multiplied by any grain factor).
+    _LABOR_CONV: Dict[str, float] = {
+        "szar2":  3600.0,
+        "gesz'u":  600.0,
+        "gesz2":    60.0,
+        "u":        10.0,
+        "disz":      1.0,
+    }
+    # Units that definitively mark a grain/capacity measurement.
+    # gesz2/gesz'u/szar2 intentionally excluded: they are generic sexagesimal
+    # counting words used for timber pieces, wool mina-groups, area sar-groups,
+    # and labor day-groups as well as grain gur-groups.  They only signal grain
+    # when a bare gur/sila3 context word OR a smaller grain subunit (asz/barig/ban2)
+    # also appears on the same line.
     _GRAIN_IND = frozenset({
         "gur", "barig", "ban2", "sila3", "sila", "asz",
-        "gesz2", "gesz'u", "geszu", "szar2",
     })
 
     # Bare unit context words (not in N(unit) format).
@@ -390,6 +402,26 @@ class ATFExtractor:
     _RE_QTY_ANIMAL = re.compile(
         r"(\d+(?:/\d+)?)\((\w+[2']?)\)\s+(?:gu4|udu|sila4|masz2?|ansze)(?=\s|$)", re.I
     )
+
+    # Non-grain commodity markers: when any of these appear on a line, the
+    # quantity tokens refer to something other than grain capacity and must
+    # not be converted through the grain factor table.
+    #   siki       = wool / textile fibre
+    #   {gesz}     = wood/tree determinative (e.g. {gesz}ma-nu = ma-nu timber)
+    #   sig4       = bricks
+    #   ma-na      = mina (weight unit, never a grain unit)
+    #   kin sahar  = earthwork / canal-digging (area in sar/gin2, not grain)
+    #   esze3/iku/GAN2 = agricultural area units
+    _RE_NON_GRAIN = re.compile(
+        r"\bsiki\b|\{gesz\}|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
+        r"|\besze3\b|\biku\b|\bGAN2\b",
+        re.I,
+    )
+
+    # "sze-bi" = "its barley (equivalent)" — an accounting conversion note that
+    # follows a processed-product entry (bran, malt) to record the grain value.
+    # It is not a separate delivery and must be skipped when collecting entries.
+    _RE_SZE_BI = re.compile(r"^sze-bi\b", re.I)
 
     # Labor/worker-day line indicators — these are NEVER grain quantities
     _RE_LABOR_LINE = re.compile(r"\bgurusz\b|\bgeme2\b", re.I)
@@ -560,8 +592,24 @@ class ATFExtractor:
         """Strip damage markers and trailing grammatical suffixes from a name."""
         name = re.sub(r"\(\$[^)]*\$\)", "", name)   # CDLI editorial markers ($...$)
         name = re.sub(r"\([a-z][a-z0-9]*\)", "", name)  # sign variant: nig2-lagar(ba)→nig2-lagar
+        # ATF editorial additions <word> — keep the content, strip the markers.
+        # "<sza3>" in "nam-<sza3>-tam" means the scribe omitted the sign but the
+        # reading is certain; we want "nam-sza3-tam", not "nam--tam".
+        name = re.sub(r"<([^>]*)>", r"\1", name)
         name = re.sub(r"[!?*#]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
+        # ATF unknown-sign placeholder "x" and city/place determinative "{ki}"
+        # must be removed before the name is stored; they are scribal uncertainty
+        # markers, not part of any personal name.
+        name = re.sub(r"\{ki\}", "", name)           # city/place determinative
+        name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
+        # Collapse multiple hyphens left when damaged brackets are stripped
+        # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
+        name = re.sub(r"-{2,}", "-", name)
+        # A dangling hyphen before a space means the hyphenated segment was
+        # stripped (e.g. "nam-sza3-[tam] ur" → "nam-sza3- ur").
+        # Replace "hyphen + space" with just a space to rejoin cleanly.
+        name = re.sub(r"-\s+", " ", name)
         name = re.sub(r"-ta\s*$", "", name)
         name = re.sub(r"-sze3\s*$", "", name)        # terminative suffix — never part of a stored name
         # Dangling hyphen left when a damaged bracket like "[ta]" is stripped:
@@ -678,6 +726,8 @@ class ATFExtractor:
         On mixed labor/grain lines ("N gurusz u4 N-sze3 N(asz) sze gur"),
         the labor prefix is stripped and grain is parsed from the remainder.
         """
+        if self._RE_NON_GRAIN.search(line):
+            return None, None
         if self._RE_LABOR_LINE.search(line):
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)
@@ -1032,6 +1082,12 @@ class ATFExtractor:
                 continue
 
             clean = self._strip_linenum(line)
+
+            # "sze-bi N(unit) gur" = "its barley equivalent: N gur" — an
+            # accounting note recording the grain value of a processed product.
+            # It is derived from the entry above, not a second commodity movement.
+            if self._RE_SZE_BI.match(clean):
+                continue
 
             if first_linenum is None:
                 m = re.match(r"(\d+[a-z]?[!?*'ʼ]?)\.", line)
@@ -1394,9 +1450,14 @@ class ATFExtractor:
             m_tot = self._RE_LABOR_TOTAL.search(s)
             if m_tot:
                 qty_str = m_tot.group(1)
-                q, _ = self._parse_grain(qty_str)
-                if q:
-                    total_workers = q
+                # Parse using pure sexagesimal labor counter, not grain factors.
+                w = sum(
+                    (float(n) / float(d) if "/" in n else float(n)) * f
+                    for n, u in self._RE_QTY_CDLI.findall(qty_str)
+                    if (f := self._LABOR_CONV.get(u.lower())) is not None
+                )
+                if w > 0:
+                    total_workers = w
                     found_szunigin = True
                 continue
 
@@ -1415,13 +1476,15 @@ class ATFExtractor:
             if m_ug and agent is None:
                 agent = self._clean_atf_name(m_ug.group(1).strip())
 
-            # Accumulate individual gurusz lines when no szunigin total
+            # Accumulate individual gurusz lines when no szunigin total.
+            # Use the pure sexagesimal labor counter (gesz2=60, u=10, disz=1),
+            # NOT _GRAIN_CONV, so "2(gesz2) 2(u) 4(disz)" → 144 workers, not 36,004.
             if not found_szunigin and self._RE_LABOR_LINE.search(clean):
                 parts = self._RE_LABOR_LINE.split(clean, 1)
                 worker_tokens = self._RE_QTY_CDLI.findall(parts[0])
                 for num_s, unit in worker_tokens:
                     ul = unit.lower()
-                    factor = self._GRAIN_CONV.get(ul)
+                    factor = self._LABOR_CONV.get(ul)
                     if factor is None:
                         continue
                     total_workers += (
@@ -1730,6 +1793,10 @@ class ATFExtractor:
 
         for line in content:
             clean = self._strip_linenum(line)
+
+            # Skip "sze-bi N gur" accounting conversion notes.
+            if self._RE_SZE_BI.match(clean):
+                continue
 
             # Commodity detection runs on every line so it can carry forward
             # to the next quantity line (commodity and quantity sometimes
