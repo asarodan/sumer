@@ -19,9 +19,9 @@ import csv
 import logging
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 
@@ -147,6 +147,62 @@ class Transaction:
     raw_date: Optional[str] = None
     line_ref: Optional[str] = None
     tx_type: Optional[str] = None      # "transfer" | "allocation" | "labor"
+
+
+# ---------------------------------------------------------------------------
+# Hierarchical data model  (Tablet → Record → Entry)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RecordEntry:
+    """One line item within an administrative record."""
+    entry_idx:  int
+    recipient:  Optional[str]   = None
+    quantity:   Optional[float] = None
+    unit:       Optional[str]   = None
+    commodity:  Optional[str]   = None
+
+
+@dataclass
+class TabletRecord:
+    """
+    One administrative act within a tablet.
+
+    record_type values:
+      "transfer"   — bilateral: confirmed issuer AND recipient
+      "receipt"    — unilateral receipt (szu ba-ti without a ki NAME-ta, or vice-versa)
+      "allocation" — szabra → engar field/grain distribution (N entries)
+      "ration"     — N(asz) NAME ration list without engar marker
+      "labor"      — gurusz worker-day account
+      "record"     — quantity/name noted but no transfer formula found (static entry)
+    """
+    record_idx:  int
+    record_type: str
+    issuer:      Optional[str]       = None
+    agent:       Optional[str]       = None
+    date:        Optional[UrIIIDate] = None
+    raw_date:    Optional[str]       = None
+    entries:     List[RecordEntry]   = field(default_factory=list)
+
+    @property
+    def n_entries(self) -> int:
+        return len(self.entries)
+
+
+@dataclass
+class TabletSummary:
+    """Top-level container: one tablet, its type, and all its records."""
+    tablet_id:   str
+    tablet_type: str
+    records:     List[TabletRecord] = field(default_factory=list)
+
+    @property
+    def n_records(self) -> int:
+        return len(self.records)
+
+    @property
+    def n_entries(self) -> int:
+        return sum(r.n_entries for r in self.records)
 
 
 # ---------------------------------------------------------------------------
@@ -1284,6 +1340,255 @@ class ATFExtractor:
         txs = self.extract_transactions(lines, tablet_id)
         return txs[0] if txs else Transaction(tablet_id=tablet_id)
 
+    # =========================================================================
+    # Hierarchical extraction: Tablet → Record → Entry
+    # =========================================================================
+
+    def _transfer_record_from_section(
+        self, section: List[str], tablet_id: str
+    ) -> Optional[TabletRecord]:
+        """
+        Wrap _extract_from_section() result as a TabletRecord.
+        Classifies record_type based on bilateral completeness:
+          issuer + recipient → "transfer"
+          recipient only    → "receipt"
+          issuer only / qty only → "record"  (static entry)
+        """
+        tx = self._extract_from_section(section, tablet_id)
+        if tx is None:
+            return None
+
+        if tx.issuer and tx.recipient:
+            rtype = "transfer"
+        elif tx.recipient:
+            rtype = "receipt"
+        elif tx.tx_type == "labor":
+            rtype = "labor"
+        else:
+            rtype = "record"
+
+        rec = TabletRecord(
+            record_idx=0,
+            record_type=rtype,
+            issuer=tx.issuer,
+            agent=tx.agent,
+            date=tx.date,
+            raw_date=tx.raw_date,
+        )
+        if tx.quantity is not None or tx.recipient is not None or tx.commodity is not None:
+            rec.entries.append(RecordEntry(
+                entry_idx=1,
+                recipient=tx.recipient,
+                quantity=tx.quantity,
+                unit=tx.unit,
+                commodity=tx.commodity,
+            ))
+        if not rec.entries and rec.issuer is None:
+            return None
+        return rec
+
+    def _allocation_records_from_lines(
+        self, lines: List[str], tablet_id: str
+    ) -> List[TabletRecord]:
+        """
+        Convert allocation groups to TabletRecords, one per szabra,
+        with one RecordEntry per engar recipient inside each record.
+        """
+        date, raw_mu = self._parse_date(lines)
+        events: List[Tuple[str, object]] = []
+
+        for line in lines:
+            s = line.strip()
+            if not self._is_content(s):
+                continue
+            clean = self._strip_linenum(s)
+            if self._RE_SZUNIGIN.match(s):
+                events.append(("total", None))
+                continue
+            m_szabra = self._RE_SZABRA.match(clean)
+            if m_szabra:
+                name = self._clean_atf_name(m_szabra.group(1))
+                if name:
+                    events.append(("szabra", name))
+                continue
+            if re.search(r"\bengar\b", clean):
+                q_inline, u_inline = self.extract_quantity(clean)
+                comm_inline = self._detect_commodity(clean)
+                m_engar = self._RE_ENGAR.match(clean)
+                raw_name = m_engar.group(1) if m_engar else ""
+                name = re.sub(r"^(?:\d+(?:/\d+)?\(\w+[2']*\)\s*)+", "", raw_name).strip()
+                name = re.sub(r"^(?:(?:sze|gur|ziz2|gig|barig|ban2|sila3?)\s+)+", "", name, flags=re.I).strip()
+                name = re.sub(r"\s+(?:GAN2|a-sza3)\b.*$", "", name, flags=re.I).strip()
+                name = re.sub(r"\s*(?:sze|gur|ziz2|gig)\s*$", "", name).strip()
+                name = self._clean_atf_name(name)
+                events.append(("engar", (name, q_inline, u_inline, comm_inline)))
+                continue
+            q, u = self.extract_quantity(clean)
+            if q is not None:
+                comm = self._detect_commodity(clean)
+                events.append(("qty", (q, u, comm)))
+
+        if sum(1 for e in events if e[0] == "engar") < 2:
+            return []
+
+        groups: List[List] = []
+        current: List = []
+        for event in events:
+            if event[0] == "total":
+                groups.append(current)
+                current = []
+            else:
+                current.append(event)
+        if current:
+            groups.append(current)
+
+        results: List[TabletRecord] = []
+        for i, group in enumerate(groups):
+            issuer: Optional[str] = None
+            for j in range(i + 1, min(i + 6, len(groups))):
+                if groups[j] and groups[j][0][0] == "szabra":
+                    issuer = groups[j][0][1]
+                    break
+            if not issuer:
+                for etype, edata in group:
+                    if etype == "szabra":
+                        issuer = edata
+                        break
+            if not issuer:
+                continue
+
+            rec = TabletRecord(
+                record_idx=0,
+                record_type="allocation",
+                issuer=issuer,
+                date=date,
+                raw_date=raw_mu,
+            )
+            pending_qty: Optional[float] = None
+            pending_unit: Optional[str] = None
+            pending_comm: Optional[str] = None
+
+            for etype, edata in group:
+                if etype == "szabra":
+                    continue
+                if etype == "qty":
+                    pending_qty, pending_unit, pending_comm = edata  # type: ignore
+                elif etype == "engar":
+                    name, q_inline, u_inline, comm_inline = edata  # type: ignore
+                    qty  = q_inline if q_inline is not None else pending_qty
+                    unit = u_inline if q_inline is not None else pending_unit
+                    comm = comm_inline or pending_comm or "barley"
+                    if qty is not None and name and len(name) >= 2:
+                        rec.entries.append(RecordEntry(
+                            entry_idx=len(rec.entries) + 1,
+                            recipient=name,
+                            quantity=qty,
+                            unit=unit,
+                            commodity=comm,
+                        ))
+                    if q_inline is None:
+                        pending_qty = None
+
+            if rec.entries:
+                results.append(rec)
+
+        return results
+
+    def _ration_record_from_lines(
+        self, lines: List[str], tablet_id: str
+    ) -> Optional[TabletRecord]:
+        """Convert _extract_ration_list result to a single TabletRecord."""
+        txs = self._extract_ration_list(lines, tablet_id)
+        if not txs:
+            return None
+        date = txs[0].date if txs else None
+        raw_mu = txs[0].raw_date if txs else None
+        rec = TabletRecord(
+            record_idx=0,
+            record_type="ration",
+            date=date,
+            raw_date=raw_mu,
+        )
+        for i, tx in enumerate(txs, 1):
+            rec.entries.append(RecordEntry(
+                entry_idx=i,
+                recipient=tx.recipient,
+                quantity=tx.quantity,
+                unit=tx.unit,
+                commodity=tx.commodity,
+            ))
+        return rec
+
+    def _labor_record_from_lines(
+        self, lines: List[str], tablet_id: str
+    ) -> Optional[TabletRecord]:
+        """Convert _extract_labor_transactions result to a single TabletRecord."""
+        txs = self._extract_labor_transactions(lines, tablet_id)
+        if not txs:
+            return None
+        tx = txs[0]
+        rec = TabletRecord(
+            record_idx=0,
+            record_type="labor",
+            agent=tx.agent,
+            date=tx.date,
+            raw_date=tx.raw_date,
+        )
+        rec.entries.append(RecordEntry(
+            entry_idx=1,
+            quantity=tx.quantity,
+            unit=tx.unit,
+            commodity=tx.commodity,
+        ))
+        return rec
+
+    def extract_records(
+        self, lines: List[str], tablet_id: str
+    ) -> TabletSummary:
+        """
+        Main hierarchical extraction entry point.
+        Returns a TabletSummary (tablet → records → entries).
+        """
+        tablet_type = self._classify_tablet(lines)
+        records: List[TabletRecord] = []
+
+        if tablet_type == "allocation":
+            records = self._allocation_records_from_lines(lines, tablet_id)
+        elif tablet_type == "labor":
+            lr = self._labor_record_from_lines(lines, tablet_id)
+            if lr:
+                records = [lr]
+        else:
+            for section in self._split_sections(lines):
+                try:
+                    rec = self._transfer_record_from_section(section, tablet_id)
+                    if rec is not None:
+                        records.append(rec)
+                except Exception as exc:
+                    logger.warning("Record extraction error %s: %s", tablet_id, exc)
+
+        # Fallbacks when primary pass found nothing
+        if not records:
+            rr = self._ration_record_from_lines(lines, tablet_id)
+            if rr:
+                records = [rr]
+        if not records and tablet_type == "labor":
+            lr = self._labor_record_from_lines(lines, tablet_id)
+            if lr:
+                records = [lr]
+
+        # Stamp sequential indices
+        for i, rec in enumerate(records, 1):
+            rec.record_idx = i
+            for j, entry in enumerate(rec.entries, 1):
+                entry.entry_idx = j
+
+        return TabletSummary(
+            tablet_id=tablet_id,
+            tablet_type=tablet_type,
+            records=records,
+        )
+
 
 # ---------------------------------------------------------------------------
 # Normalizer
@@ -1573,6 +1878,150 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
         logger.error("Failed to write GEXF to %s: %s", filepath, exc)
 
 
+# ---------------------------------------------------------------------------
+# Entity scanner
+# ---------------------------------------------------------------------------
+
+class EntityScanner:
+    """
+    Scan TabletSummary objects and build a roster of every named individual
+    or institution that appears anywhere in the corpus.
+
+    Tracks:
+      - How many times the entity appears across all tablets
+      - How many distinct tablets they appear on
+      - Which roles they fill (issuer, recipient, agent)
+    """
+
+    def __init__(self, normalizer: Optional["Normalizer"] = None) -> None:
+        self._norm = normalizer
+        # canonical_name → {tablets, roles, appearances}
+        self._roster: Dict[str, Dict] = {}
+
+    def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
+        name = raw_name.strip()
+        if not name or len(name) < 2:
+            return
+        canonical = (
+            self._norm.normalize_name(name) if self._norm else None
+        ) or name
+        if canonical not in self._roster:
+            self._roster[canonical] = {
+                "tablets": set(),
+                "roles": set(),
+                "appearances": 0,
+            }
+        self._roster[canonical]["tablets"].add(tablet_id)
+        self._roster[canonical]["roles"].add(role)
+        self._roster[canonical]["appearances"] += 1
+
+    def scan(self, summary: TabletSummary) -> None:
+        for rec in summary.records:
+            if rec.issuer:
+                self._add(rec.issuer, "issuer", summary.tablet_id)
+            if rec.agent:
+                self._add(rec.agent, "agent", summary.tablet_id)
+            for entry in rec.entries:
+                if entry.recipient:
+                    self._add(entry.recipient, "recipient", summary.tablet_id)
+
+    def export_csv(self, filepath: str) -> None:
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        with open(filepath, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, fieldnames=[
+                "entity", "appearances", "tablet_count", "roles"
+            ])
+            w.writeheader()
+            for name, data in sorted(
+                self._roster.items(), key=lambda x: -x[1]["appearances"]
+            ):
+                w.writerow({
+                    "entity":       name,
+                    "appearances":  data["appearances"],
+                    "tablet_count": len(data["tablets"]),
+                    "roles":        "|".join(sorted(data["roles"])),
+                })
+        logger.info("Entity roster: %s (%d entities)", filepath, len(self._roster))
+
+    @property
+    def entity_count(self) -> int:
+        return len(self._roster)
+
+    @property
+    def total_appearances(self) -> int:
+        return sum(d["appearances"] for d in self._roster.values())
+
+
+# ---------------------------------------------------------------------------
+# Hierarchical CSV export
+# ---------------------------------------------------------------------------
+
+def export_hierarchy_csv(
+    summaries: List[TabletSummary],
+    tablets_path: str,
+    records_path: str,
+    entries_path: str,
+) -> None:
+    """Write the three-tier hierarchy to separate CSV files."""
+    os.makedirs(os.path.dirname(os.path.abspath(tablets_path)), exist_ok=True)
+
+    with open(tablets_path, "w", newline="", encoding="utf-8") as ft, \
+         open(records_path, "w", newline="", encoding="utf-8") as fr, \
+         open(entries_path, "w", newline="", encoding="utf-8") as fe:
+
+        wt = csv.DictWriter(ft, fieldnames=[
+            "tablet_id", "tablet_type", "n_records", "n_entries", "date"
+        ])
+        wr = csv.DictWriter(fr, fieldnames=[
+            "tablet_id", "record_idx", "record_type",
+            "issuer", "agent", "n_entries", "date"
+        ])
+        we = csv.DictWriter(fe, fieldnames=[
+            "tablet_id", "record_idx", "entry_idx",
+            "recipient", "quantity", "unit", "commodity"
+        ])
+        wt.writeheader()
+        wr.writeheader()
+        we.writeheader()
+
+        for s in summaries:
+            date_str = str(s.records[0].date) if s.records and s.records[0].date else ""
+            wt.writerow({
+                "tablet_id":   s.tablet_id,
+                "tablet_type": s.tablet_type,
+                "n_records":   s.n_records,
+                "n_entries":   s.n_entries,
+                "date":        date_str,
+            })
+            for rec in s.records:
+                wr.writerow({
+                    "tablet_id":   s.tablet_id,
+                    "record_idx":  rec.record_idx,
+                    "record_type": rec.record_type,
+                    "issuer":      rec.issuer or "",
+                    "agent":       rec.agent or "",
+                    "n_entries":   rec.n_entries,
+                    "date":        str(rec.date) if rec.date else "",
+                })
+                for entry in rec.entries:
+                    we.writerow({
+                        "tablet_id":  s.tablet_id,
+                        "record_idx": rec.record_idx,
+                        "entry_idx":  entry.entry_idx,
+                        "recipient":  entry.recipient or "",
+                        "quantity":   entry.quantity if entry.quantity is not None else "",
+                        "unit":       (entry.unit or "sila3") if entry.quantity is not None else "",
+                        "commodity":  entry.commodity or "",
+                    })
+
+    logger.info(
+        "Hierarchy: %d tablets → %d records → %d entries",
+        len(summaries),
+        sum(s.n_records for s in summaries),
+        sum(s.n_entries for s in summaries),
+    )
+
+
 def export_transactions_csv(transactions: List[Transaction], filepath: str) -> None:
     if not transactions:
         logger.warning("No transactions to export: %s", filepath)
@@ -1641,11 +2090,14 @@ def main() -> None:
     extractor  = ATFExtractor(default_king="Šulgi")
     normalizer = Normalizer()
 
-    all_transactions:    List[Transaction] = []
-    barley_transactions: List[Transaction] = []
-    commodity_counts:    Dict[str, int]    = {}
+    all_transactions:    List[Transaction]  = []
+    barley_transactions: List[Transaction]  = []
+    commodity_counts:    Dict[str, int]     = {}
+    all_summaries:       List[TabletSummary] = []
+    entity_scanner = EntityScanner(normalizer)
 
     for tablet_id, lines in corpus.items():
+        # Flat transaction pass (feeds existing network/CSV pipeline)
         for tx in extractor.extract_transactions(lines, tablet_id):
             tx = normalizer.normalize_transaction(tx)
             all_transactions.append(tx)
@@ -1653,6 +2105,12 @@ def main() -> None:
                 commodity_counts[tx.commodity] = commodity_counts.get(tx.commodity, 0) + 1
             if tx.commodity == "barley":
                 barley_transactions.append(tx)
+
+        # Hierarchical pass (tablets → records → entries)
+        summary = extractor.extract_records(lines, tablet_id)
+        if summary.n_records > 0:
+            all_summaries.append(summary)
+            entity_scanner.scan(summary)
 
     n_total   = len(all_transactions)
     n_barley  = len(barley_transactions)
@@ -1734,6 +2192,24 @@ def main() -> None:
     export_transactions_csv(barley_transactions, os.path.join(output_dir, "transactions_barley.csv"))
     if sulgi_slice:
         export_transactions_csv(sulgi_slice, os.path.join(output_dir, "transactions_sulgi_45-48.csv"))
+
+    # Hierarchical outputs
+    export_hierarchy_csv(
+        all_summaries,
+        os.path.join(output_dir, "tablets.csv"),
+        os.path.join(output_dir, "records.csv"),
+        os.path.join(output_dir, "entries.csv"),
+    )
+    entity_scanner.export_csv(os.path.join(output_dir, "entities.csv"))
+
+    total_records = sum(s.n_records for s in all_summaries)
+    total_entries = sum(s.n_entries for s in all_summaries)
+    print(f"\nHierarchical counts:")
+    print(f"  Tablets with records : {len(all_summaries)}")
+    print(f"  Total records        : {total_records}")
+    print(f"  Total entries        : {total_entries}")
+    print(f"  Unique entities      : {entity_scanner.entity_count}")
+    print(f"  Entity appearances   : {entity_scanner.total_appearances}")
 
 
 if __name__ == "__main__":
