@@ -650,12 +650,10 @@ class ATFExtractor:
                 else:
                     coeff = float(num_s)
                 total += coeff * factor
-            if bare_gur:
-                reported_unit = "gur"
-            elif bare_gin2:
-                reported_unit = "gin2"
+            if bare_gin2:
+                reported_unit = "gin2"   # silver weight — value is in gin2
             else:
-                reported_unit = "sila3" if bare_sila3 else first_unit
+                reported_unit = "sila3"  # all grain quantities stored in sila3
             return (total, reported_unit) if total > 0 else (None, None)
 
         # No CDLI tokens — try animal count or plain numeric formats
