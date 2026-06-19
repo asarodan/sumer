@@ -419,6 +419,24 @@ class ATFExtractor:
     _RE_OP_DESC = re.compile(
         r"\bsze\s+(?:gesz\s+ra|de2(?:-a)?|e3(?:-a)?|ur5-ra)\b", re.I
     )
+    # Per-person rate specifiers at end of distribution lines:
+    #   "1(barig)-ta", "sila3-ta", "1(gesz2) 1(u) 5(disz) sila3-ta"
+    # The rate encodes how much each worker received; strip it before summing
+    # the main quantity to avoid adding 60+ extra sila3 per tablet.
+    _RE_RATE_SPEC = re.compile(
+        r"(?:\d+(?:/\d+)?\([^)]+\)\s+)*(?:\d+(?:/\d+)?\([^)]+\)|\w+)-ta\b",
+        re.I,
+    )
+    # Ordinal "Nth time/installment": "a-ra2 2(disz)-kam" — the N is never a
+    # commodity count, only an installment counter.
+    _RE_ARA2_KAM = re.compile(
+        r"\ba-ra2\s+\d+(?:/\d+)?\([^)]+\)-kam\b", re.I
+    )
+    # Commodity/unit keywords stripped when isolating a trailing recipient name
+    # on sze gub-ba distribution lines ("1(asz) 1(barig) gur ur-e2-mah")
+    _RE_COMM_KW = re.compile(
+        r"\b(?:sze|gur|sila3|gin2|barig|ban2|gesz2|asz|gig|ziz2)\b", re.I
+    )
 
     # --------------- Issuer patterns ---------------
     # A/B: ki NAME-ta or ki NAME at line start
@@ -576,6 +594,12 @@ class ATFExtractor:
           4. Bare-gin2 context: N(u)/N(disz) gin2 → gin2  (silver weight tablets)
           5. Animal count: N(disz) gu4/udu/… → head
         """
+        # Strip per-person rate specifiers before summing the main quantity.
+        # "7(asz) 2(barig) sze gur sila3 1(barig)-ta" → "7(asz) 2(barig) sze gur sila3"
+        line = self._RE_RATE_SPEC.sub("", line).strip()
+        # Strip ordinal phrases — "a-ra2 2(disz)-kam" embeds a count that is
+        # an installment number, not a commodity amount.
+        line = self._RE_ARA2_KAM.sub("", line).strip()
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
             units      = {u.lower() for _, u in cdli}
@@ -664,6 +688,25 @@ class ATFExtractor:
     def _qty_from_u_sze(self, u_count: str) -> float:
         """N(u) sze → N×10 sila3 (small ration distribution format)."""
         return int(u_count) * 10.0
+
+    def _extract_inline_qty_recipient(self, line: str) -> Optional[str]:
+        """
+        Extract a trailing personal name from a sze gub-ba distribution line.
+        Format: "1(asz) 1(barig) gur ur-e2-mah" → "ur-e2-mah".
+        Strips CDLI quantity tokens and commodity keywords; returns what
+        remains if it looks like a personal name.
+        """
+        stripped = self._RE_QTY_CDLI.sub("", line)
+        stripped = self._RE_COMM_KW.sub("", stripped)
+        stripped = re.sub(r"[!?*#]", "", stripped)
+        stripped = re.sub(r"\[.*?\]", "", stripped)
+        stripped = stripped.strip()
+        if not stripped or "(" in stripped or ")" in stripped:
+            return None
+        if self._looks_like_name(stripped):
+            name = self._clean_atf_name(stripped)
+            return name if name else None
+        return None
 
     # --- commodity ----------------------------------------------------------
 
@@ -1651,8 +1694,12 @@ class ATFExtractor:
                 comm = c or pending_comm   # same-line commodity preferred
                 if u == "head" and comm is None:
                     comm = "animal"
+                # sze gub-ba distribution lines carry the recipient inline:
+                # "1(asz) 1(barig) gur ur-e2-mah" → recipient = "ur-e2-mah"
+                inline_recip = self._extract_inline_qty_recipient(clean)
                 entries.append(RecordEntry(
                     entry_idx=0,
+                    recipient=inline_recip,
                     quantity=q,
                     unit=u,
                     commodity=comm,
