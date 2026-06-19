@@ -339,6 +339,12 @@ class ATFExtractor:
     _RE_BEER   = re.compile(r"\bkasz\b|\bdida\b|\bbeer\b", re.I)
     _RE_OIL    = re.compile(r"\bi3-gesz\b|\bsze-gesz-i3\b|\boil\b", re.I)
     _RE_SILVER = re.compile(r"\bku3-babbar\b|\bsilver\b", re.I)
+    # Operation-description phrases that contain "sze" but are NOT commodity markers:
+    # "sze gesz ra(-a)" = threshing, "sze de2-a" = pouring grain, "sze e3" = grain outgo
+    # "sze ur5-ra" = grain loan formula
+    _RE_OP_DESC = re.compile(
+        r"\bsze\s+(?:gesz\s+ra|de2(?:-a)?|e3(?:-a)?|ur5-ra)\b", re.I
+    )
 
     # --------------- Issuer patterns ---------------
     # A/B: ki NAME-ta or ki NAME at line start
@@ -480,24 +486,18 @@ class ATFExtractor:
 
     # --- quantity -----------------------------------------------------------
 
-    def extract_quantity(self, line: str) -> Tuple[Optional[float], Optional[str]]:
+    def _parse_grain(self, line: str) -> Tuple[Optional[float], Optional[str]]:
         """
-        Parse grain quantity; return (value_in_sila3, primary_unit).
-        Non-grain lines (worker-days, animals, area) return (None, None).
+        Parse grain quantity from a text fragment; return (value_in_sila3, unit).
 
         Handles the CDLI sexagesimal large-gur notation where counting units
         (u=10, gesz2=60, etc.) are relative to a bare 'gur' at line end:
           "5(u) sze gur"    → 50 gur  = 15,000 sila3
           "2(gesz2) sze gur" → 120 gur = 36,000 sila3
         """
-        # Worker-day lines (gurusz / geme2) are never grain quantities
-        if self._RE_LABOR_LINE.search(line):
-            return None, None
-
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
             units = {u.lower() for _, u in cdli}
-            # Check if a bare 'gur' appears as the unit context word (not as N(gur))
             bare_gur = bool(self._RE_BARE_GUR.search(line))
             if not (units & self._GRAIN_IND) and not bare_gur:
                 return None, None
@@ -506,9 +506,8 @@ class ATFExtractor:
             for num_s, unit in cdli:
                 ul = unit.lower()
                 factor = self._GRAIN_CONV.get(ul)
-                # In a bare-gur context, 'u' (the counting-ten unit) = 10 × gur
                 if factor is None and bare_gur and ul == "u":
-                    factor = 10.0 * 300.0   # 10 gur per 'u' unit
+                    factor = 10.0 * 300.0
                 if factor is None:
                     continue
                 if "/" in num_s:
@@ -525,6 +524,28 @@ class ATFExtractor:
             return float(m.group(1)), m.group(2).lower()
         return None, None
 
+    def extract_quantity(self, line: str) -> Tuple[Optional[float], Optional[str]]:
+        """
+        Parse grain quantity; return (value_in_sila3, primary_unit).
+        Non-grain lines (worker-days, animals, area) return (None, None).
+
+        On mixed labor/grain lines ("N gurusz u4 N-sze3 N(asz) sze gur"),
+        the labor prefix is stripped and grain is parsed from the remainder.
+        """
+        if self._RE_LABOR_LINE.search(line):
+            # Attempt grain extraction from the part after the labor token.
+            parts = self._RE_LABOR_LINE.split(line, 1)
+            if len(parts) > 1:
+                # Drop the work-period clause "u4 N(unit)-sze3" before grain scan.
+                remainder = re.sub(
+                    r"\bu4\s+\d+\([^)]+\)(?:-sze3)?\b", "", parts[-1]
+                )
+                q, u = self._parse_grain(remainder)
+                if q is not None:
+                    return q, u
+            return None, None
+        return self._parse_grain(line)
+
     def _qty_from_u_sze(self, u_count: str) -> float:
         """N(u) sze → N×10 sila3 (small ration distribution format)."""
         return int(u_count) * 10.0
@@ -532,6 +553,7 @@ class ATFExtractor:
     # --- commodity ----------------------------------------------------------
 
     def _detect_commodity(self, line: str) -> Optional[str]:
+        if self._RE_OP_DESC.search(line):  return None
         if self._RE_BARLEY.search(line):  return "barley"
         if self._RE_EMMER.search(line):   return "emmer"
         if self._RE_WHEAT.search(line):   return "wheat"
@@ -926,6 +948,14 @@ class ATFExtractor:
                 name = re.sub(
                     r"^(?:\d+(?:/\d+)?\(\w+[2']*\)\s*)+", "", raw_name
                 ).strip()
+                # Strip one or more bare unit/commodity words left at start after qty removal
+                # (e.g. "ziz2 gur ur-NAME" → "ur-NAME" requires two passes worth of stripping)
+                name = re.sub(
+                    r"^(?:(?:sze|gur|ziz2|gig|barig|ban2|sila3?)\s+)+", "", name, flags=re.I
+                ).strip()
+                # Strip field annotation suffixes (GAN2 = area unit, a-sza3 = field)
+                name = re.sub(r"\s+(?:GAN2|a-sza3)\b.*$", "", name, flags=re.I).strip()
+                # Strip trailing commodity/unit words
                 name = re.sub(r"\s*(?:sze|gur|ziz2|gig)\s*$", "", name).strip()
                 name = self._clean_atf_name(name)
                 events.append(("engar", (name, q_inline, u_inline, comm_inline)))
