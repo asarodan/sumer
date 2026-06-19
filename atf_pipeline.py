@@ -347,8 +347,12 @@ class ATFExtractor:
     # Unit names can contain an apostrophe (gesz'u = 600-gur), so [\w']+ is used
     # rather than \w+[2']? which would stop at the apostrophe and miss the trailing u.
     _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\(([\w']+)\)")
+    # Plain numeric quantity ("100 gur", "3.5 sila3").  The negative lookbehind
+    # blocks digits that are glued to a letter — Sumerian sign readings carry a
+    # trailing index number (e3, du11, ku3, gesz2, KWU147…), and without this a
+    # phrase like "sze gesz e3 gur" would be misread as "3 gur".
     _RE_QTY_PLAIN = re.compile(
-        r"(\d+(?:\.\d+)?)\s+(gur|barig|ban2|sila3?|gin2|ma-na)", re.I
+        r"(?<![A-Za-z])(\d+(?:\.\d+)?)\s+(gur|barig|ban2|sila3?|gin2|ma-na)", re.I
     )
 
     # Grain capacity system (sila3 per unit)
@@ -781,6 +785,13 @@ class ATFExtractor:
         if re.search(r"(?:^|\s)i3(?:-nun)?(?=\s|$)", line, re.I): return "oil"
         if self._RE_SILVER.search(line):  return "silver"
         if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
+        # guru7 = granary/grain-silo.  In multi-commodity granary accounts the
+        # commodity word on a guru7 subtotal line is sometimes broken off, and
+        # without an explicit fallback the entry inherits a stale pending
+        # commodity (e.g. wheat from a line above), mislabelling a six-figure
+        # barley total.  A granary defaults to barley, the staple it stores.
+        # Checked LAST so any explicit ziz2/gig/etc. on the same line wins.
+        if re.search(r"\bguru7\b", line, re.I): return "barley"
         # Animal commodity is inferred from unit=="head" returned by _parse_grain,
         # NOT from _detect_commodity, to avoid false positives on personal names.
         return None
