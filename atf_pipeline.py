@@ -981,39 +981,47 @@ class ATFExtractor:
             date, raw_mu = self._parse_date(section)
             results: List[Transaction] = []
             for chunk in chunks:
-                tx = self._extract_single_tx(chunk, tablet_id)
-                if tx is not None:
+                for tx in self._extract_single_tx(chunk, tablet_id):
                     if tx.date is None and date is not None:
-                        tx.date    = date
+                        tx.date     = date
                         tx.raw_date = raw_mu
                     results.append(tx)
             return results
-        tx = self._extract_single_tx(section, tablet_id)
-        return [tx] if tx is not None else []
+        return self._extract_single_tx(section, tablet_id)
 
     def _extract_single_tx(
         self, section: List[str], tablet_id: str
-    ) -> Optional[Transaction]:
+    ) -> List[Transaction]:
         """
-        Extract one bilateral transaction from a section.
-        Uses patterns A–J in order; kiszib3 (E) is a last-resort fallback.
+        Extract transactions from a single-issuer section.
+
+        Collects every quantity line as a separate entry so that a section
+        with barley on line 1 and dabin on line 2 (same issuer/recipient)
+        produces two transactions instead of discarding the second commodity.
+        The szunigin closing-total line is skipped — its quantity is the sum
+        of the individual lines above, not an additional movement.
         """
-        issuer:         Optional[str]   = None
-        recipient:      Optional[str]   = None
-        agent:          Optional[str]   = None
-        quantity:       Optional[float] = None
-        unit:           Optional[str]   = None
-        commodity:      Optional[str]   = None
-        pending_dative: Optional[str]   = None
-        prev_name:      Optional[str]   = None
-        kiszib_name:    Optional[str]   = None   # pattern E fallback
-        first_linenum:  Optional[str]   = None
+        issuer:           Optional[str]   = None
+        recipient:        Optional[str]   = None
+        agent:            Optional[str]   = None
+        pending_dative:   Optional[str]   = None
+        prev_name:        Optional[str]   = None
+        kiszib_name:      Optional[str]   = None
+        first_linenum:    Optional[str]   = None
+        pending_commodity: Optional[str]  = None
+        # Each element: (quantity, unit, commodity_at_that_line)
+        qty_entries: List[Tuple[float, str, Optional[str]]] = []
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
-            return None
+            return []
 
         for line in content:
+            # Szunigin total closes the section; its quantity is the sum of
+            # the entries already collected — do not add it as a new entry.
+            if self._RE_SZUNIGIN.match(line.strip()):
+                continue
+
             clean = self._strip_linenum(line)
 
             if first_linenum is None:
@@ -1021,20 +1029,22 @@ class ATFExtractor:
                 if m:
                     first_linenum = m.group(1)
 
-            # Quantity / commodity
-            q, u = self.extract_quantity(clean)
-            if q is not None and quantity is None:
-                quantity, unit = q, u
-                # Animal counts come back with unit="head"; propagate commodity
-                if u == "head" and commodity is None:
-                    commodity = "animal"
-
+            # Commodity detection — update pending so it can carry to the
+            # next quantity line when the commodity and quantity are on
+            # adjacent lines rather than the same line.
             c = self._detect_commodity(clean)
-            if c and commodity is None:
-                commodity = c
+            if c:
+                pending_commodity = c
+
+            # Quantity: collected into a list, not capped at one.
+            q, u = self.extract_quantity(clean)
+            if q is not None:
+                this_comm = c or pending_commodity
+                if u == "head" and this_comm is None:
+                    this_comm = "animal"
+                qty_entries.append((q, u, this_comm))
 
             # Pattern E candidate: kiszib3 NAME (save for fallback)
-            # Match at line start OR inline (e.g. "1(gesz2) gur kiszib3 NAME")
             m_kiszib = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
             if m_kiszib and kiszib_name is None:
                 cand = self._clean_atf_name(m_kiszib.group(1))
@@ -1045,9 +1055,6 @@ class ATFExtractor:
             iss = self._extract_issuer(clean)
             if iss and issuer is None:
                 issuer = iss
-                # Do NOT reset prev_name here — the recipient often appears
-                # on a line BEFORE the ki NAME-ta issuer line, and szu ba-ti
-                # comes after. Clearing it would lose that recipient.
                 continue
 
             # Agent (giri3 / ugula)
@@ -1081,10 +1088,8 @@ class ATFExtractor:
             rec_i, qty_i = self._extract_recipient_u_sze(clean)
             if rec_i and recipient is None:
                 recipient = rec_i
-                if qty_i is not None and quantity is None:
-                    quantity = qty_i
-                    unit = "u"
-                    commodity = commodity or "barley"
+                if qty_i is not None and not qty_entries:
+                    qty_entries.append((qty_i, "u", pending_commodity or "barley"))
                 prev_name = None
                 continue
 
@@ -1095,16 +1100,14 @@ class ATFExtractor:
                     pending_dative = None
                 continue
 
-            # Pattern K2: sa2-du11 NAME — statutory payment, NAME is the recipient
+            # Pattern K2: sa2-du11 NAME — statutory payment
             m_sa2 = self._RE_SA2_DU11.match(clean)
             if m_sa2 and recipient is None:
                 cand = self._clean_atf_name(m_sa2.group(1).strip())
-                # Apply same name-quality checks as the rest of the extractor
                 if (self._looks_like_name(cand)
                         and not cand.endswith("-ta")
                         and not cand.endswith("-ka-ta")):
                     recipient = cand
-                    # Don't continue — allow issuer/date to be set by later lines
 
             # Track dative -ra for pattern J
             m_dat = self._RE_DATIVE_RA.match(clean)
@@ -1120,32 +1123,45 @@ class ATFExtractor:
                       or self._RE_BA_AN_SUM.search(clean)
                       or m_dat
                       or self._RE_NOT_NAME.match(clean)):
-                # Don't reset on restricted keywords (titles like nu-banda3,
-                # month/date lines, etc.) — they provide context but don't end
-                # the "previous name" reference window.
                 prev_name = None
 
         # Apply kiszib3 fallback for issuer (pattern E)
         if issuer is None and kiszib_name:
             issuer = kiszib_name
 
-        if quantity is None and issuer is None and recipient is None:
-            return None
+        if not qty_entries and issuer is None and recipient is None:
+            return []
 
         date, raw_mu = self._parse_date(section)
-        return Transaction(
-            tablet_id=tablet_id,
-            issuer=issuer,
-            recipient=recipient,
-            agent=agent,
-            quantity=quantity,
-            unit=unit,
-            commodity=commodity,
-            date=date,
-            raw_date=raw_mu,
-            line_ref=first_linenum,
-            tx_type="transfer",
-        )
+
+        if not qty_entries:
+            return [Transaction(
+                tablet_id=tablet_id,
+                issuer=issuer,
+                recipient=recipient,
+                agent=agent,
+                date=date,
+                raw_date=raw_mu,
+                line_ref=first_linenum,
+                tx_type="transfer",
+            )]
+
+        return [
+            Transaction(
+                tablet_id=tablet_id,
+                issuer=issuer,
+                recipient=recipient,
+                agent=agent,
+                quantity=q,
+                unit=u,
+                commodity=comm,
+                date=date,
+                raw_date=raw_mu,
+                line_ref=first_linenum,
+                tx_type="transfer",
+            )
+            for q, u, comm in qty_entries
+        ]
 
     # --- field allocation extraction ----------------------------------------
 
