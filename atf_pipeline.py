@@ -316,6 +316,14 @@ class ATFExtractor:
     # Bare grain-unit words (not in N(unit) format) used as context markers
     _RE_BARE_GUR = re.compile(r"(?:^|\s)gur\b", re.I)
 
+    # Labor/worker-day line indicators — these are NEVER grain quantities
+    _RE_LABOR_LINE = re.compile(r"\bgurusz\b|\bgeme2\b", re.I)
+
+    # Transfer-formula signals used for tablet-type classification
+    _RE_TRANSFER_SIGNAL = re.compile(
+        r"\bs[zž]u\s+ba-ti\b|\bki\s+\S+-ta\b|\bba-zi\b|\bi3-dab5\b", re.I
+    )
+
     # Words that cannot be personal names
     _GRAIN_UNIT_WORDS = frozenset({
         "gur", "barig", "ban2", "sila3", "sila", "asz",
@@ -482,6 +490,10 @@ class ATFExtractor:
           "5(u) sze gur"    → 50 gur  = 15,000 sila3
           "2(gesz2) sze gur" → 120 gur = 36,000 sila3
         """
+        # Worker-day lines (gurusz / geme2) are never grain quantities
+        if self._RE_LABOR_LINE.search(line):
+            return None, None
+
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
             units = {u.lower() for _, u in cdli}
@@ -675,6 +687,24 @@ class ATFExtractor:
         if date.king or date.month or date.year_name:
             return date, raw_mu
         return None, None
+
+    # --- tablet type classification -----------------------------------------
+
+    @classmethod
+    def _classify_tablet(cls, lines: List[str]) -> str:
+        """
+        Classify a tablet as 'transfer', 'labor', or 'allocation'.
+        Labor accounts are characterised by many gurusz/geme2 lines
+        and few or no transfer-formula lines.
+        """
+        labor = sum(1 for l in lines if cls._RE_LABOR_LINE.search(l))
+        transfer = sum(1 for l in lines if cls._RE_TRANSFER_SIGNAL.search(l))
+        engar = sum(1 for l in lines if re.search(r"\bengar\b", l, re.I))
+        if engar >= 2:
+            return "allocation"
+        if labor >= 3 and labor >= transfer * 2:
+            return "labor"
+        return "transfer"
 
     # --- section splitting --------------------------------------------------
 
@@ -977,12 +1007,16 @@ class ATFExtractor:
     ) -> List[Transaction]:
         """Extract all transactions from a tablet's ATF lines."""
         results: List[Transaction] = []
+        tablet_type = self._classify_tablet(lines)
 
-        # Pass 1: bilateral transfers (section by section)
+        # Pass 1: bilateral transfers / labor-wage records (section by section)
         try:
             for section in self._split_sections(lines):
                 tx = self._extract_from_section(section, tablet_id)
                 if tx is not None:
+                    # Allocation pass handles engar tablets; don't double-tag
+                    if tx.tx_type == "transfer":
+                        tx.tx_type = tablet_type
                     results.append(tx)
         except Exception as exc:
             logger.warning("Error in transfer pass for %s: %s", tablet_id, exc)
