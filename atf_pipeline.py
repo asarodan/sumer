@@ -1349,7 +1349,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
             "recipient":        tx.recipient or "",
             "agent":            tx.agent or "",
             "quantity":         tx.quantity if tx.quantity is not None else "",
-            "unit":             tx.unit or "",
+            "unit":             "sila3" if tx.quantity is not None else "",
             "commodity":        tx.commodity or "",
             "date_king":        d.king if d else "",
             "date_year_number": d.year_number if d else "",
@@ -1428,6 +1428,15 @@ def main() -> None:
     print(f"\nCommodity breakdown:")
     for comm, cnt in sorted(commodity_counts.items(), key=lambda x: -x[1]):
         print(f"  {comm:15s}: {cnt}")
+
+    by_comm: Dict[str, float] = {}
+    for tx in all_transactions:
+        if tx.quantity and tx.commodity:
+            by_comm[tx.commodity] = by_comm.get(tx.commodity, 0) + tx.quantity
+    total_sila3 = sum(tx.quantity for tx in all_transactions if tx.quantity)
+    print(f"\nTotal sila3 across all tablets : {total_sila3:>20,.0f}")
+    for comm, vol in sorted(by_comm.items(), key=lambda x: -x[1]):
+        print(f"  {comm:<15s}             : {vol:>20,.0f}")
 
     sulgi_slice = [
         tx for tx in barley_transactions
