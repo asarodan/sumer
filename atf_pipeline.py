@@ -343,8 +343,10 @@ class ATFExtractor:
 
     _RE_LINENUM   = re.compile(r"^\d+[a-z]?[!?*'ʼ]?\.\s*(?:[a-z]\.\s*)?")
 
-    # CDLI metrological tokens: integer and fractional coefficients
-    _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\((\w+[2']?)\)")
+    # CDLI metrological tokens: integer and fractional coefficients.
+    # Unit names can contain an apostrophe (gesz'u = 600-gur), so [\w']+ is used
+    # rather than \w+[2']? which would stop at the apostrophe and miss the trailing u.
+    _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\(([\w']+)\)")
     _RE_QTY_PLAIN = re.compile(
         r"(\d+(?:\.\d+)?)\s+(gur|barig|ban2|sila3?|gin2|ma-na)", re.I
     )
