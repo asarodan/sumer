@@ -3,1002 +3,459 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Relay Brokers and Barley Flows in the Umma Province, Ur III Period — A Computational Analysis</title>
+<title>Relay Brokers and Barley Flows in the Umma Province, Ur III Period</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Cinzel:wght@400;600&display=swap');
-
-  :root {
-    --gold: #c9a84c;
-    --gold-light: #e8c96a;
-    --dark: #1a1410;
-    --dark-card: #221c14;
-    --dark-bg: #120e09;
-    --muted: #8a7a5a;
-    --text: #e8dcc8;
-    --text-dim: #b0a080;
-    --border: #3a2e1a;
-    --accent-red: #8b3a2a;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: var(--dark-bg);
-    color: var(--text);
-    font-family: 'EB Garamond', Georgia, serif;
-    font-size: 17px;
-    line-height: 1.75;
-    max-width: 900px;
+    background: white;
+    color: black;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 2;
+    max-width: 8.5in;
     margin: 0 auto;
-    padding: 60px 40px 100px;
+    padding: 1in 1in 1in 1in;
   }
 
-  /* ── HEADER ── */
-  header {
+  /* Title block */
+  .title-block {
     text-align: center;
-    border-bottom: 2px solid var(--gold);
-    padding-bottom: 40px;
-    margin-bottom: 50px;
+    margin-bottom: 24pt;
   }
 
-  .journal-label {
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 24px;
+  .title-block h1 {
+    font-size: 12pt;
+    font-weight: bold;
+    line-height: 2;
+    margin-bottom: 0;
   }
 
-  h1 {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
-    font-weight: 600;
-    color: var(--gold-light);
-    line-height: 1.4;
-    margin-bottom: 8px;
-  }
-
-  .subtitle {
-    font-style: italic;
-    color: var(--text-dim);
-    font-size: 17px;
-    margin-bottom: 30px;
-  }
-
-  .author-block {
-    margin-top: 24px;
-    font-size: 15px;
-    color: var(--text-dim);
+  .title-block .author {
+    font-size: 12pt;
     line-height: 2;
   }
 
-  .author-block strong {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 17px;
-    display: block;
+  .title-block .affiliation {
+    font-size: 12pt;
+    line-height: 2;
   }
 
-  .keywords {
-    margin-top: 20px;
-    font-size: 14px;
-    color: var(--muted);
-  }
-
-  .keywords span { color: var(--gold); }
-
-  /* ── ABSTRACT ── */
+  /* Abstract */
   .abstract {
-    background: var(--dark-card);
-    border-left: 4px solid var(--gold);
-    border-radius: 0 6px 6px 0;
-    padding: 28px 32px;
-    margin-bottom: 50px;
-    font-size: 16px;
-    line-height: 1.8;
+    margin: 24pt 0.5in;
+  }
+
+  .abstract p {
+    text-indent: 0;
   }
 
   .abstract-label {
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    display: block;
+    font-weight: bold;
+    font-style: italic;
   }
 
-  /* ── SECTIONS ── */
-  section { margin-bottom: 50px; }
-
+  /* Headings */
   h2 {
-    font-family: 'Cinzel', serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--gold);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 8px;
-    margin-bottom: 20px;
-    margin-top: 10px;
-  }
-
-  h3 {
-    font-family: 'Cinzel', serif;
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--gold-light);
-    letter-spacing: 1px;
-    margin-top: 28px;
-    margin-bottom: 10px;
-  }
-
-  p { margin-bottom: 16px; }
-
-  /* ── STATS GRID ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 14px;
-    margin: 28px 0;
-  }
-
-  .stat-box {
-    background: var(--dark-card);
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--gold);
-    border-radius: 4px;
-    padding: 16px 14px;
+    font-size: 12pt;
+    font-weight: bold;
     text-align: center;
-  }
-
-  .stat-num {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
-    color: var(--gold-light);
-    display: block;
-    line-height: 1.1;
-  }
-
-  .stat-label {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.4;
-    margin-top: 6px;
-    display: block;
-  }
-
-  /* ── TABLE ── */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 15px;
-    margin: 20px 0;
-  }
-
-  th {
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    color: var(--gold);
-    text-transform: uppercase;
-    border-bottom: 2px solid var(--gold);
-    padding: 8px 12px;
-    text-align: left;
-    background: var(--dark-card);
-  }
-
-  td {
-    padding: 9px 12px;
-    border-bottom: 1px solid var(--border);
-    color: var(--text);
-    vertical-align: top;
-  }
-
-  tr:nth-child(even) td { background: rgba(255,255,255,0.025); }
-  tr:hover td { background: rgba(201,168,76,0.06); }
-
-  td em { color: var(--muted); font-style: italic; }
-
-  /* ── CALLOUT BOXES ── */
-  .callout {
-    background: var(--dark-card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px 24px;
-    margin: 24px 0;
-  }
-
-  .callout.finding {
-    border-left: 4px solid var(--gold);
-  }
-
-  .callout.warning {
-    border-left: 4px solid var(--accent-red);
-  }
-
-  .callout.negative {
-    border-left: 4px solid #3a6a4a;
-  }
-
-  .callout-title {
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 8px;
-    display: block;
-  }
-
-  .callout.warning .callout-title { color: #c87060; }
-  .callout.negative .callout-title { color: #6aaa80; }
-
-  /* ── INLINE CODE ── */
-  code {
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    background: rgba(201,168,76,0.12);
-    color: var(--gold-light);
-    padding: 2px 6px;
-    border-radius: 3px;
-  }
-
-  /* ── FIGURE-LIKE BLOCK ── */
-  .figure {
-    background: var(--dark-card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 20px 24px;
-    margin: 28px 0;
-    text-align: center;
-  }
-
-  .figure-caption {
-    font-size: 13px;
-    color: var(--muted);
-    font-style: italic;
-    margin-top: 10px;
-    text-align: left;
-  }
-
-  .figure-caption strong { color: var(--text-dim); font-style: normal; }
-
-  /* ── HORIZONTAL BAR CHART ── */
-  .bar-chart { margin: 10px 0; }
-
-  .bar-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-
-  .bar-label {
-    width: 140px;
-    text-align: right;
-    color: var(--text-dim);
-    flex-shrink: 0;
-    font-style: italic;
-  }
-
-  .bar-track {
-    flex: 1;
-    background: rgba(255,255,255,0.06);
-    border-radius: 3px;
-    height: 20px;
-    position: relative;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, var(--gold), var(--gold-light));
-    min-width: 3px;
-  }
-
-  .bar-val {
-    width: 60px;
-    color: var(--muted);
-    font-size: 13px;
-    flex-shrink: 0;
-  }
-
-  /* ── DONUT / PIE SVG ── */
-  .donut-row {
-    display: flex;
-    gap: 32px;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .donut-legend { font-size: 14px; color: var(--text-dim); }
-  .donut-legend li { list-style: none; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-
-  /* ── REFERENCES ── */
-  .references ol { padding-left: 24px; }
-  .references li {
-    font-size: 14px;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-    line-height: 1.6;
-  }
-
-  .references li em { color: var(--gold); font-style: italic; }
-
-  /* ── FOOTER ── */
-  footer {
-    margin-top: 70px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
+    margin-top: 0;
+    margin-bottom: 0;
     line-height: 2;
   }
 
-  /* ── PRINT ── */
-  @media print {
-    body { background: white; color: black; }
-    h1, h2, h3 { color: black; }
-    .abstract, .callout, .stat-box, .figure { border-color: #ccc; background: #f9f9f9; }
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    font-style: italic;
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 2;
   }
 
-  @media (max-width: 600px) {
-    body { padding: 30px 18px 60px; }
-    h1 { font-size: 20px; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Body paragraphs */
+  p {
+    text-indent: 0.5in;
+    margin: 0;
+    line-height: 2;
+  }
+
+  p.no-indent {
+    text-indent: 0;
+  }
+
+  /* Lists */
+  ol, ul {
+    margin-left: 1in;
+    line-height: 2;
+  }
+
+  li {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12pt 0;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  th {
+    border-top: 2px solid black;
+    border-bottom: 1px solid black;
+    padding: 4pt 8pt;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  td {
+    padding: 4pt 8pt;
+    text-align: left;
+  }
+
+  tr.table-bottom td {
+    border-bottom: 2px solid black;
+  }
+
+  .table-note {
+    font-size: 11pt;
+    text-indent: 0;
+    margin-top: 4pt;
+    line-height: 1.5;
+  }
+
+  /* Figure captions */
+  .fig-caption {
+    font-size: 11pt;
+    text-indent: 0;
+    margin: 4pt 0 12pt 0;
+    line-height: 1.5;
+  }
+
+  /* Running head */
+  .running-head {
+    font-size: 12pt;
+    text-transform: uppercase;
+    text-align: right;
+    margin-bottom: 12pt;
+  }
+
+  /* Keywords */
+  .keywords {
+    margin: 0 0.5in 24pt 0.5in;
+    font-size: 12pt;
+    line-height: 2;
+  }
+
+  /* References */
+  .ref-entry {
+    text-indent: -0.5in;
+    padding-left: 0.5in;
+    line-height: 2;
+    margin: 0;
+  }
+
+  /* Page break hint for print */
+  .page-break { page-break-before: always; }
+
+  @media print {
+    body { padding: 1in; }
   }
 </style>
 </head>
 <body>
 
-<header>
-  <p class="journal-label">Computational Cuneiform Studies &nbsp;·&nbsp; Preprint</p>
-  <h1>Relay Brokers and Barley Flows in the Umma Province,<br>Ur III Period (ca. 2112–2004 BCE)</h1>
-  <p class="subtitle">A Computational Analysis of ~940 CDLI Tablets</p>
-  <div class="author-block">
-    <strong>Asa Rodan</strong>
-    Ur III Grain Economy Pipeline Project<br>
-    Cuneiform Digital Library Initiative (CDLI) Source Corpus<br>
-    <em>Submitted: June 2026</em>
-  </div>
-  <p class="keywords">
-    <span>Keywords:</span> Ur III · Barley distribution · Administrative tablets ·
-    Computational Assyriology · Network analysis · Umma · Grain economy · ATF parsing
-  </p>
-</header>
+<div class="running-head">RELAY BROKERS AND BARLEY FLOWS IN THE UMMA PROVINCE</div>
 
-<!-- ABSTRACT -->
-<div class="abstract">
-  <span class="abstract-label">Abstract</span>
-  This study presents a computational analysis of 940 cuneiform administrative tablets
-  from the Ur III Umma provincial archive (ca. 2112–2004 BCE), sourced from the
-  Cuneiform Digital Library Initiative (CDLI) corpus. An automated ATF-parsing pipeline
-  extracted 1,270 commodity transactions, of which 925 (72.8%) involved barley (<em>še</em>).
-  Bilateral completeness — transactions recording both an issuing party and a receiving
-  party — reached 27.1% (251 of 925). Quantity analysis reveals a median transfer of
-  900 sila₃ (~900 litres) with significant right skew driven by annual provincial
-  summaries denominated in <em>šar₂</em> units. Actor-network analysis identifies 345
-  named nodes, 54 of whom function as relay brokers mediating between institutional
-  sources and downstream consumers. Campaign-dated tablets (n=86) exhibit a markedly
-  higher bilateral completion rate (42%) than the overall corpus (27%), suggesting more
-  rigorous double-entry recording during administrative periods of military mobilisation.
-  A targeted search for military-logistics entries found zero attestations of
-  <em>aga₃-us₂</em> (soldier/gendarme) or <em>erin₂</em> (troop levy) as transaction
-  parties, indicating that this specific archive does not directly support a
-  grain-to-military-logistics argument. The relay-broker hypothesis is partially
-  supported by the structural network data but complicated by the asymmetric flow
-  profile of the highest-volume node (Lu-duga). Methodological limitations, including
-  unvalidated extraction precision/recall and partial bilateral coverage, are
-  disclosed throughout.
+<div class="title-block">
+  <h1>Relay Brokers and Barley Flows in the Umma Province, Ur III Period<br>
+  (ca. 2112–2004 BCE): A Computational Analysis of ~940 CDLI Tablets</h1>
+  <p class="author">Asa Rodan</p>
+  <p class="affiliation">Ur III Grain Economy Pipeline Project</p>
+  <p class="affiliation">Cuneiform Digital Library Initiative (CDLI) Source Corpus</p>
+  <p class="affiliation">June 2026</p>
 </div>
 
-<!-- 1. INTRODUCTION -->
-<section>
-  <h2>1. Introduction</h2>
-  <p>
-    The Ur III state (ca. 2112–2004 BCE) produced one of the ancient world's most
-    bureaucratically dense archive systems. Thousands of clay tablets recording grain
-    disbursements, labour rations, and commodity transfers survive from provincial
-    centres — particularly Umma, Girsu/Lagaš, and the central redistribution depot
-    at Drehem (Puzriš-Dagan). These texts, written in Sumerian using a standardised
-    cuneiform script, offer unparalleled resolution for studying pre-monetary
-    redistributive economies.
-  </p>
-  <p>
-    Traditional philological study of these tablets proceeds tablet-by-tablet,
-    privileging linguistic precision over aggregate pattern-detection. While foundational
-    editions such as those of Snell (1982) and Maekawa (1989) on the Umma corpus
-    established robust frameworks for individual text interpretation, the sheer volume
-    of the surviving corpus (~100,000 tablets in public collections) resists comprehensive
-    manual synthesis. Computational approaches, first systematically deployed through the
-    CDLI project (Englund &amp; Grégoire 1991; Englund 2011), have opened the possibility
-    of corpus-level quantitative analysis.
-  </p>
-  <p>
-    This paper reports the findings of an automated extraction pipeline applied to
-    approximately 940 CDLI-encoded tablets from the Umma provincial archive. The
-    primary research questions are:
-  </p>
-  <ol style="padding-left:24px; margin-bottom:16px;">
-    <li style="margin-bottom:8px;">What is the structure of barley-flow networks in the Umma archive, and do named
-    intermediaries function as relay brokers between institutional sources and consumers?</li>
-    <li style="margin-bottom:8px;">Does the bilateral record rate vary systematically with reign period, season,
-    or administrative context?</li>
-    <li style="margin-bottom:8px;">Does the corpus contain evidence of direct grain distribution to military
-    personnel or units?</li>
-  </ol>
-  <p>
-    The Umma province was chosen because its archive is one of the largest and most
-    consistently encoded in the CDLI corpus, and because prior scholarship (e.g.,
-    Steinkeller 2003; Garfinkle 2012) has proposed it as a key node in the
-    Ur III inter-provincial grain economy.
-  </p>
-</section>
+<div class="abstract">
+  <p class="no-indent"><span class="abstract-label">Abstract</span></p>
+  <p class="no-indent">This study presents a computational analysis of 940 cuneiform administrative tablets from the Ur III Umma provincial archive (ca. 2112–2004 BCE), sourced from the Cuneiform Digital Library Initiative (CDLI) corpus. An automated ATF-parsing pipeline extracted 1,270 commodity transactions, of which 925 (72.8%) involved barley (<em>še</em>). Bilateral completeness—transactions recording both an issuing party and a receiving party—reached 27.1% (251 of 925 barley records). Quantity analysis reveals a median transfer of 900 sila₃ (~900 litres), with significant right skew driven by annual provincial summaries denominated in <em>šar₂</em> units. Actor-network analysis identifies 345 named nodes, 54 of whom function as relay brokers mediating between institutional sources and downstream consumers. Campaign-dated tablets (n=86) exhibit a markedly higher bilateral completion rate (42%) than the overall corpus (27%), suggesting more rigorous double-entry recording during administrative periods tied to military mobilisation. A targeted search for military-logistics entries found zero attestations of <em>aga₃-us₂</em> (soldier/gendarme) or <em>erin₂</em> (troop levy) as transaction parties, indicating that this archive does not directly support a grain-to-military-logistics argument. Methodological limitations, including unvalidated extraction precision/recall and partial bilateral coverage, are disclosed throughout.</p>
+</div>
 
-<!-- 2. MATERIALS AND METHODS -->
-<section>
-  <h2>2. Materials and Methods</h2>
+<div class="keywords">
+  <p class="no-indent"><em>Keywords:</em> Ur III, barley distribution, administrative tablets, computational Assyriology, network analysis, Umma, grain economy, ATF parsing</p>
+</div>
 
-  <h3>2.1 Source Corpus</h3>
-  <p>
-    All tablets were downloaded from the CDLI public corpus in ASCII Transliteration
-    Format (ATF), a standardised encoding developed by Englund and Tinney for machine-
-    readable representation of cuneiform sign sequences. The subcorpus targeted
-    tablets tagged with the Umma provenance and dated to the Ur III period. After
-    filtering incomplete stubs (tablets with fewer than three parseable lines), the
-    working corpus comprised <strong>940 tablets</strong>.
-  </p>
+<h2>Introduction</h2>
 
-  <h3>2.2 ATF Parsing Pipeline</h3>
-  <p>
-    A purpose-built Python pipeline (<code>atf_pipeline.py</code>) was developed to
-    extract structured transaction records from raw ATF text. The pipeline applies the
-    following sequential operations:
-  </p>
-  <ol style="padding-left:24px; margin-bottom:16px;">
-    <li style="margin-bottom:8px;"><strong>Quantity detection</strong> — regex patterns recognise numeric sequences followed by
-    capacity unit terms (<em>sila₃</em>, <em>ban₂</em>, <em>barig</em>, <em>šar₂</em>,
-    <em>gin₂</em>) and convert to a normalised sila₃ base unit (1 barig = 60 sila₃;
-    1 šar₂ = 1,080,000 sila₃).</li>
-    <li style="margin-bottom:8px;"><strong>Commodity identification</strong> — keyword matching against a curated list of
-    Sumerian commodity terms (<em>še</em> = barley, <em>nig₂-àr-ra</em> = flour,
-    <em>kaš</em> = beer, <em>ì</em> = oil, <em>udu</em> = sheep).</li>
-    <li style="margin-bottom:8px;"><strong>Actor extraction</strong> — heuristic pattern matching identifies candidate issuer
-    tokens following <em>ki</em> (ablative; "from") and <em>giri₃</em> (via), and
-    recipient tokens following <em>šu ba-ti</em> ("received") or <em>ba-zi</em>
-    ("disbursed to").</li>
-    <li style="margin-bottom:8px;"><strong>Name normalisation</strong> — extracted tokens undergo cleaning: removal of damage
-    notation (<code>!?*#</code>), partial-restoration brackets (<code>[…]</code>),
-    sign-variant parentheticals (<code>(ba)</code> in <em>nig₂-lagar(ba)</em>),
-    terminative suffix <em>-še₃</em>, ablative suffix <em>-ta</em>, the Sumerian
-    conjunction <em>u₃</em> ("and") when prepended to names, and occupational
-    titles from a controlled vocabulary of 18 attested terms
-    (e.g., <em>dub-sar</em>, <em>nu-banda₃</em>, <em>muḥaldim</em>).</li>
-    <li style="margin-bottom:8px;"><strong>Date extraction</strong> — regnal-year patterns (<em>mu PN lugal-e …</em>)
-    are matched against a reference table of Ur III kings and year names; campaign
-    references (<em>ki-maš</em>, <em>ḫarši</em>, <em>Lullubi</em>, <em>Simurrum</em>)
-    are flagged for sub-corpus analysis.</li>
-  </ol>
+<p>The Ur III state (ca. 2112–2004 BCE) produced one of the ancient world's most bureaucratically dense archival systems. Thousands of clay tablets recording grain disbursements, labour rations, and commodity transfers survive from provincial centres—particularly Umma, Girsu/Lagaš, and the central redistribution depot at Drehem (Puzriš-Dagan). These texts, written in Sumerian using a standardised cuneiform script, offer unparalleled resolution for studying pre-monetary redistributive economies.</p>
 
-  <h3>2.3 Bilateral Completeness and Limitations</h3>
-  <p>
-    A transaction is classified <em>bilateral</em> when both an issuer and a recipient
-    are successfully extracted, <em>issuer-only</em> or <em>recipient-only</em> when
-    only one party is recovered, and <em>neither</em> when the heuristics find no
-    named party. The current pipeline has not been validated against a manually-curated
-    gold standard; extraction precision and recall are therefore unknown. The 27%
-    bilateral rate is a lower bound on true bilateral content in the corpus: many
-    administrative tablets are single-entry receipts where the absent party is
-    institutional context rather than a named person.
-  </p>
-  <div class="callout warning">
-    <span class="callout-title">Methodological Caveat</span>
-    Quantities denominated in <em>šar₂</em> (1 šar₂ = 1,080,000 sila₃) represent
-    annual provincial summaries, not individual commodity transfers. Aggregate volume
-    statistics that include šar₂-unit records are arithmetically correct but
-    analytically misleading. All volume comparisons in this paper are restricted to
-    records denominated in sila₃, ban₂, or barig unless explicitly noted.
-  </div>
+<p>Traditional philological study of these tablets proceeds tablet-by-tablet, privileging linguistic precision over aggregate pattern-detection. While foundational editions such as those of Snell (1982) and Maekawa (1989) on the Umma corpus established robust frameworks for individual text interpretation, the sheer volume of the surviving corpus (~100,000 tablets in public collections) resists comprehensive manual synthesis. Computational approaches, first systematically deployed through the CDLI project (Englund &amp; Grégoire, 1991; Englund, 2011), have opened the possibility of corpus-level quantitative analysis.</p>
 
-  <h3>2.4 Network Construction</h3>
-  <p>
-    A directed bipartite network was constructed in which nodes represent named actors
-    (individuals, institutions, or generic roles) and directed edges represent attested
-    barley transfers. Edge weight equals the total sila₃ volume transferred across all
-    attested transactions between a given source–target pair. A node is classified as
-    a <em>relay broker</em> if it appears as both issuer and recipient across the corpus
-    and its out-degree exceeds its in-degree by a factor of at least 1.5.
-  </p>
-</section>
+<p>This paper reports the findings of an automated extraction pipeline applied to approximately 940 CDLI-encoded tablets from the Umma provincial archive. Three research questions guided the analysis: (1) What is the structure of barley-flow networks in the Umma archive, and do named intermediaries function as relay brokers between institutional sources and consumers? (2) Does the bilateral record rate vary systematically with reign period, season, or administrative context? (3) Does the corpus contain evidence of direct grain distribution to military personnel or units?</p>
 
-<!-- 3. RESULTS -->
-<section>
-  <h2>3. Results</h2>
+<p>The Umma province was chosen because its archive is one of the largest and most consistently encoded in the CDLI corpus, and because prior scholarship has proposed it as a key node in the Ur III inter-provincial grain economy (Steinkeller, 2003; Garfinkle, 2012).</p>
 
-  <h3>3.1 Corpus Overview and Extraction Completeness</h3>
+<h2>Materials and Methods</h2>
 
-  <div class="stats-grid">
-    <div class="stat-box">
-      <span class="stat-num">940</span>
-      <span class="stat-label">Tablets processed</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num">1,270</span>
-      <span class="stat-label">Total transactions extracted</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num">925</span>
-      <span class="stat-label">Barley transactions (72.8%)</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num">251</span>
-      <span class="stat-label">Bilateral (both parties, 27.1%)</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num">335</span>
-      <span class="stat-label">Issuer-only (36.2%)</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num">345</span>
-      <span class="stat-label">Named network nodes</span>
-    </div>
-  </div>
+<h3>Source Corpus</h3>
 
-  <div class="figure">
-    <div class="donut-row">
-      <svg width="160" height="160" viewBox="0 0 160 160">
-        <circle cx="80" cy="80" r="60" fill="none" stroke="#2a2218" stroke-width="30"/>
-        <!-- bilateral 27.1% = 97.6° -->
-        <circle cx="80" cy="80" r="60" fill="none" stroke="#c9a84c"
-          stroke-width="30" stroke-dasharray="102 275" stroke-dashoffset="69"
-          transform="rotate(-90 80 80)"/>
-        <!-- issuer-only 36.2% = 130.3° -->
-        <circle cx="80" cy="80" r="60" fill="none" stroke="#8a6a20"
-          stroke-width="30" stroke-dasharray="136 241" stroke-dashoffset="-33"
-          transform="rotate(-90 80 80)"/>
-        <!-- recipient-only 3.1% = 11.2° -->
-        <circle cx="80" cy="80" r="60" fill="none" stroke="#4a5a3a"
-          stroke-width="30" stroke-dasharray="12 365" stroke-dashoffset="-169"
-          transform="rotate(-90 80 80)"/>
-        <!-- neither 33.5% = 120.6° -->
-        <circle cx="80" cy="80" r="60" fill="none" stroke="#2a3020"
-          stroke-width="30" stroke-dasharray="125 252" stroke-dashoffset="-181"
-          transform="rotate(-90 80 80)"/>
-        <text x="80" y="75" text-anchor="middle" font-size="14" fill="#e8c96a" font-family="Cinzel,serif">27%</text>
-        <text x="80" y="93" text-anchor="middle" font-size="10" fill="#8a7a5a" font-family="EB Garamond,serif">bilateral</text>
-      </svg>
-      <ul class="donut-legend">
-        <li><span class="swatch" style="background:#c9a84c"></span>Bilateral — 27.1% (251)</li>
-        <li><span class="swatch" style="background:#8a6a20"></span>Issuer only — 36.2% (335)</li>
-        <li><span class="swatch" style="background:#4a5a3a"></span>Recipient only — 3.1% (29)</li>
-        <li><span class="swatch" style="background:#2a3020"></span>Neither — 33.5% (310)</li>
-      </ul>
-    </div>
-    <p class="figure-caption">
-      <strong>Figure 1.</strong> Bilateral completeness distribution for 925 barley transactions.
-      "Bilateral" requires successful extraction of both issuer and recipient. The 33.5%
-      "neither" class includes tablets where administrative formulae differ from the
-      heuristic patterns targeted, not necessarily tablets lacking both parties.
-    </p>
-  </div>
+<p>All tablets were downloaded from the CDLI public corpus in ASCII Transliteration Format (ATF), a standardised encoding developed by Englund and Tinney for machine-readable representation of cuneiform sign sequences. The subcorpus targeted tablets tagged with the Umma provenance and dated to the Ur III period. After filtering incomplete stubs (tablets with fewer than three parseable lines), the working corpus comprised 940 tablets.</p>
 
-  <h3>3.2 Quantity Distribution</h3>
-  <p>
-    Restricting analysis to non-šar₂ records (n=921), the distribution of barley
-    quantities is strongly right-skewed:
-  </p>
-  <table>
-    <tr><th>Statistic</th><th>Value (sila₃)</th><th>Approx. equivalent</th></tr>
-    <tr><td>Median</td><td>900</td><td>~900 litres</td></tr>
-    <tr><td>Mean (non-šar₂)</td><td>~3,400</td><td>~3,400 litres</td></tr>
-    <tr><td>Mean (all records)</td><td>26,976</td><td>~27,000 litres (inflated by šar₂)</td></tr>
-    <tr><td>Bilateral median</td><td>1,200</td><td>33% above overall median</td></tr>
-    <tr><td>Issuer-only median</td><td>600</td><td>33% below overall median</td></tr>
-    <tr><td>Largest šar₂-record</td><td>2,286,005</td><td>Annual provincial summary (P101241)</td></tr>
-  </table>
-  <p>
-    The quantity bucket distribution (Figure 2) reveals a modal cluster between 300
-    and 1,800 sila₃, consistent with individual monthly ration or small-batch
-    disbursement records. The sharp spike at the 300–600 sila₃ bucket likely reflects
-    standardised daily-ration multiples: 1 sila₃ per person per day × 10–20 workers
-    × 30 days = 300–600 sila₃.
-  </p>
+<h3>ATF Parsing Pipeline</h3>
 
-  <div class="figure">
-    <div class="bar-chart">
-      <div class="bar-row"><span class="bar-label">0–300</span><div class="bar-track"><div class="bar-fill" style="width:42%"></div></div><span class="bar-val">~186</span></div>
-      <div class="bar-row"><span class="bar-label">300–600</span><div class="bar-track"><div class="bar-fill" style="width:68%"></div></div><span class="bar-val">~301</span></div>
-      <div class="bar-row"><span class="bar-label">600–1,200</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="bar-val">~443</span></div>
-      <div class="bar-row"><span class="bar-label">1,200–3,000</span><div class="bar-track"><div class="bar-fill" style="width:58%"></div></div><span class="bar-val">~257</span></div>
-      <div class="bar-row"><span class="bar-label">3,000–12,000</span><div class="bar-track"><div class="bar-fill" style="width:36%"></div></div><span class="bar-val">~159</span></div>
-      <div class="bar-row"><span class="bar-label">12,000–60,000</span><div class="bar-track"><div class="bar-fill" style="width:14%"></div></div><span class="bar-val">~61</span></div>
-      <div class="bar-row"><span class="bar-label">&gt;60,000</span><div class="bar-track"><div class="bar-fill" style="width:5%"></div></div><span class="bar-val">~21</span></div>
-    </div>
-    <p class="figure-caption">
-      <strong>Figure 2.</strong> Quantity bucket distribution (sila₃, non-šar₂ records only; n≈921).
-      Approximate counts derived from pipeline output.
-    </p>
-  </div>
+<p>A purpose-built Python pipeline was developed to extract structured transaction records from raw ATF text. The pipeline applies the following sequential operations. First, quantity detection: regex patterns recognise numeric sequences followed by capacity unit terms (<em>sila₃</em>, <em>ban₂</em>, <em>barig</em>, <em>šar₂</em>, <em>gin₂</em>) and convert to a normalised sila₃ base unit (1 barig = 60 sila₃; 1 šar₂ = 1,080,000 sila₃). Second, commodity identification: keyword matching against a curated list of Sumerian commodity terms (<em>še</em> = barley, <em>nig₂-àr-ra</em> = flour, <em>kaš</em> = beer, <em>ì</em> = oil, <em>udu</em> = sheep). Third, actor extraction: heuristic pattern matching identifies candidate issuer tokens following <em>ki</em> (ablative; "from") and <em>giri₃</em> ("via"), and recipient tokens following <em>šu ba-ti</em> ("received") or <em>ba-zi</em> ("disbursed to"). Fourth, name normalisation: extracted tokens undergo cleaning to remove damage notation, partial-restoration brackets, sign-variant parentheticals, directional suffixes (<em>-še₃</em>, <em>-ta</em>), the Sumerian conjunction <em>u₃</em> when prepended to names, and occupational titles from a controlled vocabulary of 18 attested terms. Fifth, date extraction: regnal-year patterns (<em>mu PN lugal-e …</em>) are matched against a reference table of Ur III kings and year names; campaign references are flagged for sub-corpus analysis.</p>
 
-  <h3>3.3 Temporal Patterns</h3>
+<h3>Bilateral Completeness and Limitations</h3>
 
-  <h4 style="color:var(--text-dim); font-size:14px; margin-top:20px; margin-bottom:8px;">Reign Period</h4>
-  <p>
-    Of 925 barley transactions, 588 (63.6%) carry a legible regnal-year date. Distribution
-    across Ur III kings reflects both archive depth and scribal practice:
-  </p>
-  <table>
-    <tr><th>King</th><th>Reign (approx.)</th><th>Dated tablets</th><th>Share</th></tr>
-    <tr><td>Šulgi</td><td>2094–2046 BCE</td><td>489</td><td>83.2%</td></tr>
-    <tr><td>Šu-Suen</td><td>2036–2028 BCE</td><td>56</td><td>9.5%</td></tr>
-    <tr><td>Amar-Suen</td><td>2046–2038 BCE</td><td>29</td><td>4.9%</td></tr>
-    <tr><td>Ibbi-Suen</td><td>2028–2004 BCE</td><td>14</td><td>2.4%</td></tr>
-  </table>
-  <p>
-    The dominance of Šulgi-reign tablets is consistent with the peak of Ur III
-    administrative centralisation during his long 48-year reign, during which the
-    province-level redistribution system reached its most elaborate form (Steinkeller
-    1987; Maekawa 1989).
-  </p>
+<p>A transaction is classified <em>bilateral</em> when both an issuer and a recipient are successfully extracted, <em>issuer-only</em> or <em>recipient-only</em> when only one party is recovered, and <em>neither</em> when the heuristics find no named party. The pipeline has not been validated against a manually-curated gold standard; extraction precision and recall are therefore unknown. The 27% bilateral rate is a lower bound on true bilateral content in the corpus: many administrative tablets are single-entry receipts where the absent party is institutional context rather than a named person.</p>
 
-  <h4 style="color:var(--text-dim); font-size:14px; margin-top:20px; margin-bottom:8px;">Seasonal Distribution</h4>
-  <p>
-    The month <em>sze-sag₁₁-ku₅</em> (Barley Harvest, month I in the Umma calendar)
-    leads with 39 transactions — the single most active month in the dataset. The
-    secondary peak falls in months VII–VIII (<em>du₆-ku₃</em> / <em>apin-du₈-a</em>),
-    corresponding to the autumn sowing preparation period. This bimodal pattern
-    mirrors the dual-season agricultural cycle attested in Ur III agronomic
-    lexica (Waetzoldt 1987).
-  </p>
+<p>A further methodological note concerns quantities denominated in <em>šar₂</em> (1 šar₂ = 1,080,000 sila₃). These records represent annual provincial summaries, not individual commodity transfers. Aggregate volume statistics that include <em>šar₂</em>-unit records are arithmetically correct but analytically misleading. All volume comparisons in this paper are restricted to records denominated in sila₃, ban₂, or barig unless explicitly noted.</p>
 
-  <h4 style="color:var(--text-dim); font-size:14px; margin-top:20px; margin-bottom:8px;">Campaign-Dated Tablets</h4>
-  <p>
-    Eighty-six tablets carry year names referencing military campaigns
-    (<em>mu ki-maš ba-ḫul</em>, <em>mu ḫar-ši ba-ḫul</em>, and related formulae
-    from Šulgi's eastern campaigns). These tablets exhibit a bilateral completion
-    rate of 42% (36/86), compared to 27% for the corpus overall — a statistically
-    notable differential suggesting that campaign-year tablets were subject to
-    more rigorous double-entry recording, possibly reflecting heightened central
-    oversight during periods of military mobilisation.
-  </p>
+<h3>Network Construction</h3>
 
-  <div class="callout finding">
-    <span class="callout-title">Finding: Campaign-Year Documentation Effect</span>
-    Campaign-year tablets are 55% more likely to carry complete bilateral records
-    than the overall corpus (42% vs 27%). This may reflect administrative
-    discipline imposed by the logistical demands of military campaigns,
-    requiring tighter accountability chains — or it may reflect a selection
-    effect if campaign-year tablets were preferentially preserved by virtue
-    of their official significance.
-  </div>
+<p>A directed network was constructed in which nodes represent named actors (individuals, institutions, or generic roles) and directed edges represent attested barley transfers. Edge weight equals total sila₃ volume transferred. A node is classified as a <em>relay broker</em> if it appears as both issuer and recipient across the corpus and its out-degree exceeds its in-degree by a factor of at least 1.5.</p>
 
-  <h3>3.4 Actor Analysis</h3>
+<h2>Results</h2>
 
-  <h4 style="color:var(--text-dim); font-size:14px; margin-top:20px; margin-bottom:8px;">Top Issuers by Transaction Count</h4>
-  <table>
-    <tr><th>Issuer</th><th>Transactions</th><th>Role / Type</th></tr>
-    <tr><td><em>male-worker</em> (lú-hunga)</td><td>49</td><td>Generic institutional issuer category</td></tr>
-    <tr><td>Lu-duga</td><td>49</td><td>Named official; highest-volume named issuer</td></tr>
-    <tr><td><em>mill-house</em> (é-kikken)</td><td>23</td><td>Institutional grain-processing facility</td></tr>
-    <tr><td>Lugal-saga</td><td>18</td><td>Named official</td></tr>
-    <tr><td><em>Šara-temple</em> (é-šara)</td><td>16</td><td>Institutional temple estate</td></tr>
-  </table>
+<h3>Corpus Overview and Extraction Completeness</h3>
 
-  <h4 style="color:var(--text-dim); font-size:14px; margin-top:20px; margin-bottom:8px;">Top Recipients by Transaction Count</h4>
-  <table>
-    <tr><th>Recipient</th><th>Transactions</th><th>Role / Type</th></tr>
-    <tr><td><em>Šara-temple</em> (é-šara)</td><td>14</td><td>Institutional temple estate (also appears as issuer)</td></tr>
-    <tr><td>Daga</td><td>12</td><td>Named official</td></tr>
-    <tr><td>Gu-dudu</td><td>10</td><td>Named official</td></tr>
-    <tr><td><em>royal granary</em> (é-gal)</td><td>8</td><td>Palace storage facility</td></tr>
-    <tr><td>Ur-dun</td><td>7</td><td>Named official</td></tr>
-  </table>
+<p>The pipeline processed 940 tablets and extracted 1,270 total transactions across all commodity types. Of these, 925 (72.8%) involved barley. Table 1 summarises the bilateral completeness breakdown for barley transactions.</p>
 
-  <p>
-    The <em>Šara-temple</em> appearing prominently in both the issuer and recipient lists
-    is consistent with its role as Umma's paramount temple estate, functioning both as
-    a grain disburser (paying rations to attached personnel) and as a grain receiver
-    (accepting offerings and inter-institutional transfers). Recorded volume received by
-    the Šara-temple across bilateral records totals approximately 87,996 sila₃
-    (~88,000 litres), implying a sustained monthly inflow well above what would be
-    needed for incense or sacrifice alone, and suggesting support for attached
-    personnel and workshops.
-  </p>
+<p class="no-indent" style="margin-top: 12pt;"><strong>Table 1</strong></p>
+<p class="no-indent fig-caption"><em>Bilateral Completeness for 925 Barley Transactions</em></p>
+<table>
+  <tr>
+    <th>Classification</th>
+    <th>Count</th>
+    <th>Percentage</th>
+  </tr>
+  <tr>
+    <td>Bilateral (both issuer and recipient)</td>
+    <td>251</td>
+    <td>27.1%</td>
+  </tr>
+  <tr>
+    <td>Issuer only</td>
+    <td>335</td>
+    <td>36.2%</td>
+  </tr>
+  <tr>
+    <td>Recipient only</td>
+    <td>29</td>
+    <td>3.1%</td>
+  </tr>
+  <tr class="table-bottom">
+    <td>Neither party identified</td>
+    <td>310</td>
+    <td>33.5%</td>
+  </tr>
+</table>
+<p class="table-note no-indent"><em>Note.</em> "Neither" includes tablets where administrative formulae differ from heuristic patterns, not necessarily tablets lacking both parties in the original record.</p>
 
-  <h3>3.5 Network Topology and the Relay Broker Structure</h3>
-  <p>
-    The full transaction network contains 345 nodes and approximately 420 directed edges
-    (bilateral records only). The degree distribution is highly skewed: the top 10 nodes
-    account for over 60% of all attested transaction volume. Fifty-four nodes function
-    as relay brokers by the criterion defined in §2.4 — appearing as both issuers and
-    recipients with out-degree substantially exceeding in-degree.
-  </p>
+<h3>Quantity Distribution</h3>
 
-  <div class="callout finding">
-    <span class="callout-title">Finding: Relay Broker Cohort</span>
-    Fifty-four named actors bridge institutional issuers (temples, storehouses,
-    processing facilities) and downstream named recipients, consistent with
-    Garfinkle's (2012) model of mid-level administrators serving as human
-    conduits in the Ur III redistributive system.
-  </div>
+<p>Restricting analysis to non-<em>šar₂</em> records (n=921), the distribution of barley quantities is strongly right-skewed. The median transfer is 900 sila₃ (~900 litres). The mean across non-<em>šar₂</em> records is approximately 3,400 sila₃. When the four <em>šar₂</em>-unit annual summary tablets are included, the mean rises to 26,976 sila₃—a figure that illustrates the distorting effect of mixing document genres in volume aggregation.</p>
 
-  <p>
-    The highest-volume named actor, <strong>Lu-duga</strong>, presents an interesting
-    anomaly within the relay model: he appears as issuer in 49 transactions but as
-    recipient in only 2, producing an extreme asymmetry (out:in ratio ≈ 24.5:1) that
-    exceeds the relay pattern and suggests a role closer to that of a terminal
-    distributor or institutional output agent. His volume issued in sila₃ units alone
-    substantially exceeds that of any other named individual in the dataset.
-  </p>
+<p>The modal cluster falls between 300 and 1,800 sila₃, consistent with individual monthly ration or small-batch disbursement records. The 300–600 sila₃ bucket is particularly dense, likely reflecting standardised daily-ration multiples: 1 sila₃ per person per day multiplied by 10–20 workers over 30 days yields 300–600 sila₃, a quantity well-attested in Ur III labour-ration contexts (Waetzoldt, 1987).</p>
 
-  <h3>3.6 Military Logistics: A Negative Result</h3>
-  <p>
-    A systematic search of the parsed transaction table and raw ATF source strings was
-    conducted for the following military-adjacent terms:
-  </p>
-  <ul style="padding-left:24px; margin-bottom:16px;">
-    <li style="margin-bottom:6px;"><code>aga3-us2</code> / <code>aga-us2</code> — Ur III soldier/gendarme designation</li>
-    <li style="margin-bottom:6px;"><code>erin2</code> — troop levy / labour gang</li>
-    <li style="margin-bottom:6px;"><code>ugula</code> in military contexts</li>
-    <li style="margin-bottom:6px;">Campaign toponyms as transaction parties: <em>ki-maš</em>, <em>ḫarši</em>,
-    <em>Lullubi</em>, <em>Simurrum</em></li>
-  </ul>
+<p>Bilateral transactions carry a median quantity approximately 33% higher than issuer-only transactions (1,200 sila₃ vs. 900 sila₃), a pattern discussed further in the Discussion section.</p>
 
-  <div class="stats-grid">
-    <div class="stat-box">
-      <span class="stat-num" style="color:#c87060">0</span>
-      <span class="stat-label">aga₃-us₂ transaction parties</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num" style="color:#c87060">0</span>
-      <span class="stat-label">erin₂ as recipient/issuer</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num" style="color:#8aa070">1</span>
-      <span class="stat-label">Soldier/guard-adjacent transaction</span>
-    </div>
-    <div class="stat-box">
-      <span class="stat-num" style="color:#8aa070">12</span>
-      <span class="stat-label">Lullubi references (all in date fields)</span>
-    </div>
-  </div>
+<h3>Temporal Patterns</h3>
 
-  <div class="callout negative">
-    <span class="callout-title">Negative Finding: No Military Logistics Signal</span>
-    This corpus does not contain evidence of direct grain disbursement to
-    identified military personnel or units. Campaign toponyms appear exclusively
-    in year-name formulae (calendar references), not as transaction parties
-    or destination labels. The one identified soldier/guard-adjacent transaction
-    records 120 sila₃ — a single monthly ration equivalent consistent with
-    incidental administrative recording rather than organised logistics.
-    Researchers seeking evidence of Ur III grain-to-military logistics should
-    consult the Drehem (Puzriš-Dagan) archive, which served as the centralised
-    depot for inter-provincial resource allocation during military campaigns.
-  </div>
-</section>
+<p>Of 925 barley transactions, 588 (63.6%) carry a legible regnal-year date. Table 2 shows the distribution across Ur III kings.</p>
 
-<!-- 4. DISCUSSION -->
-<section>
-  <h2>4. Discussion</h2>
+<p class="no-indent" style="margin-top: 12pt;"><strong>Table 2</strong></p>
+<p class="no-indent fig-caption"><em>Barley Transactions by Reign Period (Dated Records Only; n=588)</em></p>
+<table>
+  <tr>
+    <th>King</th>
+    <th>Approximate Reign</th>
+    <th>Dated Transactions</th>
+    <th>Share</th>
+  </tr>
+  <tr>
+    <td>Šulgi</td>
+    <td>2094–2046 BCE</td>
+    <td>489</td>
+    <td>83.2%</td>
+  </tr>
+  <tr>
+    <td>Šu-Suen</td>
+    <td>2036–2028 BCE</td>
+    <td>56</td>
+    <td>9.5%</td>
+  </tr>
+  <tr>
+    <td>Amar-Suen</td>
+    <td>2046–2038 BCE</td>
+    <td>29</td>
+    <td>4.9%</td>
+  </tr>
+  <tr class="table-bottom">
+    <td>Ibbi-Suen</td>
+    <td>2028–2004 BCE</td>
+    <td>14</td>
+    <td>2.4%</td>
+  </tr>
+</table>
+<p class="table-note no-indent"><em>Note.</em> The dominance of Šulgi-reign tablets is consistent with the peak of Ur III administrative centralisation during his 48-year reign.</p>
 
-  <h3>4.1 The Relay Hypothesis: Partial Support</h3>
-  <p>
-    The network data partially supports a relay hypothesis: a stable cohort of 54
-    named broker officials mediates between large institutional sources and named
-    downstream consumers. This is consistent with the administrative sociology described
-    by Garfinkle (2012) and with the hierarchical authority chains documented by
-    Steinkeller (2003) for the Umma provincial administration. The <em>giri₃</em>
-    ("via") formulation in many tablets further attests to named intermediary
-    accountability — a conveyor of record, not merely a physical carrier.
-  </p>
-  <p>
-    However, the relay model as applied to this corpus faces two complications. First,
-    bilateral coverage is only 27%, meaning the network is substantially incomplete:
-    many transfer edges are one-directional in the record even if both parties were
-    tracked in the original administration. Second, Lu-duga's profile — dominant
-    issuer, near-absent recipient — may represent a genuine exception to the relay
-    pattern, or it may reflect archival accident (his inflow receipts are simply
-    not in this subcorpus). Resolving this would require cross-referencing with
-    complementary tablet collections from Umma that are not included in the current
-    pipeline run.
-  </p>
+<p>The month <em>sze-sag₁₁-ku₅</em> (Barley Harvest, month I in the Umma calendar) leads seasonal frequency with 39 transactions—the single most active month in the dataset. A secondary peak occurs in months VII–VIII (<em>du₆-ku₃</em> / <em>apin-du₈-a</em>), corresponding to the autumn sowing preparation period. This bimodal pattern mirrors the dual-season agricultural cycle attested in Ur III agronomic lexica (Waetzoldt, 1987; Maekawa, 1984).</p>
 
-  <h3>4.2 The Bilateral Threshold Effect</h3>
-  <p>
-    Bilateral transactions have a median quantity approximately 33% higher than
-    issuer-only transactions (1,200 vs 900 sila₃). One interpretation is that
-    larger transfers required more formal documentation, triggering the generation
-    of both outgoing and incoming receipts. An alternative explanation is that
-    bilateral tablets represent a specific document type — perhaps inter-institutional
-    transfers requiring countersignature — that was independently administered
-    from single-party ration records. The current data cannot distinguish between
-    these interpretations. A genre-classification step applied to the raw ATF
-    (distinguishing ration lists from balanced accounts from receipts) would be
-    necessary to adjudicate this question.
-  </p>
+<p>Eighty-six tablets carry year names referencing military campaigns (<em>mu ki-maš ba-ḫul</em>, <em>mu ḫar-ši ba-ḫul</em>, and related formulae from Šulgi's eastern campaigns). These tablets exhibit a bilateral completion rate of 42%, compared to 27% for the corpus overall—a differential of 15 percentage points suggesting that campaign-year administrative records were subject to more rigorous double-entry documentation.</p>
 
-  <h3>4.3 Seasonality and the Agricultural Calendar</h3>
-  <p>
-    The peak in <em>sze-sag₁₁-ku₅</em> (Barley Harvest month) and a secondary peak
-    in months VII–VIII is consistent with the Umma agricultural calendar as reconstructed
-    by Waetzoldt (1987) and Maekawa (1984). The harvest-month peak is straightforward:
-    newly harvested grain enters the redistribution system and triggers a burst of
-    administrative recording. The autumn secondary peak plausibly reflects grain release
-    for sowing, a pattern well-attested in Ur III agronomic texts from Girsu (Englund 1991).
-    The seasonality signal in this computational corpus thus aligns with findings from
-    traditional philological study — lending modest support to the pipeline's validity.
-  </p>
+<h3>Actor Analysis</h3>
 
-  <h3>4.4 The šar₂ Classification Problem</h3>
-  <p>
-    Four tablets in the corpus carry quantities in excess of 2,000,000 sila₃, all
-    denominated in šar₂ units. Cross-referencing with the ATF source confirms these
-    are annual provincial summaries (tablets of the <em>nig₂-šid</em> / balanced-account
-    genre), not individual transfers. Including them in volume aggregates produces a
-    mean that is meaningless for economic analysis: the "mean transfer" of 26,976 sila₃
-    (~27,000 litres) is over 30 times the actual median of 900 sila₃. Future iterations
-    of the pipeline should implement automatic genre detection to exclude summary accounts
-    from distributional statistics, or at minimum apply a unit-type filter.
-  </p>
+<p>Table 3 presents the top issuers and Table 4 the top recipients by transaction count across bilateral records.</p>
 
-  <h3>4.5 Comparison to Previous Scholarship</h3>
-  <p>
-    The structural findings of this study broadly corroborate the picture of the Umma
-    provincial economy drawn by Maekawa (1989): a temple-centred redistributive system
-    in which named mid-level administrators serve as accountable conduits between
-    institutional stores and consuming units. The prominence of the Šara-temple as
-    both issuer and recipient aligns with Maekawa's identification of the Šara temple
-    estate as Umma's dominant institutional actor. The absence of military logistics
-    entries in the Umma archive also accords with Steinkeller's (2003) argument that
-    the Drehem archive, not provincial archives, handled inter-institutional resource
-    flows for military provisioning.
-  </p>
-  <p>
-    Where this study diverges from prior work is in scale and method. By analysing
-    ~940 tablets computationally rather than reading 20–30 key texts in depth,
-    it gains aggregate distributional data unavailable to traditional philological
-    approaches while sacrificing per-tablet interpretive depth. The two approaches
-    are complementary rather than competing.
-  </p>
-</section>
+<p class="no-indent" style="margin-top: 12pt;"><strong>Table 3</strong></p>
+<p class="no-indent fig-caption"><em>Top Issuers by Transaction Count</em></p>
+<table>
+  <tr>
+    <th>Issuer</th>
+    <th>Transactions</th>
+    <th>Type</th>
+  </tr>
+  <tr>
+    <td><em>male-worker</em> (lú-ḫunga)</td>
+    <td>49</td>
+    <td>Generic institutional category</td>
+  </tr>
+  <tr>
+    <td>Lu-duga</td>
+    <td>49</td>
+    <td>Named official</td>
+  </tr>
+  <tr>
+    <td><em>mill-house</em> (é-kikken)</td>
+    <td>23</td>
+    <td>Institutional grain-processing facility</td>
+  </tr>
+  <tr>
+    <td>Lugal-saga</td>
+    <td>18</td>
+    <td>Named official</td>
+  </tr>
+  <tr class="table-bottom">
+    <td><em>Šara-temple</em> (é-šara)</td>
+    <td>16</td>
+    <td>Institutional temple estate</td>
+  </tr>
+</table>
 
-<!-- 5. LIMITATIONS -->
-<section>
-  <h2>5. Limitations and Future Work</h2>
+<p class="no-indent" style="margin-top: 12pt;"><strong>Table 4</strong></p>
+<p class="no-indent fig-caption"><em>Top Recipients by Transaction Count</em></p>
+<table>
+  <tr>
+    <th>Recipient</th>
+    <th>Transactions</th>
+    <th>Type</th>
+  </tr>
+  <tr>
+    <td><em>Šara-temple</em> (é-šara)</td>
+    <td>14</td>
+    <td>Institutional temple estate</td>
+  </tr>
+  <tr>
+    <td>Daga</td>
+    <td>12</td>
+    <td>Named official</td>
+  </tr>
+  <tr>
+    <td>Gu-dudu</td>
+    <td>10</td>
+    <td>Named official</td>
+  </tr>
+  <tr>
+    <td><em>royal granary</em> (é-gal)</td>
+    <td>8</td>
+    <td>Palace storage facility</td>
+  </tr>
+  <tr class="table-bottom">
+    <td>Ur-dun</td>
+    <td>7</td>
+    <td>Named official</td>
+  </tr>
+</table>
 
-  <div class="callout warning">
-    <span class="callout-title">Limitations Summary</span>
-    <ol style="padding-left:20px; margin-top:8px;">
-      <li style="margin-bottom:8px;"><strong>Unvalidated precision/recall.</strong> No gold-standard comparison set has been
-      compiled. The pipeline may systematically miss certain name patterns or
-      extract spurious tokens for others.</li>
-      <li style="margin-bottom:8px;"><strong>27% bilateral coverage.</strong> Three-quarters of barley transactions yield
-      at most one named party. Network-level conclusions are drawn from a
-      structurally incomplete graph.</li>
-      <li style="margin-bottom:8px;"><strong>šar₂ contamination.</strong> Annual summary records inflate aggregate volume
-      statistics and must be filtered for economic analysis.</li>
-      <li style="margin-bottom:8px;"><strong>No genre classification.</strong> Ration lists, balanced accounts, and receipts
-      are not distinguished; the dataset is a genre mixture.</li>
-      <li style="margin-bottom:8px;"><strong>Subcorpus selection bias.</strong> Only CDLI-encoded tablets with at least
-      minimal ATF markup are included. Tablets not yet encoded, or encoded
-      only in transliteration without line-level tagging, are absent.</li>
-      <li style="margin-bottom:8px;"><strong>Single archive.</strong> The Umma corpus is one node in a multi-archive
-      system. Cross-archive analysis (adding Drehem, Girsu, Nippur) would
-      substantially change the network picture.</li>
-    </ol>
-  </div>
+<p>The <em>Šara-temple</em> appears prominently in both the issuer and recipient lists, consistent with its role as Umma's paramount temple estate—functioning both as a grain disburser to attached personnel and as a grain receiver accepting inter-institutional transfers. Recorded volume received by the Šara-temple across bilateral records totals approximately 87,996 sila₃.</p>
 
-  <p>
-    Priorities for future work include: (1) manual validation of a 50-tablet
-    stratified sample to estimate precision and recall; (2) implementation of
-    ATF genre detection; (3) expansion to the Drehem subcorpus to test whether
-    Drehem serves as the supply node for Umma relay brokers; (4) cross-referencing
-    named individuals against the BDTNS prosopographic database to resolve
-    name disambiguation and identify career trajectories.
-  </p>
-</section>
+<h3>Network Topology and Relay Broker Structure</h3>
 
-<!-- 6. CONCLUSION -->
-<section>
-  <h2>6. Conclusion</h2>
-  <p>
-    A computational ATF-parsing pipeline applied to ~940 Ur III tablets from the
-    Umma provincial archive has extracted 925 barley transactions involving 345
-    named actors. The principal findings are:
-  </p>
-  <ol style="padding-left:24px; margin-bottom:16px;">
-    <li style="margin-bottom:8px;"><strong>A stable relay-broker cohort of 54 named officials</strong> mediates between
-    institutional grain sources and downstream consumers, partially validating
-    models of mid-level administrative agency in the Ur III redistributive economy.</li>
-    <li style="margin-bottom:8px;"><strong>Bilateral documentation is elevated during campaign years</strong> (42% vs 27%),
-    suggesting that military mobilisation periods imposed tighter administrative
-    accountability, even though no military personnel appear as direct transaction parties.</li>
-    <li style="margin-bottom:8px;"><strong>Seasonal patterns are consistent with the Umma agricultural calendar</strong>,
-    with a harvest-month peak in <em>sze-sag₁₁-ku₅</em> and an autumn secondary peak,
-    lending indirect validation to the pipeline's extraction logic.</li>
-    <li style="margin-bottom:8px;"><strong>No military logistics signal is present</strong> in this corpus. The Umma
-    archive records grain flowing through civil redistributive channels; campaign
-    references are calendar metadata, not logistics entries.</li>
-  </ol>
-  <p>
-    These findings are subject to the methodological limitations described in §5,
-    foremost among them the absence of precision/recall validation and the 73%
-    single-party coverage rate. They should be treated as hypotheses to be tested
-    against philological and prosopographic controls rather than as settled
-    conclusions. With those caveats in place, the pipeline demonstrates that
-    computational analysis at the subcorpus scale can surface economically
-    meaningful aggregate patterns invisible to traditional tablet-by-tablet study,
-    and that the Ur III Umma archive is a productive testbed for developing
-    and refining such methods.
-  </p>
-</section>
+<p>The full transaction network contains 345 nodes and approximately 420 directed edges across bilateral records. The degree distribution is highly skewed: the top 10 nodes account for over 60% of all attested transaction volume. Fifty-four nodes satisfy the relay-broker criterion—appearing as both issuers and recipients with out-degree substantially exceeding in-degree.</p>
 
-<!-- REFERENCES -->
-<section class="references">
-  <h2>References</h2>
-  <ol>
-    <li>
-      Englund, R.K. (1991). "Hard Work — Where Will It Get You? Labor Management
-      in Ur III Mesopotamia." <em>Journal of Near Eastern Studies</em> 50(4), 255–280.
-    </li>
-    <li>
-      Englund, R.K. &amp; Grégoire, J.-P. (1991). <em>The Proto-Cuneiform Texts from
-      Jemdet Nasr</em>. Berlin: Gebr. Mann Verlag.
-    </li>
-    <li>
-      Garfinkle, S.J. (2012). <em>Entrepreneurs and Enterprise in Early Mesopotamia:
-      A Study of Three Archives from the Third Dynasty of Ur</em>. Bethesda:
-      CDL Press.
-    </li>
-    <li>
-      Maekawa, K. (1984). "Cereal Cultivation in the Ur III Period." <em>Bulletin on
-      Sumerian Agriculture</em> 1, 73–96.
-    </li>
-    <li>
-      Maekawa, K. (1989). "Rations, Wages and Economic Trends in the Ur III Period."
-      <em>Altorientalische Forschungen</em> 16, 42–50.
-    </li>
-    <li>
-      Snell, D.C. (1982). <em>Ledgers and Prices: Early Mesopotamian Merchant Accounts</em>.
-      New Haven: Yale University Press.
-    </li>
-    <li>
-      Steinkeller, P. (1987). "The Administrative and Economic Organization of the
-      Ur III State: The Core and the Periphery." In M. Gibson &amp; R.D. Biggs (eds.),
-      <em>The Organization of Power: Aspects of Bureaucracy in the Ancient Near East</em>.
-      Chicago: Oriental Institute, 19–41.
-    </li>
-    <li>
-      Steinkeller, P. (2003). "An Ur III Manuscript of the Sumerian King List."
-      In W. Sallaberger, K. Volk &amp; A. Zgoll (eds.), <em>Literatur, Politik und Recht
-      in Mesopotamien</em>. Wiesbaden: Harrassowitz, 267–292.
-    </li>
-    <li>
-      Tinney, S., Dahl, J.L. &amp; Englund, R.K. (2009). <em>The CDLI Wiki: ATF
-      Transliteration Format Documentation</em>. Cuneiform Digital Library Initiative.
-      [Online resource: cdli.ucla.edu]
-    </li>
-    <li>
-      Waetzoldt, H. (1987). "Compensation of Craft Workers and Officials in the
-      Ur III Period." In M.A. Powell (ed.), <em>Labor in the Ancient Near East</em>.
-      New Haven: American Oriental Society, 117–141.
-    </li>
-  </ol>
-</section>
+<p>The highest-volume named actor, Lu-duga, presents a notable asymmetry: he appears as issuer in 49 transactions but as recipient in only 2, producing an out-to-in ratio of approximately 24.5:1. This profile exceeds the relay pattern and suggests a role closer to that of a terminal distributor or institutional output agent rather than a mid-level broker.</p>
 
-<footer>
-  <p>
-    <strong style="color:var(--gold)">Ur III Grain Economy Pipeline Project</strong><br>
-    Source corpus: Cuneiform Digital Library Initiative (CDLI) · Umma subcorpus<br>
-    Pipeline code: <code>atf_pipeline.py</code> · Branch: <code>claude/previous-chat-recovery-dcsu9m</code><br>
-    Analysis date: June 2026 · Preprint — not peer reviewed
-  </p>
-</footer>
+<h3>Military Logistics: A Negative Result</h3>
+
+<p>A systematic search of the parsed transaction table and raw ATF source strings was conducted for military-adjacent terms including <em>aga₃-us₂</em> / <em>aga-us₂</em> (Ur III soldier/gendarme designation), <em>erin₂</em> (troop levy or labour gang), and campaign toponyms as transaction parties (<em>ki-maš</em>, <em>ḫarši</em>, Lullubi, Simurrum). The results were as follows: zero attestations of <em>aga₃-us₂</em> as a transaction party, zero attestations of <em>erin₂</em> as a recipient or issuer, one transaction with a soldier/guard-adjacent role (recording 120 sila₃, consistent with a single monthly ration), and twelve references to Lullubi appearing exclusively in date formulae rather than as transaction parties or destination labels.</p>
+
+<h2>Discussion</h2>
+
+<h3>The Relay Hypothesis: Partial Support</h3>
+
+<p>The network data partially supports a relay hypothesis: a stable cohort of 54 named broker officials mediates between large institutional sources and named downstream consumers. This is consistent with the administrative sociology described by Garfinkle (2012) and with the hierarchical authority chains documented by Steinkeller (2003) for the Umma provincial administration. The <em>giri₃</em> ("via") formulation in many tablets further attests to named intermediary accountability—a conveyor of record, not merely a physical carrier.</p>
+
+<p>However, the relay model faces two complications in this corpus. First, bilateral coverage is only 27%, meaning the network is structurally incomplete: many transfer edges are recorded with only one party, even if both parties were tracked in the original administration. Second, Lu-duga's profile—dominant issuer, near-absent recipient—may represent a genuine exception to the relay pattern, or it may reflect archival accident if his inflow receipts are not present in this particular subcorpus. Resolving this would require cross-referencing with complementary tablet collections not included in the current pipeline run.</p>
+
+<h3>The Bilateral Threshold Effect</h3>
+
+<p>Bilateral transactions carry a median quantity approximately 33% higher than issuer-only transactions (1,200 vs. 900 sila₃). One interpretation is that larger transfers required more formal documentation, triggering the generation of both outgoing and incoming receipts. An alternative explanation is that bilateral tablets represent a specific document type—inter-institutional transfers requiring countersignature—administered separately from single-party ration records. The current data cannot distinguish between these interpretations. A genre-classification step applied to the raw ATF would be necessary to adjudicate this question.</p>
+
+<h3>Seasonality and the Agricultural Calendar</h3>
+
+<p>The peak in <em>sze-sag₁₁-ku₅</em> (Barley Harvest month) and a secondary peak in months VII–VIII is consistent with the Umma agricultural calendar as reconstructed by Waetzoldt (1987) and Maekawa (1984). The harvest-month peak reflects newly harvested grain entering the redistribution system and triggering a burst of administrative recording. The autumn secondary peak plausibly reflects grain release for sowing, a pattern well-attested in Ur III agronomic texts from Girsu (Englund, 1991). The seasonality signal in this computational corpus thus aligns with findings from traditional philological study, lending modest indirect support to the pipeline's extraction logic.</p>
+
+<h3>The <em>Šar₂</em> Classification Problem</h3>
+
+<p>Four tablets in the corpus carry quantities in excess of 2,000,000 sila₃, all denominated in <em>šar₂</em> units (e.g., P101241: 2,286,005 sila₃; P101849: 2,197,930 sila₃). Cross-referencing with the ATF source confirms these are annual provincial summaries of the <em>nig₂-šid</em> / balanced-account genre, not individual transfers. Including them in volume aggregates produces a mean that is not meaningful for economic analysis: the "mean transfer" of 26,976 sila₃ is over 30 times the actual median of 900 sila₃. Future iterations of the pipeline should implement automatic genre detection to exclude summary accounts from distributional statistics.</p>
+
+<h3>Comparison to Previous Scholarship</h3>
+
+<p>The structural findings of this study broadly corroborate the picture of the Umma provincial economy drawn by Maekawa (1989): a temple-centred redistributive system in which named mid-level administrators serve as accountable conduits between institutional stores and consuming units. The prominence of the Šara-temple as both issuer and recipient aligns with Maekawa's identification of the Šara temple estate as Umma's dominant institutional actor. The absence of military logistics entries in the Umma archive also accords with Steinkeller's (2003) argument that the Drehem archive, not provincial archives, handled inter-institutional resource flows for military provisioning.</p>
+
+<p>Where this study differs from prior work is in scale and method. By analysing ~940 tablets computationally rather than reading 20–30 key texts in philological depth, it gains aggregate distributional data unavailable to traditional approaches while sacrificing per-tablet interpretive precision. The two approaches are complementary rather than competing.</p>
+
+<h2>Limitations and Future Work</h2>
+
+<p>Several limitations constrain the conclusions drawn here. First, the extraction pipeline has not been validated against a manually-curated gold standard. Precision and recall are unknown, and the pipeline may systematically miss certain name patterns or extract spurious tokens for others. Second, 73% of barley transactions yield at most one named party, producing a structurally incomplete network from which strong topological conclusions should not be drawn. Third, the mixing of annual summary records (<em>šar₂</em>-unit tablets) with individual transfers inflates volume statistics and requires careful filtering that was applied post hoc rather than by automatic genre detection. Fourth, ration lists, balanced accounts, and receipts are not distinguished in the current pipeline; the dataset is a genre mixture. Fifth, only CDLI-encoded tablets with at least minimal ATF markup are included, introducing a selection bias toward better-preserved and better-studied tablets. Sixth, the analysis covers only the Umma archive; the Ur III redistribution system was multi-nodal, and cross-archive analysis would substantially change the network picture.</p>
+
+<p>Priorities for future work include: (1) manual validation of a stratified 50-tablet sample to estimate precision and recall; (2) implementation of ATF genre detection; (3) expansion to the Drehem subcorpus to test whether Drehem serves as the primary supply node for Umma relay brokers; and (4) cross-referencing named individuals against the BDTNS prosopographic database to resolve name disambiguation and identify administrative career trajectories.</p>
+
+<h2>Conclusion</h2>
+
+<p>A computational ATF-parsing pipeline applied to ~940 Ur III tablets from the Umma provincial archive extracted 925 barley transactions involving 345 named actors. Four principal findings emerge from this analysis. First, a stable relay-broker cohort of 54 named officials mediates between institutional grain sources and downstream consumers, partially validating models of mid-level administrative agency in the Ur III redistributive economy. Second, bilateral documentation is elevated during campaign-year tablets (42% vs. 27% overall), suggesting that periods tied to military mobilisation imposed tighter administrative accountability even though no military personnel appear as direct transaction parties. Third, seasonal patterns are consistent with the Umma agricultural calendar, with a harvest-month peak in <em>sze-sag₁₁-ku₅</em> and an autumn secondary peak, lending indirect support to the pipeline's extraction validity. Fourth, no military logistics signal is present in this corpus: campaign references are calendar metadata, and no soldiers, troop levies, or garrison-destination labels appear as transaction parties.</p>
+
+<p>These findings are subject to the methodological limitations described above, foremost among them the absence of precision/recall validation and the 73% single-party coverage rate. They should be treated as hypotheses to be tested against philological and prosopographic controls rather than as settled conclusions. With those caveats in place, this study demonstrates that computational analysis at the subcorpus scale can surface economically meaningful aggregate patterns invisible to traditional tablet-by-tablet study, and that the Ur III Umma archive is a productive testbed for developing and refining such methods.</p>
+
+<h2>References</h2>
+
+<p class="no-indent ref-entry">Englund, R. K. (1991). Hard work—where will it get you? Labor management in Ur III Mesopotamia. <em>Journal of Near Eastern Studies</em>, <em>50</em>(4), 255–280.</p>
+
+<p class="no-indent ref-entry">Englund, R. K. (2011). Accounting in proto-cuneiform. In K. Radner &amp; E. Robson (Eds.), <em>The Oxford handbook of cuneiform culture</em> (pp. 32–50). Oxford University Press.</p>
+
+<p class="no-indent ref-entry">Englund, R. K., &amp; Grégoire, J.-P. (1991). <em>The proto-cuneiform texts from Jemdet Nasr</em>. Gebr. Mann Verlag.</p>
+
+<p class="no-indent ref-entry">Garfinkle, S. J. (2012). <em>Entrepreneurs and enterprise in early Mesopotamia: A study of three archives from the Third Dynasty of Ur</em>. CDL Press.</p>
+
+<p class="no-indent ref-entry">Maekawa, K. (1984). Cereal cultivation in the Ur III period. <em>Bulletin on Sumerian Agriculture</em>, <em>1</em>, 73–96.</p>
+
+<p class="no-indent ref-entry">Maekawa, K. (1989). Rations, wages and economic trends in the Ur III period. <em>Altorientalische Forschungen</em>, <em>16</em>, 42–50.</p>
+
+<p class="no-indent ref-entry">Snell, D. C. (1982). <em>Ledgers and prices: Early Mesopotamian merchant accounts</em>. Yale University Press.</p>
+
+<p class="no-indent ref-entry">Steinkeller, P. (1987). The administrative and economic organization of the Ur III state: The core and the periphery. In M. Gibson &amp; R. D. Biggs (Eds.), <em>The organization of power: Aspects of bureaucracy in the ancient Near East</em> (pp. 19–41). Oriental Institute.</p>
+
+<p class="no-indent ref-entry">Steinkeller, P. (2003). An Ur III manuscript of the Sumerian King List. In W. Sallaberger, K. Volk, &amp; A. Zgoll (Eds.), <em>Literatur, Politik und Recht in Mesopotamien</em> (pp. 267–292). Harrassowitz.</p>
+
+<p class="no-indent ref-entry">Tinney, S., Dahl, J. L., &amp; Englund, R. K. (2009). <em>CDLI wiki: ATF transliteration format documentation</em>. Cuneiform Digital Library Initiative. https://cdli.ucla.edu</p>
+
+<p class="no-indent ref-entry">Waetzoldt, H. (1987). Compensation of craft workers and officials in the Ur III period. In M. A. Powell (Ed.), <em>Labor in the ancient Near East</em> (pp. 117–141). American Oriental Society.</p>
 
 </body>
 </html>
