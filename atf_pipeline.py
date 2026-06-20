@@ -341,7 +341,7 @@ class ATFExtractor:
       Fractional coefficients (1/2(disz) etc.) are handled.
     """
 
-    _RE_LINENUM   = re.compile(r"^\d+[a-z]?[!?*'ʼ]?\.\s*(?:[a-z]\.\s*)?")
+    _RE_LINENUM   = re.compile(r"^\d+(?:-\d+)?[a-z]?[!?*'ʼ]?\.\s*(?:[a-z]\.\s*)?")
 
     # CDLI metrological tokens: integer and fractional coefficients.
     # Unit names can contain an apostrophe (gesz'u = 600-gur), so [\w']+ is used
