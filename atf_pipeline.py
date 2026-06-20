@@ -1545,6 +1545,25 @@ class ATFExtractor:
     ) -> List[Transaction]:
         """Extract all transactions from a tablet's ATF lines."""
         results: List[Transaction] = []
+        # Skip non-administrative texts: lexical lists, bilingual glossaries,
+        # royal inscriptions, literary/metrological texts, and non-Sumerian
+        # tablets — these use formats incompatible with the Ur III admin parser.
+        for l in lines[:10]:
+            s = l.strip()
+            if re.match(r"#atf:\s+use\s+(lexical|bilingual|literary|emesal)", s, re.I):
+                return []
+            if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", s, re.I):
+                return []
+        # Require at least one administrative keyword before attempting extraction.
+        # Metrological tables and lexical lists have numbers but no admin vocabulary.
+        _ADMIN_KW = re.compile(
+            r"\bszu\s+ba-ti\b|\bba-zi\b|\bi3-dab5\b|\bki\s+\S+-ta\b"
+            r"|\bszunigin\b|\bengar\b|\bszabra\b|\bmu\s+\S+-ma\b"
+            r"|\bgiri3\b|\bba-an-szum2?\b",
+            re.I,
+        )
+        if not any(_ADMIN_KW.search(l) for l in lines):
+            return []
         tablet_type = self._classify_tablet(lines)
 
         # Allocation tablets: only run the allocation pass.
