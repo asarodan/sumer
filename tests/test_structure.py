@@ -98,3 +98,89 @@ class TestBasicTransaction:
 
     def test_empty_tablet_no_transactions(self, ext):
         assert ext.extract_transactions(_tablet("1. [...]"), "P900000") == []
+
+
+class TestSzuniginNotDoubleCountedInRecords:
+    """szunigin total must not produce an extra entry in the records path."""
+
+    def _entries(self, ext, body):
+        summary = ext.extract_records(_tablet(*body), "P900000")
+        return [e for rec in summary.records for e in rec.entries if e.quantity]
+
+    def test_szunigin_excluded_from_records(self, ext):
+        # Two data lines → two entries; the szunigin is the sum, not a third entry.
+        entries = self._entries(ext, [
+            "1. 3(asz) sze gur",
+            "2. 4(asz) sze gur",
+            "3. szunigin 7(asz) sze gur",
+        ])
+        qtys = sorted(e.quantity for e in entries)
+        # Should be [900, 1200] not [900, 1200, 2100]
+        assert qtys == [900.0, 1200.0]
+
+    def test_szunigin_excluded_not_splitting_total(self, ext):
+        # Verify total qty sums to data lines, NOT data+total
+        entries = self._entries(ext, [
+            "1. 2(asz) sze gur",
+            "2. szunigin 2(asz) sze gur",
+        ])
+        assert sum(e.quantity for e in entries) == 600.0  # one entry only
+
+
+class TestYieldLedger:
+    """Yield-balance ledger tablets must be classified correctly."""
+
+    def test_yield_ledger_type(self, ext):
+        # Tablet with sze-bi + mu-kux + la2-ia3 → yield_ledger type
+        lines = _tablet(
+            "1. a-sza3 ur-nanna",
+            "2. 5(asz) GAN2",               # field area (suppressed)
+            "3. sze-bi 1(szar2) gur",        # expected yield (suppressed)
+            "4. mu-kux 5(gesz2) 4(asz) gur", # actual delivery (counted)
+            "5. la2-ia3 2(gesz2) gur",       # deficit (suppressed)
+        )
+        summary = ext.extract_records(lines, "P900000")
+        assert summary.tablet_type == "yield_ledger"
+
+    def test_yield_ledger_only_counts_delivery(self, ext):
+        # Only the mu-kux quantity should appear; sze-bi and la2-ia3 suppressed.
+        # mu-kux itself is now an admin keyword so no additional trigger needed.
+        lines = _tablet(
+            "1. a-sza3 ur-nanna",
+            "2. sze-bi 1(szar2) gur",         # expected: 1,080,000 sila3 — suppressed
+            "3. mu-kux 5(gesz2) 4(asz) gur",  # delivered: 90,000 + 1,200 = 91,200 sila3
+            "4. la2-ia3 2(gesz2) gur",         # deficit 36,000 sila3 — suppressed
+            "5. iti sze-kin-ku5",
+            "6. mu szul-gi lugal uri5{ki}-ma",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 91_200.0 in qtys           # mu-kux delivery counted
+        assert 1_080_000.0 not in qtys   # sze-bi suppressed
+        assert 36_000.0 not in qtys      # la2-ia3 deficit suppressed
+
+
+class TestBalanceLinesInContext:
+    """Balance-line filtering must work inside full tablet extraction."""
+
+    def test_la2_ia3_not_a_transaction(self, ext):
+        lines = _tablet(
+            "1. 3(asz) sze gur",
+            "2. ki lugal-ta",
+            "3. la2-ia3 1(asz) gur",  # deficit — must not generate a tx
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        assert all(t.quantity == 900.0 for t in txs)
+
+    def test_sza3_bi_ta_not_a_transaction(self, ext):
+        lines = _tablet(
+            "1. 4(asz) sze gur ki lugal-ta szu ba-ti",
+            "2. sza3-bi-ta 4(asz) gur",   # carry-forward — must not generate a tx
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 1200.0 in qtys
+        assert qtys.count(1200.0) == 1  # not doubled by sza3-bi-ta

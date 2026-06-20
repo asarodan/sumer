@@ -613,7 +613,7 @@ class StructureMixin:
         _ADMIN_KW = re.compile(
             r"\bszu\s+ba-ti\b|\bba-zi\b|\bi3-dab5\b|\bki\s+\S+-ta\b"
             r"|\bszunigin\b|\bengar\b|\bszabra\b|\bmu\s+\S+-ma\b"
-            r"|\bgiri3\b|\bba-an-szum2?\b",
+            r"|\bgiri3\b|\bba-an-szum2?\b|\bmu-kux\b",
             re.I,
         )
         if not any(_ADMIN_KW.search(l) for l in lines):
