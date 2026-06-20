@@ -19,10 +19,12 @@ class EntityMixin:
             if len(cand) >= 2:
                 return cand
 
-        # B: ki NAME (abbreviated ablative, line-end, nothing after name)
+        # B: ki NAME (abbreviated ablative, no -ta) — strip any trailing debit
+        # verb ("ki {d}iszkur-illat ba-zi") so it isn't glued onto the name.
         m = self._RE_KI_ONLY.match(clean)
         if m:
-            cand = self._clean_atf_name(m.group(1))
+            raw = self._RE_ISSUER_TRAIL.sub("", m.group(1)).strip()
+            cand = self._clean_atf_name(raw)
             # Reject known non-ablative ki compounds (threshing floor su7, geographic masz)
             if (len(cand) >= 2
                     and not cand.startswith(("su7", "masz", "en-gi"))

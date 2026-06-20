@@ -158,7 +158,20 @@ class ExtractorBase:
 
     # --------------- Issuer patterns ---------------
     # A/B: ki NAME-ta or ki NAME at line start
-    _RE_KI_TA    = re.compile(r"^ki#?\s+(.+?)-ta(?:\s|$)(?:#.*)?$")
+    # The ablative -ta is the right edge of the name; anything after it is the
+    # debit clause ("ki na-sa6-ta ba-zi" = "expended from Nasa"), so allow — and
+    # discard — a trailing verb phrase rather than failing to match it.  The
+    # non-greedy (.+?) still stops at the first -ta that is followed by a space
+    # or end, so a name carrying an internal -ta- ("in-ta-e3-a-ta") is kept whole.
+    _RE_KI_TA    = re.compile(r"^ki#?\s+(.+?)-ta(?:\s+.*)?$")
+    # Trailing administrative verb/formula that follows an abbreviated ablative
+    # issuer name (pattern B has no -ta to bound the name):
+    #   "ki {d}iszkur-illat ba-zi" → issuer is {d}iszkur-illat, ba-zi is the verb.
+    # Note: this only strips a verb that trails a *separate* name word; "ki
+    # ba-zi-ta" (the person Bazi) is captured by pattern A as "ba-zi" untouched.
+    _RE_ISSUER_TRAIL = re.compile(
+        r"\s+(?:ba-(?:an-)?zi(?:-ge)?|i3-dab5|in-dab5|s[zž]u\s+ba-ti)\s*$", re.I
+    )
     _RE_KI_ONLY  = re.compile(r"^ki#?\s+([a-z{}\-0-9\[\]]+(?:\s+[a-z{}\-0-9\[\]]+)*)\s*(?:#.*)?$", re.I)
     # C: NAME ki at line end (reject {ki} determinative)
     _RE_KI_ABL   = re.compile(r"^(.*?)\s+ki(?:2)?\s*(?:#.*)?$")
