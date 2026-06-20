@@ -36,6 +36,19 @@ class TestWeights:
         assert unit == "gin2"
 
 
+class TestLaborLines:
+    def test_u4_a_locative_stripped(self, ext):
+        # "N gurusz u4 1-a M sila3" — the "1-a" is a locative day-count
+        # (not a ration) and must not inflate the M sila3 grain total.
+        q, u = ext.extract_quantity("1(disz) gurusz u4 1(disz)-a 5(disz) sila3")
+        assert q == 5.0 and u == "sila3"
+
+    def test_u4_kam_ordinal_stripped(self, ext):
+        # "u4 N-kam" = "on the Nth day" — ordinal suffix must also be stripped.
+        q, u = ext.extract_quantity("5(disz) geme2 u4 1(disz)-kam 10(disz) sila3")
+        assert q == 10.0 and u == "sila3"
+
+
 class TestAnimalsAndNonGrain:
     def test_animal_head(self, ext):
         assert ext.extract_quantity("5(disz) gu4") == (5.0, "head")

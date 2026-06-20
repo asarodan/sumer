@@ -223,9 +223,11 @@ class QuantityMixin:
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)
             if len(parts) > 1:
-                # Drop the work-period clause "u4 N(unit)-sze3" before grain scan.
+                # Drop the work-period clause "u4 N(unit)[-sze3/-a/-kam]" before
+                # grain scan.  The count token (N days) must not be summed into
+                # grain.  Suffixes: -sze3 (terminative), -a (locative), -kam (ordinal).
                 remainder = re.sub(
-                    r"\bu4\s+\d+\([^)]+\)(?:-sze3)?\b", "", parts[-1]
+                    r"\bu4\s+\d+(?:/\d+)?\([^)]+\)(?:-(?:sze3|a|kam))?\b", "", parts[-1]
                 )
                 q, u = self._parse_grain(remainder)
                 if q is not None:
