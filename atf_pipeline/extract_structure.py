@@ -643,7 +643,36 @@ class StructureMixin:
             except Exception as exc:
                 logger.warning("Error in labor pass for %s: %s", tablet_id, exc)
 
+        self._propagate_tablet_commodity(results)
         return results
+
+    @staticmethod
+    def _propagate_tablet_commodity(results: List[Transaction]) -> None:
+        """
+        Fill in commodity for bare grain-capacity lines from tablet context.
+
+        Many Ur III accounts name the commodity once (a header total or one
+        disbursement) and then list further amounts as a bare "N gur NAME"
+        with no commodity word; section splits (e.g. at sza3-bi-ta) reset the
+        forward-carried pending commodity, so those lines arrive as None.
+
+        When the whole tablet attests exactly one grain-capacity (sila3)
+        commodity, every bare sila3 line is that commodity, so propagate it.
+        Tablets that interleave two staples (barley + emmer) stay ambiguous
+        and are left untouched rather than guessed.  Archaic (pre-Ur III)
+        tablets are excluded naturally: they carry no Ur-III commodity label,
+        so the attested set is empty and nothing is filled.
+        """
+        seen = {
+            tx.commodity for tx in results
+            if tx.unit == "sila3" and tx.commodity is not None
+        }
+        if len(seen) != 1:
+            return
+        only = next(iter(seen))
+        for tx in results:
+            if tx.unit == "sila3" and tx.commodity is None:
+                tx.commodity = only
 
     def extract_transaction(self, lines: List[str], tablet_id: str) -> Transaction:
         """Single-transaction shim for backward compatibility."""
