@@ -230,3 +230,24 @@ class TestScribalCorrections:
         # "3 ban2 <<3 ban2>> gur" → only 3 ban2 = 30 sila3 (correction discarded).
         q, u = ext.extract_quantity("3(ban2) <<3(ban2)>> gur")
         assert q == 30.0 and u == "sila3"
+
+
+class TestKu3BiSilverNote:
+    """ku3-bi ("its silver [equivalent]") introduces a weight annotation, not grain."""
+
+    def test_standalone_ku3bi_not_grain(self, ext):
+        # "ku3-bi 6(asz) gin2-kam" = "its silver is 6 gin2" — asz here is a
+        # counting unit, NOT the grain-capacity gur-scale unit.  Must not
+        # produce 1800 sila3.
+        assert ext.extract_quantity("ku3-bi 6(asz@c) gin2-kam") == (None, None)
+
+    def test_grain_before_ku3bi_preserved(self, ext):
+        # "N sila3 commodity ku3-bi M gin2" — the grain quantity before the
+        # silver note must still be extracted.
+        q, u = ext.extract_quantity("1(ban2) 8(disz) sila3 lal3 ku3-bi 1(u) 5/6(disz) gin2")
+        assert u == "sila3" and q == 18.0  # 1 ban2 (10) + 8 disz (8)
+
+    def test_pure_ku3bi_line_none(self, ext):
+        # Whole line is just the silver note with no preceding grain quantity.
+        # ku3-bi stripped → empty string → (None, None).
+        assert ext.extract_quantity("ku3-bi 3(disz) 1/2(disz) gin2 5(disz) sze") == (None, None)

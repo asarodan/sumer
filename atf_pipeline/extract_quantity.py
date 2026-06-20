@@ -202,6 +202,15 @@ class QuantityMixin:
         # residuals already embedded in surrounding totals — do not sum them.
         if self._RE_BALANCE_LINE.search(line):
             return None, None
+        # ku3-bi = "its silver [equivalent]" — always introduces a weight note,
+        # never a grain capacity.  Truncate the line at ku3-bi so that
+        # "N sila3 commodity ku3-bi M gin2" returns N sila3, not N + M-derived.
+        # When the entire line is "ku3-bi …", stripping yields an empty string → None.
+        m_ku3bi = re.search(r"\bku3-bi\b", line, re.I)
+        if m_ku3bi:
+            line = line[:m_ku3bi.start()].strip()
+            if not line:
+                return None, None
         # guru7 (granary) lines: "N guru7 QUANTITY gur" — the N before guru7 is
         # the granary count, not part of the grain quantity.  Strip the count and
         # the guru7 word, then parse only the grain portion that follows.
