@@ -44,34 +44,51 @@ _URNAMMA_FRAGS: Dict[int, List[str]] = {
 }
 
 _ŠULGI_FRAGS: Dict[int, List[str]] = {
-    1:  ["lugal-uri5{ki}-ma"],
-    3:  ["en-{d}inanna"],
-    18: ["en-{d}inanna nibru{ki}"],
-    44: ["bad3 mar-tu ba-du3"],
-    48: ["us2-sa ha-ar-szi{ki}"],
-    47: ["ha-ar-szi{ki}"],
-    46: ["us2-sa ki-masz{ki}"],
-    45: ["ki-masz{ki}"],
+    # us2-sa (year-after) entries BEFORE their base year so first-match-wins
+    # correctly assigns the more specific "year after" label.
+    44: ["us2-sa", "bad3 ma-da"],      # year after border wall (corpus: us2-sa...bad3 ma-da mu-du3)
+    18: ["en {d}inanna", "ba-hun"],    # en of Inanna installed (check before less-specific Y3)
+    48: ["us2-sa", "ha-ar-szi{ki}"],   # year after Harši campaign
+    46: ["us2-sa", "ki-masz{ki}"],     # year after Kimaš campaign
+    # base years follow their us2-sa counterparts
+    2:  ["szul-gi-iri-mu-sze3"],       # "my city" year (corpus: 15+ occ of iri-mu compound)
+    3:  ["en {d}inanna", "i3-pa3"],    # en of Inanna chosen by oracle
+    23: ["ur-bi2-lum", "si-mu-ru-um", "kar2-har"],  # eastern campaign: Urbi'um/Lulubum/Simurrum/Karhar
+    33: ["dingir kalam-ma", "sza-asz-ru"],  # "god of the land" destroyed Šašrum
+    43: ["bad3 ma-da"],                # border wall built (after Y44 to catch plain vs us2-sa)
+    45: ["ki-masz{ki}"],               # Kimaš campaign
+    47: ["ha-ar-szi{ki}"],             # Harši campaign
 }
 
 _AMARSUEN_FRAGS: Dict[int, List[str]] = {
-    1:  ["uri2{ki}-a"],
-    2:  ["en-{d}inanna"],
-    6:  ["sza-asz-szu{ki}"],
-    9:  ["hu-uh2-nu-ri{ki}"],
+    # us2-sa entries before base years
+    3:  ["us2-sa", "ur-bi2-"],             # year after Urbilum; ur-bi2- prefix covers all spelling variants
+    7:  ["us2-sa", "sza-asz", "mu-hul"],   # year after Šašrum; sza-asz covers all spelling variants
+    # base years
+    2:  ["ur-bi2-"],                       # Urbilum destroyed; ur-bi2- matches lum/i3-lum/ba-hul variants
+    4:  ["gu-za", "{d}en-lil2", "in-dim2"],  # made throne for Enlil (corpus: 17 occ)
+    6:  ["sza-asz", "mu-hul"],             # Šašrum destroyed; covers sza-asz-ru{ki} and sza-asz-szu2-ru-um variants
+    8:  ["en eridu{ki} ba-hun"],           # en of Eridu installed (corpus: 200+ occ via en-nun-e formula)
+    9:  ["hu-uh2-nu-ri{ki}"],              # Huhunuri campaign
 }
 
 _ŠUSUEN_FRAGS: Dict[int, List[str]] = {
-    1:  ["ma2 {d}en-zu"],
-    2:  ["szu-{d}suen bad3"],
-    3:  ["szu-{d}suen bad3"],
-    4:  ["za-ab-sza-li{ki}"],
-    5:  ["en {d}nanna"],
+    # us2-sa entries before their base years
+    3:  ["us2-sa", "bad3 mar-tu"],     # year after Martu wall (corpus: 9+ occ)
+    9:  ["us2-sa", "ma2-gur8"],       # year after great boat (covers both ma2-gur8-mah and ma2-gur8 mah)
+    # base years
+    2:  ["bad3 mar-tu"],               # Martu wall "Muriq-Tidnim" built (corpus: 66+49 occ)
+    4:  ["za-ab-sza-li{ki}"],          # Zabšali destroyed (corpus: 365 occ)
+    5:  ["si-ma-num2{ki}"],            # Simanam destroyed (corpus: 30+ occ)
+    6:  ["e2 {d}szara2", "umma{ki}"],  # Šara temple at Umma built (corpus: 122 occ)
+    7:  ["na-ru2-a"],                  # great stele (na-ru2-a-mah / na-ru2-a mah space variant)
+    8:  ["ma2-gur8"],                  # great boat (ma2-gur8-mah / ma2-gur8 mah space variant)
 }
 
 _IBBISUEN_FRAGS: Dict[int, List[str]] = {
-    1:  ["i-bi2-{d}suen lugal"],
-    2:  ["ibbi-{d}suen lugal"],
+    2:  ["si-mu-ru-um{ki}", "mu-hul"], # Simurrum destroyed (corpus: 51+35 occ)
+    3:  ["dalla mu-un-na-an-e3-a"],    # Nanna's heart displayed (corpus: 33 occ)
+    4:  ["nun-me-te-an-na"],           # built Nun-me-te-anna for Nanna (corpus: 13 occ)
 }
 
 KING_YEAR_MAP: Dict[str, Tuple[str, Dict[int, List[str]]]] = {
