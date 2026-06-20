@@ -20,6 +20,10 @@ class ExtractorBase:
     # Unit names can contain an apostrophe (gesz'u = 600-gur), so [\w']+ is used
     # rather than \w+[2']? which would stop at the apostrophe and miss the trailing u.
     _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\(([\w'@]+)\)")
+    # A whitespace token that *begins* with a CDLI quantity (allowing a leading
+    # "[" for bracket damage). Used to find allotment boundaries when splitting a
+    # multi-commodity line into separate entries.
+    _RE_QTY_TOKEN = re.compile(r"^\[?\d+(?:/\d+)?\([\w'@]+\)")
     # Plain numeric quantity ("100 gur", "3.5 sila3").  The negative lookbehind
     # blocks digits that are glued to a letter — Sumerian sign readings carry a
     # trailing index number (e3, du11, ku3, gesz2, KWU147…), and without this a

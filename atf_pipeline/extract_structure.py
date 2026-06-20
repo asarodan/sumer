@@ -182,10 +182,17 @@ class StructureMixin:
             if c:
                 pending_commodity = c
 
-            # Quantity: collected into a list, not capped at one.
-            q, u = self.extract_quantity(clean)
-            if q is not None:
-                this_comm = c or pending_commodity
+            # Quantity: a single ATF line can pack several allotments
+            # ("5 sila3 beer 5 gin2 onion"); split them so capacity and weight
+            # goods become separate entries rather than one conflated total.
+            # Single-commodity lines return one segment and behave as before.
+            segs = self._segment_allotments(clean)
+            for seg in segs:
+                q, u = self.extract_quantity(seg)
+                if q is None:
+                    continue
+                seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
+                this_comm = seg_c or pending_commodity
                 if u == "head" and this_comm is None:
                     this_comm = "animal"
                 qty_entries.append((q, u, this_comm))

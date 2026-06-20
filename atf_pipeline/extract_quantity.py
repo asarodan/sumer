@@ -178,6 +178,36 @@ class QuantityMixin:
             return None, None
         return self._parse_grain(line)
 
+    def _segment_allotments(self, line: str) -> list:
+        """
+        Split a line that packs several commodity allotments into one segment
+        each, e.g.
+            "5(disz) sila3 kasz 5(disz) sila3 ninda 5(disz) gin2 szum2"
+        becomes three segments (beer / bread / onion), so capacity and weight
+        goods are not summed into a single conflated total.
+
+        A new allotment begins at a quantity token that follows a token already
+        carrying a commodity word.  Lines with zero or one commodity return the
+        original string unchanged, so single-commodity extraction is identical.
+        """
+        toks = line.split()
+        bounds = []
+        seen = False
+        for i, t in enumerate(toks):
+            if seen and self._RE_QTY_TOKEN.match(t):
+                bounds.append(i)
+                seen = False
+            if self._detect_commodity(t):
+                seen = True
+        if not bounds:
+            return [line]
+        segs, prev = [], 0
+        for b in bounds:
+            segs.append(" ".join(toks[prev:b]))
+            prev = b
+        segs.append(" ".join(toks[prev:]))
+        return segs
+
     def _qty_from_u_sze(self, u_count: str) -> float:
         """N(u) sze → N×10 sila3 (small ration distribution format)."""
         return int(u_count) * 10.0
