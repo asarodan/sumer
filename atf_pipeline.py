@@ -420,6 +420,8 @@ class ATFExtractor:
         r"\bsiki\b|\{gesz\}|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
         r"|\besze3\b|\biku\b|\bGAN2\b"
         r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
+        r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
+        r"|\bku6\b"        # ku6 = fish — never a grain context
         r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b",  # livestock compounds
         re.I,
     )
@@ -706,6 +708,16 @@ class ATFExtractor:
                         factor = 10.0              # 10 gin2
                     elif bare_gin2 and ul == "disz":
                         factor = 1.0               # 1 gin2
+                elif not grain_ind and not bare_gur and (bare_sila3 or bare_gin2):
+                    # Bare sila3/gin2 context without grain-indicator sub-units
+                    # means the sexagesimal counters are pure counts in those
+                    # units (e.g. soup: "9(szar2)…sila3 tu7" = 9×3600 sila3;
+                    # silver: "2(szar2)…gin2" = 2×3600 gin2).
+                    # Use LABOR_CONV (szar2=3600, gesz'u=600, gesz2=60) instead
+                    # of the gur-scaled GRAIN_CONV (szar2=1,080,000 sila3).
+                    labor_f = self._LABOR_CONV.get(ul)
+                    if labor_f is not None:
+                        factor = labor_f
                 if factor is None:
                     continue
                 if "/" in num_s:
