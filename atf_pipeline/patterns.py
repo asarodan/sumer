@@ -138,7 +138,9 @@ class ExtractorBase:
     _RE_OIL    = re.compile(
         r"\bi3-gesz\b|\bsze-gesz-i3\b|\bi3-szah2\b|\bi3-udu\b|\boil\b", re.I
     )
-    _RE_SILVER = re.compile(r"\bku3-babbar\b|\bsilver\b", re.I)
+    # ku3-bi = "its silver (value)" — a silver equivalent note, e.g.
+    # "ku3-bi N gin2 M sze" where sze is the barleycorn weight sub-unit.
+    _RE_SILVER = re.compile(r"\bku3-babbar\b|\bku3-bi\b|\bsilver\b", re.I)
     # Operation-description phrases that contain "sze" but are NOT commodity markers:
     # "sze gesz ra(-a)" = threshing, "sze de2-a" = pouring grain, "sze e3" = grain outgo
     # "sze ur5-ra" = grain loan formula

@@ -45,6 +45,52 @@ class QuantityMixin:
                         return float(n) / float(d), "head"
                     return float(coeff_s), "head"
                 return None, None
+
+            # Mixed capacity + weight line, e.g.
+            #   "5(disz) sila3 kasz 5(disz) gin2 szum2"  (5 sila3 beer + 5 shekels onion)
+            # The gin2 tokens are a separate weight allotment: they must not be
+            # summed into the grain total, nor flip the whole line's unit to gin2
+            # (which mislabels the capacity commodity as a weight).  Bucket each
+            # token by the unit word that follows it and keep only the capacity
+            # (sila3-scale) portion.  Guarded to lines that genuinely mix the two
+            # systems so pure-weight (silver/oil) and pure-grain lines are
+            # untouched.
+            if bare_gin2 and (grain_ind or bare_gur or bare_sila3):
+                cap_total = 0.0
+                matches = list(self._RE_QTY_CDLI.finditer(line))
+                for i, mt in enumerate(matches):
+                    ul = mt.group(2).split("@")[0].lower()
+                    seg_end = matches[i + 1].start() if i + 1 < len(matches) else len(line)
+                    ctx = line[mt.end():seg_end]
+                    # Weight token: the first unit word after it is gin2 (and the
+                    # token is not itself a grain-capacity unit like asz/barig).
+                    gpos = ctx.find("gin2")
+                    smatch = self._RE_BARE_SILA3.search(ctx)
+                    spos = smatch.start() if smatch else -1
+                    if (ul not in self._GRAIN_IND
+                            and gpos != -1 and (spos == -1 or gpos < spos)):
+                        continue
+                    factor = self._GRAIN_CONV.get(ul)
+                    if factor is None:
+                        if bare_gur and ul == "u":
+                            factor = 10.0 * 300.0
+                        elif ul == "u":
+                            factor = 10.0
+                        elif ul == "disz":
+                            factor = 1.0
+                    if factor is None:
+                        continue
+                    num_s = mt.group(1)
+                    if "/" in num_s:
+                        n, d = num_s.split("/", 1)
+                        coeff = float(n) / float(d)
+                    else:
+                        coeff = float(num_s)
+                    cap_total += coeff * factor
+                if cap_total > 0:
+                    return cap_total, "sila3"
+                # No capacity content resolved → fall through to the weight path.
+
             total = 0.0
             first_unit = cdli[0][1].lower()
             for num_s, unit in cdli:
@@ -157,7 +203,23 @@ class QuantityMixin:
 
     def _detect_commodity(self, line: str) -> Optional[str]:
         if self._RE_OP_DESC.search(line):  return None
-        if self._RE_BARLEY.search(line):  return "barley"
+        # Silver/gold are tested before barley: on a precious-metal line
+        # ("ku3-bi N gin2 M sze") the sze is the barleycorn weight sub-unit
+        # (1/180 shekel), not the barley commodity, so barley must not win.
+        if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
+        if self._RE_SILVER.search(line):  return "silver"
+        if self._RE_BARLEY.search(line):
+            # "sze" alongside a gin2/ma-na weight but no capacity unit is the
+            # barleycorn weight sub-unit (1/180 shekel), not barley grain.
+            # Such a line weighs metal: attribute it to the metal if named.
+            if ((self._RE_BARE_GIN2.search(line) or re.search(r"\bma-na\b", line, re.I))
+                    and not self._RE_BARE_SILA3.search(line)
+                    and not self._RE_BARE_GUR.search(line)
+                    and not re.search(r"\b(?:asz|barig|ban2)\b", line, re.I)):
+                if re.search(r"\bku3\b|\bku3-", line, re.I): return "silver"
+                if re.search(r"\buruda\b", line, re.I):      return "copper"
+                return None
+            return "barley"
         if self._RE_EMMER.search(line):   return "emmer"
         if self._RE_WHEAT.search(line):   return "wheat"
         if self._RE_DATES.search(line):   return "dates"
@@ -168,8 +230,6 @@ class QuantityMixin:
         # like i3-dab5 (received), i3-li2 (name), by requiring whitespace/end after
         if self._RE_OIL.search(line):     return "oil"
         if re.search(r"(?:^|\s)i3(?:-nun)?(?=\s|$)", line, re.I): return "oil"
-        if self._RE_SILVER.search(line):  return "silver"
-        if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
         # guru7 = granary/grain-silo.  In multi-commodity granary accounts the
         # commodity word on a guru7 subtotal line is sometimes broken off, and
         # without an explicit fallback the entry inherits a stale pending
