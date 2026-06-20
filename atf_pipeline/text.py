@@ -10,8 +10,14 @@ from atf_pipeline.patterns import ExtractorBase
 class TextMixin:
     """Low-level string normalisation shared across all extraction passes."""
 
+    # Scribal corrections in CDLI ATF: <<deleted text>> marks text the scribe
+    # wrote and then crossed out.  It must be removed before quantity parsing
+    # so that the original (wrong) tokens are not summed alongside the correction.
+    _RE_SCRIBAL_CORR = re.compile(r"<<[^>]*>>")
+
     def _strip_linenum(self, line: str) -> str:
-        return self._RE_LINENUM.sub("", line).strip()
+        line = self._RE_LINENUM.sub("", line).strip()
+        return self._RE_SCRIBAL_CORR.sub("", line).strip()
 
     @staticmethod
     def _is_content(line: str) -> bool:

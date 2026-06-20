@@ -194,6 +194,8 @@ class QuantityMixin:
         On mixed labor/grain lines ("N gurusz u4 N-sze3 N(asz) sze gur"),
         the labor prefix is stripped and grain is parsed from the remainder.
         """
+        # Strip scribal corrections (crossed-out text): <<deleted>> → ""
+        line = self._RE_SCRIBAL_CORR.sub("", line).strip()
         if self._RE_NON_GRAIN.search(line):
             return None, None
         # Accounting balance lines (deficit, surplus, carry-forward subtotals) represent

@@ -199,3 +199,34 @@ class TestBalanceLines:
         # mu-kux delivery lines ARE real grain movements — must not be filtered
         q, u = ext.extract_quantity("mu-kux 3(asz) sze gur")
         assert q == 900.0 and u == "sila3"
+
+    def test_la2_ia3_am3_trailing_suppressed(self, ext):
+        # "N gur la2-ia3-am3" = "N gur it is the deficit" — a total of the shortfall,
+        # not a delivery; suppress it.
+        assert ext.extract_quantity(
+            "3(gesz'u) 3(gesz2) 8(asz) 3(ban2) 4(disz) sila3 gur la2-ia3-am3"
+        ) == (None, None)
+
+    def test_la2_ia3_am3_on_szunigin_suppressed(self, ext):
+        # szunigin + la2-ia3-am3 = grand total of a deficit; must not produce a tx
+        assert ext.extract_quantity(
+            "szunigin 9(gesz2) 8(asz) 3(barig) 5(ban2) gur la2-ia3-am3"
+        ) == (None, None)
+
+
+class TestScribalCorrections:
+    """CDLI <<...>> marks text the scribe crossed out; it must be stripped."""
+
+    def test_scribal_correction_stripped(self, ext):
+        # "5 sila3 beer + <<5 sila3>> (correction) + 5 sila3 bread" — the <<5>>
+        # was the scribe's error and is deleted; only the two real allotments remain.
+        q, u = ext.extract_quantity(
+            "5(disz) sila3 kasz 5(disz) sila3 <<5(disz) sila3>> ninda"
+        )
+        assert q == 10.0 and u == "sila3"
+
+    def test_correction_does_not_add_quantity(self, ext):
+        # A plain quantity with a crossed-out unit must not double-count.
+        # "3 ban2 <<3 ban2>> gur" → only 3 ban2 = 30 sila3 (correction discarded).
+        q, u = ext.extract_quantity("3(ban2) <<3(ban2)>> gur")
+        assert q == 30.0 and u == "sila3"
