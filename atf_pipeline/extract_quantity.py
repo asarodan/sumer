@@ -202,6 +202,10 @@ class QuantityMixin:
         # residuals already embedded in surrounding totals — do not sum them.
         if self._RE_BALANCE_LINE.search(line):
             return None, None
+        # igi-N-gal2 = "1/N-th fraction" (rate/share notation) — the N(unit) inside
+        # is a denominator, never a commodity quantity.  Strip before parsing so that
+        # "igi-5(disz)-gal2-bi 5(asz) 4(barig) gur" gives 5 asz 4 barig, not 5+5 asz.
+        line = re.sub(r"\bigi-\d+(?:/\d+)?\([^)]+\)-gal2(?:-bi)?\b", "", line).strip()
         # ku3-bi = "its silver [equivalent]" — always introduces a weight note,
         # never a grain capacity.  Truncate the line at ku3-bi so that
         # "N sila3 commodity ku3-bi M gin2" returns N sila3, not N + M-derived.

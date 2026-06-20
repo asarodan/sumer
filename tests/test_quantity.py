@@ -36,6 +36,22 @@ class TestWeights:
         assert unit == "gin2"
 
 
+class TestIgiGal2Fraction:
+    """igi-N-gal2 = '1/N-th fraction' — the N is a denominator, not a quantity."""
+
+    def test_igi_gal2_prefix_not_counted(self, ext):
+        # "igi-5-gal2-bi N sila3" = "its 1/5th: N sila3" — the 5 is a denominator
+        q, u = ext.extract_quantity("igi-5(disz)-gal2-bi 1(ban2) 6(disz) 2/3(disz) sila3")
+        assert u == "sila3" and abs(q - (10 + 6 + 2/3)) < 0.01
+
+    def test_igi_gal2_inline_not_counted(self, ext):
+        # mid-line "igi-3-gal2" rate: 3(disz) in it must not add 3 sila3
+        q, u = ext.extract_quantity(
+            "1(gesz2) 3(asz) gur 1(u) gin2 igi-3(disz)-gal2 ku3-babbar"
+        )
+        assert u == "sila3" and q == 18_900.0  # only the gesz2+asz grain
+
+
 class TestLaborLines:
     def test_u4_a_locative_stripped(self, ext):
         # "N gurusz u4 1-a M sila3" — the "1-a" is a locative day-count
