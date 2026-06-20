@@ -606,12 +606,16 @@ class ATFExtractor:
         name = re.sub(r"\[.*?\]", "", name)
         # Strip all ATF determinatives ({d}, {gesz}, {ki}, {gar}, etc.) and
         # phonetic complements that appear inside or after sign readings.
-        # These are scribal notation aids, not part of the name itself.
+        # Also handles unclosed braces ({gar without closing }) from damaged lines.
         name = re.sub(r"\{[^}]*\}", "", name)
+        name = re.sub(r"\{[^}]*$", "", name)    # unclosed brace at end of string
         # Strip sign-form modifier suffixes (@g, @c, @t, @v, @n …) on sign names.
         # They encode alternative sign forms and are never part of personal names.
         name = re.sub(r"@[A-Za-z0-9]+", "", name)
         name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
+        # CDLI sign catalog references (REC344, KWU147, LAK123, etc.) are
+        # sign-list numbers, not readable syllables — strip them from names.
+        name = re.sub(r"\b[A-Z]{2,}[0-9]+\b", "", name)
         # Collapse multiple hyphens left when damaged brackets are stripped
         # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
         name = re.sub(r"-{2,}", "-", name)
@@ -727,7 +731,16 @@ class ATFExtractor:
 
         m = self._RE_QTY_PLAIN.search(line)
         if m:
-            return float(m.group(1)), m.group(2).lower()
+            raw_val = float(m.group(1))
+            raw_unit = m.group(2).lower()
+            # Normalize plain-text grain units to sila3 so they're consistent
+            # with CDLI-token path output ("5 gur" → 1500 sila3, "4 sila" → 4 sila3).
+            conv = {"gur": 300.0, "barig": 60.0, "ban2": 10.0}
+            if raw_unit in conv:
+                return raw_val * conv[raw_unit], "sila3"
+            if raw_unit == "sila":
+                return raw_val, "sila3"
+            return raw_val, raw_unit
         return None, None
 
     def extract_quantity(self, line: str) -> Tuple[Optional[float], Optional[str]]:
