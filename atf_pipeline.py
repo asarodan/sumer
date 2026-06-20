@@ -346,7 +346,7 @@ class ATFExtractor:
     # CDLI metrological tokens: integer and fractional coefficients.
     # Unit names can contain an apostrophe (gesz'u = 600-gur), so [\w']+ is used
     # rather than \w+[2']? which would stop at the apostrophe and miss the trailing u.
-    _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\(([\w']+)\)")
+    _RE_QTY_CDLI  = re.compile(r"(\d+(?:/\d+)?)\(([\w'@]+)\)")
     # Plain numeric quantity ("100 gur", "3.5 sila3").  The negative lookbehind
     # blocks digits that are glued to a letter — Sumerian sign readings carry a
     # trailing index number (e3, du11, ku3, gesz2, KWU147…), and without this a
@@ -418,7 +418,9 @@ class ATFExtractor:
     #   esze3/iku/GAN2 = agricultural area units
     _RE_NON_GRAIN = re.compile(
         r"\bsiki\b|\{gesz\}|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
-        r"|\besze3\b|\biku\b|\bGAN2\b",
+        r"|\besze3\b|\biku\b|\bGAN2\b"
+        r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
+        r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b",  # livestock compounds
         re.I,
     )
 
@@ -595,17 +597,20 @@ class ATFExtractor:
     def _clean_atf_name(name: str) -> str:
         """Strip damage markers and trailing grammatical suffixes from a name."""
         name = re.sub(r"\(\$[^)]*\$\)", "", name)   # CDLI editorial markers ($...$)
-        name = re.sub(r"\([a-z][a-z0-9]*\)", "", name)  # sign variant: nig2-lagar(ba)→nig2-lagar
+        name = re.sub(r"\([A-Za-z][A-Za-z0-9\-]*\)", "", name)  # sign variant: ensi2(PA-TE), kas4(DU)
         # ATF editorial additions <word> — keep the content, strip the markers.
         # "<sza3>" in "nam-<sza3>-tam" means the scribe omitted the sign but the
         # reading is certain; we want "nam-sza3-tam", not "nam--tam".
         name = re.sub(r"<([^>]*)>", r"\1", name)
         name = re.sub(r"[!?*#]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
-        # ATF unknown-sign placeholder "x" and city/place determinative "{ki}"
-        # must be removed before the name is stored; they are scribal uncertainty
-        # markers, not part of any personal name.
-        name = re.sub(r"\{ki\}", "", name)           # city/place determinative
+        # Strip all ATF determinatives ({d}, {gesz}, {ki}, {gar}, etc.) and
+        # phonetic complements that appear inside or after sign readings.
+        # These are scribal notation aids, not part of the name itself.
+        name = re.sub(r"\{[^}]*\}", "", name)
+        # Strip sign-form modifier suffixes (@g, @c, @t, @v, @n …) on sign names.
+        # They encode alternative sign forms and are never part of personal names.
+        name = re.sub(r"@[A-Za-z0-9]+", "", name)
         name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
         # Collapse multiple hyphens left when damaged brackets are stripped
         # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
@@ -663,6 +668,9 @@ class ATFExtractor:
         line = self._RE_ARA2_KAM.sub("", line).strip()
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
+            # Strip CDLI sign-form modifiers (@c, @t, @v …) before unit lookup.
+            # "1(asz@c)" and "1(asz)" both mean 1 gur.
+            cdli = [(n, u.split("@")[0]) for n, u in cdli]
             units      = {u.lower() for _, u in cdli}
             bare_gur   = bool(self._RE_BARE_GUR.search(line))
             bare_sila3 = bool(self._RE_BARE_SILA3.search(line))
@@ -1174,7 +1182,7 @@ class ATFExtractor:
             if rec_i and recipient is None:
                 recipient = rec_i
                 if qty_i is not None and not qty_entries:
-                    qty_entries.append((qty_i, "u", pending_commodity or "barley"))
+                    qty_entries.append((qty_i, "sila3", pending_commodity or "barley"))
                 prev_name = None
                 continue
 
@@ -1420,7 +1428,7 @@ class ATFExtractor:
                     tablet_id=tablet_id,
                     recipient=name,
                     quantity=qty,
-                    unit="asz",
+                    unit="sila3",
                     commodity=comm,
                     date=date,
                     raw_date=raw_mu,
@@ -1463,9 +1471,9 @@ class ATFExtractor:
                 qty_str = m_tot.group(1)
                 # Parse using pure sexagesimal labor counter, not grain factors.
                 w = sum(
-                    (float(n) / float(d) if "/" in n else float(n)) * f
+                    (float(n.split("/")[0]) / float(n.split("/")[1]) if "/" in n else float(n)) * f
                     for n, u in self._RE_QTY_CDLI.findall(qty_str)
-                    if (f := self._LABOR_CONV.get(u.lower())) is not None
+                    if (f := self._LABOR_CONV.get(u.split("@")[0].lower())) is not None
                 )
                 if w > 0:
                     total_workers = w
@@ -1494,7 +1502,7 @@ class ATFExtractor:
                 parts = self._RE_LABOR_LINE.split(clean, 1)
                 worker_tokens = self._RE_QTY_CDLI.findall(parts[0])
                 for num_s, unit in worker_tokens:
-                    ul = unit.lower()
+                    ul = unit.split("@")[0].lower()
                     factor = self._LABOR_CONV.get(ul)
                     if factor is None:
                         continue
@@ -1860,7 +1868,7 @@ class ATFExtractor:
                     entry_idx=0,
                     recipient=rec_i,
                     quantity=qty_i,
-                    unit="u",
+                    unit="sila3",
                     commodity=pending_comm or "barley",
                 ))
                 prev_name = None
