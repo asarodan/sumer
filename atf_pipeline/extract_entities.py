@@ -109,7 +109,7 @@ class EntityMixin:
                 name   = self._clean_atf_name(m.group(1))
                 father = self._clean_atf_name(m.group(2))
                 if (len(name) >= 2 and len(father) >= 2
-                        and not name.startswith("-") and not father.startswith("-")
+                        and name[:1].isalpha() and father[:1].isalpha()
                         and father.lower() not in self._PATRONYM_STOP
                         and self._looks_like_name(name)
                         and self._looks_like_name(father)):

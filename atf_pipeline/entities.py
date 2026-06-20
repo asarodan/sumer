@@ -26,22 +26,58 @@ class EntityScanner:
         self._norm = normalizer
         # canonical_name → {tablets, roles, appearances}
         self._roster: Dict[str, Dict] = {}
-        # canonical_name → {canonical_father: count} (parentage / homonym data)
-        self._fathers: Dict[str, Dict[str, int]] = {}
+        # canonical_name → {canonical_father: {"count": int, "tablets": set}}
+        self._fathers: Dict[str, Dict[str, Dict]] = {}
 
-    def add_patronymics(self, pairs) -> None:
-        """Record (name, father) parentage pairs, normalising both sides so the
-        father set matches the canonical roster keys."""
-        for name, father in pairs:
+    def add_patronymics(self, triples) -> None:
+        """Record (name, father, tablet_id) parentage statements, normalising
+        both name and father so they match the canonical roster keys. tablet_id
+        may be None when source provenance is not tracked."""
+        for item in triples:
+            name, father = item[0], item[1]
+            tablet_id = item[2] if len(item) > 2 else None
             nm = (self._norm.normalize_name(name) if self._norm else name) or name
             fa = (self._norm.normalize_name(father) if self._norm else father) or father
-            self._fathers.setdefault(nm, {})
-            self._fathers[nm][fa] = self._fathers[nm].get(fa, 0) + 1
+            slot = self._fathers.setdefault(nm, {}).setdefault(
+                fa, {"count": 0, "tablets": set()}
+            )
+            slot["count"] += 1
+            if tablet_id is not None:
+                slot["tablets"].add(tablet_id)
 
     @property
     def homonym_count(self) -> int:
         """Number of names attested with two or more distinct fathers."""
         return sum(1 for fa in self._fathers.values() if len(fa) >= 2)
+
+    def export_patronymics_csv(self, filepath: str) -> None:
+        """One row per (name, father) parentage edge — the raw material for
+        family trees and for disambiguating individuals who share a name.
+        is_homonym marks names attested with more than one father."""
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        with open(filepath, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, fieldnames=[
+                "name", "father", "attestations", "tablet_count",
+                "is_homonym", "tablets",
+            ])
+            w.writeheader()
+            for name in sorted(self._fathers):
+                fathers = self._fathers[name]
+                is_homonym = len(fathers) >= 2
+                for father, data in sorted(
+                    fathers.items(), key=lambda x: -x[1]["count"]
+                ):
+                    tablets = sorted(data["tablets"])
+                    w.writerow({
+                        "name":         name,
+                        "father":       father,
+                        "attestations": data["count"],
+                        "tablet_count": len(tablets),
+                        "is_homonym":   int(is_homonym),
+                        "tablets":      "|".join(tablets),
+                    })
+        n_edges = sum(len(f) for f in self._fathers.values())
+        logger.info("Patronymics: %s (%d name→father edges)", filepath, n_edges)
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
         name = raw_name.strip()
@@ -84,14 +120,14 @@ class EntityScanner:
                 fathers = self._fathers.get(name, {})
                 # Most-attested fathers first; this is the parentage evidence
                 # for telling apart distinct individuals who share this name.
-                ranked = sorted(fathers.items(), key=lambda x: -x[1])
+                ranked = sorted(fathers.items(), key=lambda x: -x[1]["count"])
                 w.writerow({
                     "entity":       name,
                     "appearances":  data["appearances"],
                     "tablet_count": len(data["tablets"]),
                     "roles":        "|".join(sorted(data["roles"])),
                     "n_fathers":    len(fathers),
-                    "fathers":      "|".join(f"{f}({c})" for f, c in ranked),
+                    "fathers":      "|".join(f"{f}({d['count']})" for f, d in ranked),
                 })
         logger.info("Entity roster: %s (%d entities)", filepath, len(self._roster))
 

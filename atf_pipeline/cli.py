@@ -48,7 +48,10 @@ def main() -> None:
     patronymics = []
     for tablet_id, lines in corpus.items():
         raw_transactions.extend(extractor.extract_transactions(lines, tablet_id))
-        patronymics.extend(extractor.extract_patronymics(lines))
+        patronymics.extend(
+            (name, father, tablet_id)
+            for name, father in extractor.extract_patronymics(lines)
+        )
         summary = extractor.extract_records(lines, tablet_id)
         if summary.n_records > 0:
             all_summaries.append(summary)
@@ -162,6 +165,7 @@ def main() -> None:
         os.path.join(output_dir, "entries.csv"),
     )
     entity_scanner.export_csv(os.path.join(output_dir, "entities.csv"))
+    entity_scanner.export_patronymics_csv(os.path.join(output_dir, "patronymics.csv"))
 
     total_records = sum(s.n_records for s in all_summaries)
     total_entries = sum(s.n_entries for s in all_summaries)
