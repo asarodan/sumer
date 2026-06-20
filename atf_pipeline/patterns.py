@@ -95,7 +95,9 @@ class ExtractorBase:
         r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
         r"|\bku6\b"        # ku6 = fish — never a grain context
-        r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b",  # livestock compounds
+        r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b"  # livestock compounds
+        r"|\bgu2\b",       # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
+                           # reed/timber/wool — the asz token is NOT a gur here
         re.I,
     )
 
@@ -127,9 +129,15 @@ class ExtractorBase:
     _RE_EMMER  = re.compile(r"\bziz2\b|\bemmer\b", re.I)
     _RE_WHEAT  = re.compile(r"\bgig\b|\bwheat\b", re.I)
     _RE_DATES  = re.compile(r"\bzu2-lum\b|\bdates?\b", re.I)
-    _RE_FLOUR  = re.compile(r"\bzi3\b|\bzi3-gu\b|\bdabin\b|\bflour\b", re.I)
+    # esza = eša fine flour; dabin = barley flour; zi3 = generic flour
+    _RE_FLOUR  = re.compile(r"\bzi3\b|\bzi3-gu\b|\bdabin\b|\besza\b|\bflour\b", re.I)
+    _RE_BREAD  = re.compile(r"\bninda\b|\bbread\b", re.I)
     _RE_BEER   = re.compile(r"\bkasz\b|\bdida\b|\bbeer\b", re.I)
-    _RE_OIL    = re.compile(r"\bi3-gesz\b|\bsze-gesz-i3\b|\boil\b", re.I)
+    # i3-gesz/sze-gesz-i3 = sesame oil; i3-szah2 = lard; i3-udu = sheep tallow.
+    # All booked here under the fats/oils commodity bucket.
+    _RE_OIL    = re.compile(
+        r"\bi3-gesz\b|\bsze-gesz-i3\b|\bi3-szah2\b|\bi3-udu\b|\boil\b", re.I
+    )
     _RE_SILVER = re.compile(r"\bku3-babbar\b|\bsilver\b", re.I)
     # Operation-description phrases that contain "sze" but are NOT commodity markers:
     # "sze gesz ra(-a)" = threshing, "sze de2-a" = pouring grain, "sze e3" = grain outgo

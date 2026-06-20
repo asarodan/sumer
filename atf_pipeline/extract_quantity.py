@@ -162,6 +162,7 @@ class QuantityMixin:
         if self._RE_WHEAT.search(line):   return "wheat"
         if self._RE_DATES.search(line):   return "dates"
         if self._RE_FLOUR.search(line):   return "flour"
+        if self._RE_BREAD.search(line):   return "bread"
         if self._RE_BEER.search(line):    return "beer"
         # "i3" standalone = oil/fat; "i3-nun" = ghee — but exclude verbal compounds
         # like i3-dab5 (received), i3-li2 (name), by requiring whitespace/end after
