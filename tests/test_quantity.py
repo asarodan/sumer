@@ -114,6 +114,60 @@ class TestLargeGrainUnits:
         assert u == "sila3"
         assert q == 49_610.0
 
+    def test_guru7_count_stripped(self, ext):
+        # "N guru7 QUANTITY gur" — N is the granary count, not part of the grain.
+        # 1(asz) guru7 = 1 granary; quantity = 1(gesz'u) 3(gesz2) 5(u) 4(asz) gur
+        # = (1*600 + 3*60 + 5*10 + 4)*300 = 834*300 = 250,200 sila3
+        q, u = ext.extract_quantity(
+            "1(asz) guru7 1(gesz'u) 3(gesz2) 5(u) 4(asz) 2(barig) 3(disz) sila3 sze gur"
+        )
+        assert u == "sila3"
+        # Count tokens (1 asz = 300) must NOT be added
+        assert q == (1*600 + 3*60 + 5*10 + 4)*300 + 2*60 + 3
+
+    def test_guru7_multi_granary(self, ext):
+        # Large granary count: "3(gesz2) 3(u) 6(asz) guru7 2(gesz'u) 8(gesz2)..."
+        # Only the post-guru7 quantity matters.
+        q, u = ext.extract_quantity(
+            "3(gesz2) 3(u) 6(asz) guru7 2(gesz'u) 8(gesz2) 1(u) 3(asz) 3(barig) 2(ban2) 5(disz) sila3 gur"
+        )
+        assert u == "sila3"
+        expected = (2*600 + 8*60 + 1*10 + 3)*300 + 3*60 + 2*10 + 5
+        assert q == expected
+
+
+class TestLa2Subtraction:
+    """la2 = 'lacking/minus' subtracts the following token(s) from the total."""
+
+    def test_la2_asz_gur(self, ext):
+        # 3(gesz2) 5(u) la2 1(asz) gur = (180+50-1)*300 = 68,700 sila3
+        q, u = ext.extract_quantity("3(gesz2) 5(u) la2 1(asz) gur")
+        assert u == "sila3"
+        assert q == (3*60 + 5*10 - 1) * 300
+
+    def test_la2_barig_gur(self, ext):
+        # 3(u) 9(asz) la2 2(barig) gur = 39 gur minus 2 barig
+        q, u = ext.extract_quantity("3(u) 9(asz) la2 2(barig) gur")
+        assert u == "sila3"
+        assert q == (3*10 + 9)*300 - 2*60
+
+    def test_la2_sze_gur(self, ext):
+        # 4(asz) la2 1(barig) sze gur = 1200 - 60 = 1140 sila3
+        q, u = ext.extract_quantity("4(asz) la2 1(barig) sze gur")
+        assert u == "sila3"
+        assert q == 4*300 - 60
+
+    def test_la2_gin2(self, ext):
+        # 1(gesz2) la2 1(u) gin2 = 60 - 10 = 50 gin2 (silver weight)
+        q, u = ext.extract_quantity("1(gesz2) la2 1(u) gin2")
+        assert u == "gin2"
+        assert q == 50.0
+
+    def test_la2_ia3_still_suppressed(self, ext):
+        # la2-ia3 (deficit) must NOT be treated as a la2 subtraction
+        q, u = ext.extract_quantity("la2-ia3 1(gesz2) 5(asz) gur")
+        assert q is None
+
 
 class TestBalanceLines:
     def test_la2_ia3_suppressed(self, ext):

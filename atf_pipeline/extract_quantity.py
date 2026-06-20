@@ -8,6 +8,8 @@ from typing import Optional, Tuple
 class QuantityMixin:
     """Parse metrological quantities and detect the commodity of a line."""
 
+    _RE_LA2_MINUS = re.compile(r"\bla2\b(?!-ia3)", re.I)
+
     def _parse_grain(self, line: str) -> Tuple[Optional[float], Optional[str]]:
         """
         Parse commodity quantity; return (value_in_native_unit, unit_name).
@@ -18,6 +20,10 @@ class QuantityMixin:
           3. Bare-sila3 context: N(disz) sila3 → sila3  (small ration tablets)
           4. Bare-gin2 context: N(u)/N(disz) gin2 → gin2  (silver weight tablets)
           5. Animal count: N(disz) gu4/udu/… → head
+
+        The Sumerian subtraction operator "la2" ("lacking") is handled by parsing
+        the portion before la2 as a positive quantity and the portion after as a
+        negative quantity, then returning their difference.
         """
         # Strip per-person rate specifiers before summing the main quantity.
         # "7(asz) 2(barig) sze gur sila3 1(barig)-ta" → "7(asz) 2(barig) sze gur sila3"
@@ -25,6 +31,32 @@ class QuantityMixin:
         # Strip ordinal phrases — "a-ra2 2(disz)-kam" embeds a count that is
         # an installment number, not a commodity amount.
         line = self._RE_ARA2_KAM.sub("", line).strip()
+        # Handle la2 ("minus"/"lacking") subtraction operator.
+        # "3(gesz2) 5(u) la2 1(asz) gur" = (180+50-1) gur, NOT 231 gur.
+        # We parse the positive tokens (before la2) and negative tokens (after
+        # la2) separately, then subtract.  Unit-context words (sze, gur, gin2)
+        # that follow the subtrahend are appended to BOTH halves so that the
+        # unit is correctly resolved (e.g. bare "3(gesz2) 5(u)" needs "gur"
+        # to know it's a gur-scale number).
+        m_la2 = self._RE_LA2_MINUS.search(line)
+        if m_la2:
+            pos_part = line[:m_la2.start()].strip()
+            neg_tail = line[m_la2.end():].strip()
+            # Find the context suffix: everything after the last CDLI token in neg_tail.
+            all_cdli_in_neg = list(self._RE_QTY_CDLI.finditer(neg_tail))
+            if all_cdli_in_neg:
+                last_tok_end = all_cdli_in_neg[-1].end()
+                ctx_suffix = neg_tail[last_tok_end:].strip()
+            else:
+                ctx_suffix = neg_tail
+            pos_line = (pos_part + " " + ctx_suffix).strip()
+            neg_line = neg_tail
+            q_pos, u_pos = self._parse_grain(pos_line)
+            q_neg, u_neg = self._parse_grain(neg_line)
+            if q_pos is not None and q_neg is not None and u_pos == u_neg:
+                result = q_pos - q_neg
+                return (result, u_pos) if result > 0 else (None, None)
+            # If subtraction doesn't resolve cleanly, fall through to normal parse.
         cdli = self._RE_QTY_CDLI.findall(line)
         if cdli:
             # Strip CDLI sign-form modifiers (@c, @t, @v …) before unit lookup.
@@ -168,6 +200,14 @@ class QuantityMixin:
         # residuals already embedded in surrounding totals — do not sum them.
         if self._RE_BALANCE_LINE.search(line):
             return None, None
+        # guru7 (granary) lines: "N guru7 QUANTITY gur" — the N before guru7 is
+        # the granary count, not part of the grain quantity.  Strip the count and
+        # the guru7 word, then parse only the grain portion that follows.
+        m_guru7 = re.search(r"\bguru7\b", line, re.I)
+        if m_guru7:
+            line = line[m_guru7.end():].strip()
+            if not line:
+                return None, None
         if self._RE_LABOR_LINE.search(line):
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)
