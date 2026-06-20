@@ -5,8 +5,8 @@ fetch_corpus.py — Download CDLI tablets in bulk for the ATF pipeline.
 CDLI publishes its ENTIRE corpus as a single ATF dump in the cdli-gh/data
 GitHub repository (file: cdliatf_unblocked.atf, ~87 MB, stored with Git LFS).
 This script pulls that dump — optionally filtering to just the tablets you
-want — and writes a file that atf_pipeline.py / parse_tablet.py can read
-directly.
+want — and writes a file that the atf_pipeline package / parse_tablet.py can
+read directly.
 
 The raw github URL only returns the LFS *pointer*; the real bytes live on
 media.githubusercontent.com, which is what we use below.
@@ -26,7 +26,7 @@ Examples
   python3 fetch_corpus.py --ids my_ids.txt -o batch.atf
 
 Then run the pipeline on the result:
-  python3 atf_pipeline.py anor07.atf
+  python3 -m atf_pipeline anor07.atf
   python3 parse_tablet.py anor07.atf
 """
 from __future__ import annotations
