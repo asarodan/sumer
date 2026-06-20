@@ -100,6 +100,49 @@ class TestBasicTransaction:
         assert ext.extract_transactions(_tablet("1. [...]"), "P900000") == []
 
 
+class TestEnvelopeDeduplication:
+    """@envelope sections duplicate the tablet text; they must be stripped."""
+
+    def test_envelope_not_double_counted(self, ext):
+        # A tablet with an @envelope bearing the same quantity must yield
+        # exactly one transaction, not two.
+        lines = [
+            "&P900001 = Synthetic envelope test",
+            "#atf: lang sux",
+            "@tablet",
+            "@obverse",
+            "1. 8(asz) sze gur",
+            "2. ki lugal-ta",
+            "@reverse",
+            "1. ur-saga szu ba-ti",
+            "@envelope",
+            "@obverse",
+            "1. 8(asz) sze gur",
+            "2. ki lugal-ta",
+            "@reverse",
+            "1. kiszib3 ur-saga",
+        ]
+        txs = ext.extract_transactions(lines, "P900001")
+        qtys = [t.quantity for t in txs if t.quantity]
+        assert qtys.count(2400.0) == 1
+
+    def test_seal_section_ignored(self, ext):
+        lines = [
+            "&P900002 = Synthetic seal test",
+            "#atf: lang sux",
+            "@tablet",
+            "@obverse",
+            "1. 5(asz) sze gur ki lugal-ta",
+            "@reverse",
+            "1. ur-saga szu ba-ti",
+            "@seal 1",
+            "1. ur-saga dub-sar",
+            "2. dumu lugal-ba",
+        ]
+        txs = ext.extract_transactions(lines, "P900002")
+        assert len([t for t in txs if t.quantity]) == 1
+
+
 class TestSzuniginNotDoubleCountedInRecords:
     """szunigin total must not produce an extra entry in the records path."""
 

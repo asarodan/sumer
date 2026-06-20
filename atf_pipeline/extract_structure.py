@@ -41,6 +41,29 @@ class StructureMixin:
             return "labor"
         return "transfer"
 
+    @staticmethod
+    def _strip_secondary_sections(lines: List[str]) -> List[str]:
+        """
+        Remove @envelope and @seal sections from a tablet's lines.
+
+        Ur III tablets often have an outer clay envelope (@envelope) with the
+        same text as the inner tablet, and @seal sign-list sections.  Parsing
+        these would double-count quantities.  Only @tablet is the primary body;
+        @envelope and @seal are secondary and are stripped until the next
+        top-level @tablet marker (or end of tablet).
+        """
+        _TOP_LEVEL = re.compile(r"^@(tablet|envelope|seal)\b", re.I)
+        _SECONDARY = re.compile(r"^@(envelope|seal)\b", re.I)
+        result: List[str] = []
+        skip = False
+        for line in lines:
+            s = line.strip()
+            if _TOP_LEVEL.match(s):
+                skip = bool(_SECONDARY.match(s))
+            if not skip:
+                result.append(line)
+        return result
+
     def _split_sections(self, lines: List[str]) -> List[List[str]]:
         """Split tablet into sections at szunigin total lines only."""
         sections: List[List[str]] = []
@@ -598,6 +621,7 @@ class StructureMixin:
         self, lines: List[str], tablet_id: str
     ) -> List[Transaction]:
         """Extract all transactions from a tablet's ATF lines."""
+        lines = self._strip_secondary_sections(lines)
         results: List[Transaction] = []
         # Skip non-administrative texts: lexical lists, bilingual glossaries,
         # royal inscriptions, literary/metrological texts, and non-Sumerian
@@ -1097,6 +1121,7 @@ class StructureMixin:
         that every commodity line in a section becomes a distinct entry —
         a section with barley + emmer + wheat yields three entries, not one.
         """
+        lines = self._strip_secondary_sections(lines)
         tablet_type = self._classify_tablet(lines)
         records: List[TabletRecord] = []
 

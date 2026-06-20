@@ -105,6 +105,15 @@ class TestLargeGrainUnits:
         # Regression: szar2 = 3,600 gur = 1,080,000 sila3
         assert ext.extract_quantity("1(szar2) sze gur") == (1_080_000.0, "sila3")
 
+    def test_u_unit_without_sze_gur(self, ext):
+        # Abbreviated second line on a tablet: "2(gesz2) 4(u) 5(asz) 1(barig) 5(ban2)"
+        # without an explicit "sze gur" — the grain_ind from asz/barig must make
+        # u resolve to 10 gur = 3,000 sila3, not 0.
+        # Expected: (2*60 + 4*10 + 5)*300 + 1*60 + 5*10 = 165*300 + 110 = 49,610
+        q, u = ext.extract_quantity("2(gesz2) 4(u) 5(asz) 1(barig) 5(ban2)")
+        assert u == "sila3"
+        assert q == 49_610.0
+
 
 class TestBalanceLines:
     def test_la2_ia3_suppressed(self, ext):

@@ -97,8 +97,8 @@ class QuantityMixin:
                 ul = unit.lower()
                 factor = self._GRAIN_CONV.get(ul)
                 if factor is None:
-                    if bare_gur and ul == "u":
-                        factor = 10.0 * 300.0      # 10 gur per u-unit
+                    if (bare_gur or grain_ind) and ul == "u":
+                        factor = 10.0 * 300.0      # 10 gur per u-unit (sexagesimal)
                     elif bare_sila3 and ul == "u":
                         factor = 10.0              # 10 sila3
                     elif bare_sila3 and ul == "disz":
