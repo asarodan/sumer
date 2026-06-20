@@ -89,6 +89,33 @@ class EntityMixin:
                 return name, qty
         return None, None
 
+    def extract_patronymics(self, lines) -> list:
+        """
+        Scan a tablet's lines for "NAME dumu FATHER" parentage statements.
+
+        Returns a list of (name, father) pairs in cleaned ATF form. These let a
+        shared name be split into distinct individuals: two people both called
+        lu2-szara2 are distinguishable when one is "dumu ur-nigar" and the other
+        "dumu lugal-ezem". Status descriptors (dumu lugal = prince, dumu eridu =
+        citizen-of) are filtered out.
+        """
+        pairs = []
+        for raw in lines:
+            s = raw.strip()
+            if not s or s[0] in "&#@$":
+                continue
+            clean = self._strip_linenum(s)
+            for m in self._RE_PATRONYM.finditer(clean):
+                name   = self._clean_atf_name(m.group(1))
+                father = self._clean_atf_name(m.group(2))
+                if (len(name) >= 2 and len(father) >= 2
+                        and not name.startswith("-") and not father.startswith("-")
+                        and father.lower() not in self._PATRONYM_STOP
+                        and self._looks_like_name(name)
+                        and self._looks_like_name(father)):
+                    pairs.append((name, father))
+        return pairs
+
     def _extract_agent(self, clean: str) -> Optional[str]:
         """Pattern L: giri3 NAME or ugula NAME."""
         for pat in (self._RE_GIRI3, self._RE_UGULA):

@@ -43,10 +43,12 @@ def main() -> None:
     commodity_counts:    Dict[str, int]     = {}
     all_summaries:       List[TabletSummary] = []
 
-    # Pass 1: extract every tablet (raw, un-normalised).
+    # Pass 1: extract every tablet (raw, un-normalised), plus parentage pairs.
     raw_transactions: List[Transaction] = []
+    patronymics = []
     for tablet_id, lines in corpus.items():
         raw_transactions.extend(extractor.extract_transactions(lines, tablet_id))
+        patronymics.extend(extractor.extract_patronymics(lines))
         summary = extractor.extract_records(lines, tablet_id)
         if summary.n_records > 0:
             all_summaries.append(summary)
@@ -69,6 +71,7 @@ def main() -> None:
             barley_transactions.append(tx)
     for summary in all_summaries:
         entity_scanner.scan(summary)
+    entity_scanner.add_patronymics(patronymics)
 
     n_total   = len(all_transactions)
     n_barley  = len(barley_transactions)
@@ -168,3 +171,4 @@ def main() -> None:
     print(f"  Total entries        : {total_entries}")
     print(f"  Unique entities      : {entity_scanner.entity_count}")
     print(f"  Entity appearances   : {entity_scanner.total_appearances}")
+    print(f"  Shared names (2+ fathers): {entity_scanner.homonym_count}")

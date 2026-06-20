@@ -230,6 +230,22 @@ class ExtractorBase:
     _RE_GIRI3  = re.compile(r"^giri3#?\s+(.+?)(?:\s*(?:#.*)?)?$")
     _RE_UGULA  = re.compile(r"^ugula#?\s+(.+?)(?:\s*(?:#.*)?)?$")
 
+    # --------------- Parentage (patronymic) ---------------
+    # "NAME dumu FATHER" / "NAME dumu-munus FATHER" — child-of formula. Both are
+    # single whitespace tokens (Sumerian names are hyphen-joined internally), so
+    # capture the token on each side of a standalone "dumu".
+    _RE_PATRONYM = re.compile(
+        r"(?<![\w-])([a-z0-9{}\[\]_-]{2,})\s+dumu(?:-munus)?\s+([a-z0-9{}\[\]_-]{2,})",
+        re.I,
+    )
+    # Words that follow "dumu" as a status/origin descriptor, not a father's
+    # name: dumu lugal = prince, dumu eridu = citizen of Eridu, dumu sza3 e2 =
+    # household child, dumu gu4 = plough-team junior, etc.
+    _PATRONYM_STOP = frozenset({
+        "lugal", "sza3", "e2", "gu4", "munus", "nita", "ki", "eridu",
+        "dingir", "uri5", "gir2-su", "umma", "nibru",
+    })
+
     # --------------- Date ---------------
     _RE_ITI = re.compile(
         r"^(?:\d+[a-z]?[!?*'ʼ]?\.\s*)?iti\s+(\S+(?:\s+\S+)*?)"
