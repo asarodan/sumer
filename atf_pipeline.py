@@ -10,13 +10,13 @@ CDLI year names:  https://cdli.mpiwg-berlin.mpg.de/
 BDTNS:            https://bdtns.filol.csic.es/
 """
 
+import copy
 import csv
 import logging
 import os
 import re
-from dataclasses import asdict, dataclass
-from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 
@@ -39,12 +39,12 @@ _URNAMMA_FRAGS: Dict[int, List[str]] = {
 _ŠULGI_FRAGS: Dict[int, List[str]] = {
     1:  ["lugal-uri5{ki}-ma"],
     3:  ["en-{d}inanna"],
-    44: ["bad3 mar-tu ba-du3"],
     # Years 45-48 are the primary target range for Umma barley records
     45: ["ki-maški{ki}", "hu-ur5-ti{ki}"],
     46: ["ús2-sa ki-maški{ki}"],
     47: ["har-ši{ki}"],
     48: ["ús2-sa har-ši{ki}"],
+    # NOTE: bad3 mar-tu ba-du3 is Šu-Suen 4, not Šulgi 44 — see _ŠUSUEN_FRAGS
 }
 
 _AMARSUEN_FRAGS: Dict[int, List[str]] = {
@@ -57,7 +57,8 @@ _AMARSUEN_FRAGS: Dict[int, List[str]] = {
 _ŠUSUEN_FRAGS: Dict[int, List[str]] = {
     1:  ["ma2 {d}en-zu"],
     3:  ["šu-{d}suen bad3"],
-    4:  ["za-ab-ša-li{ki}"],
+    4:  ["bad3 mar-tu ba-du3"],   # Amorite wall built (moved from erroneous Šulgi 44)
+    6:  ["za-ab-ša-li{ki}"],      # Zabšali campaign (moved from erroneous SS 4)
 }
 
 # Maps lowercase ATF king-name variant → (canonical display name, year-frag dict)
@@ -79,6 +80,61 @@ KING_YEAR_MAP: Dict[str, Tuple[str, Dict[int, List[str]]]] = {
 
 
 # ---------------------------------------------------------------------------
+# Transliteration normalisation
+# ---------------------------------------------------------------------------
+
+def normalize_atf(line: str) -> str:
+    """
+    Convert CDLI legacy ASCII transliteration digraphs to Unicode equivalents
+    so that standard text-dump exports are handled identically to Unicode ATF.
+
+    Conversions applied (case-preserving):
+      sz / SZ  →  š / Š   (CDLI ASCII representation of esh/shin)
+
+    Called on every input line before pattern matching and on every name
+    string before normalisation lookups, ensuring ASCII corpus downloads
+    do not silently bypass regex filters or fragment matching.
+    """
+    # sz is exclusively used as the ASCII digraph for š in Sumerian ATF;
+    # no independent s+z sequence exists in standard CDLI transliteration.
+    line = line.replace("SZ", "Š").replace("sz", "š")
+    return line
+
+
+# ---------------------------------------------------------------------------
+# Metrological systems
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MetrologicalSystem:
+    """
+    Grain capacity conversion table from unit names to sila3 equivalents.
+    Pass a custom instance to ATFExtractor to handle regional archive
+    variants (e.g. a 240-sila3 gur or non-standard barig subdivisions).
+    """
+    name: str
+    to_sila3: Dict[str, float]
+
+    def convert(self, unit: str, amount: float) -> float:
+        return amount * self.to_sila3.get(unit.lower(), 1.0)
+
+
+# Nippur grain capacity standard — dominant in Ur III administrative texts.
+# 1 gur = 5 barig = 300 sila3 | 1 barig = 6 ban2 = 60 sila3 | 1 ban2 = 10 sila3
+UR_III_GRAIN = MetrologicalSystem(
+    name="Ur III grain (Nippur standard)",
+    to_sila3={
+        "gur":   300.0,
+        "barig":  60.0,
+        "ban2":   10.0,
+        "sila3":   1.0,
+        "sila":    1.0,
+        "gin2":    1.0 / 60,   # rare in grain contexts; included for completeness
+    },
+)
+
+
+# ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
 
@@ -93,7 +149,7 @@ class UrIIIDate:
 
     def in_range(self, king: str, year_min: int, year_max: int) -> bool:
         """True if this date falls within [year_min, year_max] for the given king."""
-        if self.king and king.lower() not in self.king.lower():
+        if self.king and self.king.lower() != king.lower():
             return False
         if self.year_number is not None:
             return year_min <= self.year_number <= year_max
@@ -125,6 +181,7 @@ class Transaction:
     date: Optional[UrIIIDate] = None
     raw_date: Optional[str] = None     # verbatim mu-line from tablet
     line_ref: Optional[str] = None     # first content line number
+    tx_type: Optional[str] = None      # "receipt" | "disbursement" | "delivery"
 
 
 # ---------------------------------------------------------------------------
@@ -210,24 +267,38 @@ class ATFExtractor:
     )
 
     # Commodities
-    _RE_BARLEY = re.compile(r"\bše\b|she\b|\bbarley\b",  re.I)
+    _RE_BARLEY = re.compile(r"\bše(?:-\w+)?\b|\bshe(?:-\w+)?\b|\bbarley\b", re.I)
     _RE_EMMER  = re.compile(r"\bziz2\b|\bemmer\b",        re.I)
     _RE_DATES  = re.compile(r"\bzu2-lum\b|\bdates?\b",    re.I)
     _RE_FLOUR  = re.compile(r"\bzig3\b|\bflour\b",        re.I)
 
     # Issuer: line ends with " ki" or " ki2" (ablative)
     _RE_KI_ABL = re.compile(r"^(.*?)\s+ki(?:2)?\s*(?:#.*)?$")
-    # Guard: reject if ki immediately follows closing brace (place determinative)
-    _RE_KI_DET = re.compile(r"\}\s*ki(?:2)?\s*(?:#.*)?$")
+    # Guard: reject lines where the final "ki" is a place-name determinative.
+    # Catches both "}ki" (embedded: uri5{ki}) and "{ki}" standing alone at
+    # line-end, as well as lines whose only content is the syllable "ki".
+    _RE_KI_DET = re.compile(
+        r"(?:"
+        r"\}\s*ki(?:2)?"        # place-det directly before ki: uri5{ki}[ ]ki
+        r"|"
+        r"\{ki\}"               # bare determinative at line-end: umma{ki}
+        r")\s*(?:#.*)?$"
+    )
 
     # Recipient: "NAME šu ba-ti" on same line
-    _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-ti(?:\s+\S+)?\s*(?:#.*)?$")
+    _RE_SHU_BATI  = re.compile(r"^(.*?)\s+šu\s+ba-(?:an-)?ti(?:\s+\S+)?\s*(?:#.*)?$")
     # Standalone šu ba-ti / šu ba-an-ti line
     _RE_SHU_ALONE = re.compile(r"^šu\s+ba-(?:an-)?ti\s*(?:#.*)?$")
+    # i3-dab5 ("took in custody / received") — high-frequency Umma receipt verb
+    _RE_I3_DAB5       = re.compile(r"^(.*?)\s+i3-dab5\s*(?:#.*)?$")
+    _RE_I3_DAB5_ALONE = re.compile(r"^i3-dab5\s*(?:#.*)?$")
     # Dative postposition: name ends in -ra
     _RE_DATIVE_RA = re.compile(r"^(.+?)-ra\s*(?:#.*)?$")
     # "was given": ba-an-šum2 / ba-an-šum
     _RE_BA_AN_SUM = re.compile(r"\bba-an-šum2?\b")
+    # Disbursement / delivery verbs (for transaction-type classification)
+    _RE_BA_ZI  = re.compile(r"\bba-zi\b")
+    _RE_MU_KUX = re.compile(r"\bmu-ku[x\d]+\b|\bmu-DU\b", re.I)
 
     # Date: month line  "iti [month]" optionally followed by "u4 N(-kam)"
     _RE_ITI = re.compile(
@@ -247,7 +318,11 @@ class ATFExtractor:
 
     # ---------------------------------------------------------------------------
 
-    def __init__(self, default_king: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        default_king: Optional[str] = None,
+        metrological_system: Optional["MetrologicalSystem"] = None,
+    ) -> None:
         """
         Parameters
         ----------
@@ -256,8 +331,13 @@ class ATFExtractor:
             explicit royal name token.  Useful when parsing a corpus known
             to fall within a single reign, e.g. ``"Šulgi"`` for the core
             Umma archive.
+        metrological_system : MetrologicalSystem, optional
+            Conversion table for metrological units.  Defaults to the Nippur
+            standard (1 gur = 300 sila3).  Override for regional corpora that
+            use different unit equivalences.
         """
         self._default_king = default_king
+        self._metro = metrological_system or UR_III_GRAIN
 
     def _strip_linenum(self, line: str) -> str:
         return self._RE_LINENUM.sub("", line).strip()
@@ -278,9 +358,8 @@ class ATFExtractor:
         if cdli:
             total = 0.0
             first_unit = cdli[0][1].lower()
-            conversions = {"gur": 300.0, "barig": 60.0, "ban2": 10.0}
             for num_s, unit in cdli:
-                total += float(num_s) * conversions.get(unit.lower(), 1.0)
+                total += self._metro.convert(unit, float(num_s))
             return total, first_unit
 
         m = self._RE_QTY_PLAIN.search(line)
@@ -307,19 +386,45 @@ class ATFExtractor:
         m = self._RE_KI_ABL.match(clean)
         if m:
             candidate = m.group(1).strip()
-            if len(candidate) >= 2 and not candidate.startswith(("$", "#")):
+            # Require ≥4 chars: excludes bare syllables ("ki", "ma") that are
+            # not issuer names, while still accepting short names like "dada".
+            if len(candidate) >= 4 and not candidate.startswith(("$", "#")):
                 return candidate
         return None
 
     def _extract_recipient_inline(self, clean: str) -> Optional[str]:
-        """Return name from 'NAME šu ba-ti' on the same line."""
-        m = self._RE_SHU_BATI.match(clean)
-        if m:
-            r = m.group(1).strip()
-            # Strip trailing dative -ra if present
-            r = re.sub(r"-ra$", "", r)
-            return r if len(r) >= 2 else None
+        """
+        Return name from same-line receipt formulas:
+          - 'NAME šu ba-ti'  (received)
+          - 'NAME i3-dab5'   (took in custody)
+        """
+        for pattern in (self._RE_SHU_BATI, self._RE_I3_DAB5):
+            m = pattern.match(clean)
+            if m:
+                r = m.group(1).strip()
+                r = re.sub(r"-ra$", "", r)  # strip trailing dative
+                return r if len(r) >= 2 else None
         return None
+
+    def _is_standalone_receipt(self, clean: str) -> bool:
+        """True if the line is a bare receipt verb with no preceding name."""
+        return bool(
+            self._RE_SHU_ALONE.match(clean) or
+            self._RE_I3_DAB5_ALONE.match(clean)
+        )
+
+    def _is_dative_breaker(self, clean: str) -> bool:
+        """
+        True for lines that definitively end a dative-name→receipt sequence.
+        Commodity/quantity lines are NOT breakers — scribes routinely insert
+        them between a dative name and its receipt verb in multi-line entries.
+        """
+        return bool(
+            self._RE_ŠUNIGIN.match(clean) or   # total line starts a new sub-record
+            self._RE_KI_ABL.match(clean) or    # issuer line signals a new record
+            self._RE_ITI.match(clean) or       # month line is outside the name block
+            self._RE_MU.match(clean)           # year line is outside the name block
+        )
 
     # --- date parsing -------------------------------------------------------
 
@@ -331,16 +436,33 @@ class ATFExtractor:
         Pass 2: if no king was found but self._default_king is set, use it and
                 try to match year fragments against that king's fragment dict.
         """
-        lower = year_str.lower()
+        # Strip damage markers and broken-text brackets before fragment matching
+        # so that e.g. "mu ki-maš[ki{ki}]" still matches the fragment "ki-maški{ki}".
+        clean_ys = re.sub(r"\[.*?\]", "", year_str)
+        clean_ys = re.sub(r"[!?*]", "", clean_ys)
+        clean_ys = re.sub(r"\s+", " ", clean_ys).strip()
+        lower = clean_ys.lower()
+
+        # "Year After" marker: if present, only fragment sets that explicitly
+        # require it are eligible — prevents base-year misattribution where
+        # "mu ús2-sa ki-maški{ki} hu-ur5-ti{ki}" would otherwise match
+        # Šulgi 45 (whose fragments are a subset of the year-after formula).
+        has_usssa = "ús2-sa" in lower
+
+        def _match_year(frags: Dict[int, List[str]]) -> Optional[int]:
+            for yr_num, fragments in frags.items():
+                frags_lower = [f.lower() for f in fragments]
+                if has_usssa and not any("ús2-sa" in f for f in frags_lower):
+                    continue  # skip base-year entries when year-after marker present
+                if all(f in lower for f in frags_lower):
+                    return yr_num
+            return None
 
         # Pass 1: explicit king name in year string
         for key, (canonical, frags) in KING_YEAR_MAP.items():
             if key in lower:
                 date.king = canonical
-                for yr_num, fragments in frags.items():
-                    if all(frag.lower() in lower for frag in fragments):
-                        date.year_number = yr_num
-                        break
+                date.year_number = _match_year(frags)
                 return
 
         # Pass 2: assumed king from corpus context
@@ -349,10 +471,8 @@ class ATFExtractor:
             for key, (canonical, frags) in KING_YEAR_MAP.items():
                 if canonical != self._default_king:
                     continue
-                for yr_num, fragments in frags.items():
-                    if all(frag.lower() in lower for frag in fragments):
-                        date.year_number = yr_num
-                        return
+                date.year_number = _match_year(frags)
+                return
 
     def _parse_date(self, lines: List[str]) -> Tuple[Optional["UrIIIDate"], Optional[str]]:
         """Scan lines for date information; return (UrIIIDate, raw_mu_string)."""
@@ -360,7 +480,7 @@ class ATFExtractor:
         raw_mu: Optional[str] = None
 
         for line in lines:
-            clean = self._strip_linenum(line.strip())
+            clean = normalize_atf(self._strip_linenum(line.strip()))
 
             m = self._RE_ITI.match(clean)
             if m:
@@ -425,8 +545,9 @@ class ATFExtractor:
         recipient: Optional[str] = None
         quantity: Optional[float] = None
         unit: Optional[str] = None
-        commodity: Optional[str] = None
-        pending_dative: Optional[str] = None  # name from -ra line waiting for ba-ti/šum2
+        commodity: Optional[str] = None        # primary commodity (first detected)
+        tx_type: Optional[str] = None          # receipt | disbursement | delivery
+        pending_dative: Optional[str] = None   # name from -ra line waiting for ba-ti/šum2
         first_linenum: Optional[str] = None
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
@@ -435,55 +556,71 @@ class ATFExtractor:
             return None
 
         for i, line in enumerate(content):
-            clean = self._strip_linenum(line)
+            clean = normalize_atf(self._strip_linenum(line))
 
             if first_linenum is None:
                 m = re.match(r"(\d+[a-z]?[!?*]?)\.", line)
                 if m:
                     first_linenum = m.group(1)
 
-            # Quantity / commodity
-            q, u = self.extract_quantity(clean)
-            if q is not None and quantity is None:
-                quantity, unit = q, u
-
+            # Quantity / commodity — accumulate only lines that match the
+            # primary commodity.  A section with mixed barley + emmer quantities
+            # must not sum them together: only the first commodity's lines count.
             c = self._detect_commodity(clean)
             if c and commodity is None:
-                commodity = c
+                commodity = c   # lock primary commodity on first detection
+
+            q, u = self.extract_quantity(clean)
+            if q is not None:
+                line_commodity = c  # commodity on THIS line (may be None)
+                if line_commodity is None or line_commodity == commodity:
+                    # Accumulate: same commodity as primary, or no commodity tag
+                    # (continuation lines for the same entry)
+                    quantity = (quantity or 0.0) + q
+                    if unit is None:
+                        unit = u
+                # else: different commodity — skip to avoid cross-commodity corruption
 
             # Issuer
             iss = self._extract_issuer(clean)
             if iss and issuer is None:
                 issuer = iss
 
-            # Recipient: inline "NAME šu ba-ti"
+            # Recipient: inline "NAME šu ba-ti" / "NAME i3-dab5"
             rec = self._extract_recipient_inline(clean)
             if rec and recipient is None:
                 recipient = rec
+                tx_type = tx_type or "receipt"
                 pending_dative = None
 
-            # Recipient: standalone "šu ba-ti" line → previous dative name
-            elif self._RE_SHU_ALONE.match(clean) and pending_dative and recipient is None:
+            # Recipient: standalone receipt verb → previous dative name
+            elif self._is_standalone_receipt(clean) and pending_dative and recipient is None:
                 recipient = pending_dative
+                tx_type = tx_type or "receipt"
                 pending_dative = None
 
             # "was given" ba-an-šum2 → previous dative name
             elif self._RE_BA_AN_SUM.search(clean) and pending_dative and recipient is None:
                 recipient = pending_dative
+                tx_type = tx_type or "receipt"
                 pending_dative = None
+
+            # Disbursement / delivery verb detection (does not set recipient)
+            if self._RE_BA_ZI.search(clean):
+                tx_type = tx_type or "disbursement"
+            elif self._RE_MU_KUX.search(clean):
+                tx_type = tx_type or "delivery"
 
             # Track dative -ra name for next line
             m_dat = self._RE_DATIVE_RA.match(clean)
             if m_dat and not rec and not iss:
                 cand = m_dat.group(1).strip()
-                if len(cand) >= 2:
-                    pending_dative = cand
-                else:
-                    pending_dative = None
-            elif not (self._RE_SHU_ALONE.match(clean) or self._RE_BA_AN_SUM.search(clean)):
-                # Reset pending dative if line is unrelated
-                if not m_dat:
-                    pending_dative = None
+                pending_dative = cand if len(cand) >= 2 else None
+            elif self._is_dative_breaker(clean):
+                # Structural boundary: give up on pending dative
+                pending_dative = None
+            # else: commodity/quantity/other lines between -ra and receipt verb
+            # are allowed — do NOT clear pending_dative here
 
         # Discard sections with no actionable data
         if quantity is None and issuer is None and recipient is None:
@@ -498,10 +635,22 @@ class ATFExtractor:
             quantity=quantity,
             unit=unit,
             commodity=commodity,
+            tx_type=tx_type,
             date=date,
             raw_date=raw_mu,
             line_ref=first_linenum,
         )
+
+    def _extract_tablet_issuer(self, lines: List[str]) -> Optional[str]:
+        """Pre-scan all tablet lines for the first ki-ablative issuer.
+        Used to propagate issuer context across @obverse/@reverse sections
+        when an issuer named on one face is not repeated on subsequent faces."""
+        for line in lines:
+            clean = normalize_atf(self._strip_linenum(line.strip()))
+            iss = self._extract_issuer(clean)
+            if iss:
+                return iss
+        return None
 
     def extract_transactions(
         self, lines: List[str], tablet_id: str
@@ -512,9 +661,20 @@ class ATFExtractor:
         """
         results: List[Transaction] = []
         try:
+            # Extract date and issuer from the full tablet first so that
+            # mu/iti lines on @reverse and ki-ablative issuers are available
+            # as fallback for sections whose own slice lacks them.
+            tablet_date, tablet_raw_mu = self._parse_date(lines)
+            tablet_issuer = self._extract_tablet_issuer(lines)
+
             for section in self._split_sections(lines):
                 tx = self._extract_from_section(section, tablet_id)
                 if tx is not None:
+                    if tx.date is None and tablet_date is not None:
+                        tx.date     = tablet_date
+                        tx.raw_date = tablet_raw_mu
+                    if tx.issuer is None and tablet_issuer is not None:
+                        tx.issuer = tablet_issuer
                     results.append(tx)
         except Exception as exc:
             logger.warning("Error parsing tablet %s: %s", tablet_id, exc)
@@ -537,10 +697,15 @@ class Normalizer:
 
     Strategy:
       1. Exact lookup in compiled maps (fastest).
-      2. Substring scan: check if the input *contains* a known key as a
-         whole token — catches compound role strings like "Ur-Nanna šabra".
-      3. Fuzzy match via SequenceMatcher against all known keys (fallback).
-      4. Return a cleaned version of the original if no match found.
+      2. Token-bounded substring scan: check if the input *contains* a known
+         key as a whole whitespace-delimited token — catches compound role
+         strings like "Ur-Nanna šabra".
+      3. Flag as [UNRESOLVED] and record in self.unresolved for manual curation.
+
+    Fuzzy/similarity matching is intentionally absent.  Sumerian personal
+    names share significant character sequences by design; SequenceMatcher-
+    style resolution silently conflates distinct historical individuals.
+    All unresolved strings must be added to NAME_MAP or a name-authority CSV.
     """
 
     # Administrative titles and roles
@@ -649,66 +814,116 @@ class Normalizer:
         "lugal-sa6-ga":    "Lugal-saga",
     }
 
-    def __init__(self, fuzzy_threshold: float = 0.82) -> None:
-        self.fuzzy_threshold = fuzzy_threshold
-        # Flat lookup for exact / fuzzy matching (titles + institutions + names)
+    # Prefix applied to names that could not be resolved deterministically.
+    # These must be reviewed manually and added to NAME_MAP or a name-authority
+    # file before treating any network output as evidence.
+    UNRESOLVED_PREFIX = "[UNRESOLVED]"
+
+    def __init__(self) -> None:
+        # Merged lookup: titles + institutions + names (order matters for priority)
         self._all: Dict[str, str] = {}
         self._all.update(self.TITLE_MAP)
         self._all.update(self.INSTITUTION_MAP)
         self._all.update(self.NAME_MAP)
+        # Memoization cache: cleaned string → canonical form
+        self._cache: Dict[str, Optional[str]] = {}
+        # Track unresolved strings for export / manual curation
+        self.unresolved: Set[str] = set()
+
+    def load_name_authority(self, filepath: str) -> int:
+        """
+        Load additional name entries from a two-column CSV (atf_form, canonical).
+        Use this to import a BDTNS-derived prosopographical authority list.
+        Returns the number of entries loaded; clears the cache on success.
+        """
+        count = 0
+        try:
+            with open(filepath, newline="", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    key = self._clean(row["atf_form"])
+                    val = row["canonical"].strip()
+                    self.NAME_MAP[key] = val
+                    self._all[key] = val
+                    count += 1
+            self._cache.clear()
+            logger.info("Loaded %d name-authority entries from %s", count, filepath)
+        except (OSError, KeyError) as exc:
+            logger.error("Failed to load name authority %s: %s", filepath, exc)
+        return count
 
     # --- internal helpers ---------------------------------------------------
 
     def _clean(self, name: str) -> str:
-        """Lowercase, remove damage markers and broken-text brackets."""
-        name = name.lower().strip()
+        """Lowercase, normalize ASCII transliteration, remove damage markers."""
+        name = normalize_atf(name).lower().strip()
         name = re.sub(r"[!?*]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
         name = re.sub(r"\s+", " ", name).strip()
         return name
-
-    def _fuzzy_match(self, name: str) -> Optional[str]:
-        best_ratio = 0.0
-        best: Optional[str] = None
-        for key, canonical in self._all.items():
-            ratio = SequenceMatcher(None, name, key).ratio()
-            if ratio > best_ratio:
-                best_ratio, best = ratio, canonical
-        return best if best_ratio >= self.fuzzy_threshold else None
 
     # --- public interface ---------------------------------------------------
 
     def normalize_name(self, name: Optional[str]) -> Optional[str]:
         """
         Normalize a name or title string to a canonical form.
-        Returns None for None / empty input.
+
+        Resolution order:
+          1. Cache hit.
+          2. Exact lookup in merged authority map.
+          3. Token-bounded substring scan (for compound strings like "Ur-Nanna šabra").
+
+        If no deterministic match is found the original cleaned string is
+        returned prefixed with UNRESOLVED_PREFIX and logged as a warning.
+        Fuzzy / SequenceMatcher matching is intentionally absent: Sumerian
+        personal names in the Umma archive are orthographically similar by
+        design (Ur-Nanna, Ur-Suen, Ur-Utu share significant character
+        sequences), making similarity-based resolution a source of silent
+        prosopographical conflation.  All unresolved strings should be
+        reviewed manually and added to NAME_MAP or a name-authority CSV.
         """
         if not name:
             return name
 
         cleaned = self._clean(name)
 
-        # 1. Exact lookup
+        # 1. Cache
+        if cleaned in self._cache:
+            return self._cache[cleaned]
+
+        result: Optional[str] = None
+
+        # 2. Exact lookup
         if cleaned in self._all:
-            return self._all[cleaned]
+            result = self._all[cleaned]
 
-        # 2. Whole-token substring scan (handles "Ur-Nanna šabra"-style strings)
-        #    Prefer longest matching key to avoid short false positives.
-        best_key_len = 0
-        best_canon: Optional[str] = None
-        for key, canonical in self._all.items():
-            if key in cleaned and len(key) > best_key_len:
-                best_key_len, best_canon = len(key), canonical
-        if best_canon and best_key_len >= 3:
-            return best_canon
+        # 3. Token-bounded substring scan
+        if result is None:
+            best_key_len = 0
+            best_canon: Optional[str] = None
+            for key, canonical in self._all.items():
+                if len(key) < 3 or len(key) <= best_key_len:
+                    continue
+                # Match key only as a complete whitespace-delimited token
+                if re.search(r"(?:^|\s)" + re.escape(key) + r"(?:\s|$)", cleaned):
+                    best_key_len, best_canon = len(key), canonical
+            if best_canon:
+                result = best_canon
 
-        # 3. Fuzzy match
-        fuzzy = self._fuzzy_match(cleaned)
-        if fuzzy:
-            return fuzzy
+        # 4. Unresolved: flag for manual curation; do NOT guess via similarity.
+        # Sumerian personal names share significant character sequences by design
+        # (Ur-Nanna / Ur-Suen / Ur-Utu), making SequenceMatcher-style resolution
+        # a source of silent prosopographical conflation.  All unresolved strings
+        # must be reviewed manually and added to NAME_MAP or an authority CSV.
+        if result is None:
+            self.unresolved.add(cleaned)
+            logger.warning(
+                "Unresolved name %r — add to NAME_MAP or authority CSV", cleaned
+            )
+            result = f"{self.UNRESOLVED_PREFIX} {cleaned}"
 
-        # 4. Return cleaned original
-        return cleaned
+        self._cache[cleaned] = result
+        return result
 
     def normalize_transaction(self, tx: Transaction) -> Transaction:
         tx.issuer    = self.normalize_name(tx.issuer)
@@ -729,16 +944,25 @@ class NetworkBuilder:
     def add_transaction(self, tx: Transaction) -> None:
         if not tx.issuer or not tx.recipient:
             return
-        weight = tx.quantity if tx.quantity else 1.0
+        volume = tx.quantity if tx.quantity else 1.0
+        yr = tx.date.year_number if tx.date and tx.date.year_number else None
         if self.graph.has_edge(tx.issuer, tx.recipient):
-            self.graph[tx.issuer][tx.recipient]["weight"] += weight
-            self.graph[tx.issuer][tx.recipient]["count"]  += 1
+            e = self.graph[tx.issuer][tx.recipient]
+            e["weight"]  += volume   # cumulative sila3 (used by nx algorithms)
+            e["volume"]  += volume   # same, explicitly named for export clarity
+            e["count"]   += 1
+            e["_tablets"].add(tx.tablet_id)
+            if yr is not None:
+                e["_years"].add(yr)
         else:
             self.graph.add_edge(
                 tx.issuer,
                 tx.recipient,
-                weight=weight,
+                weight=volume,
+                volume=volume,
                 count=1,
+                _tablets={tx.tablet_id},
+                _years={yr} if yr is not None else set(),
             )
 
     def build(self, transactions: List[Transaction]) -> nx.DiGraph:
@@ -753,11 +977,19 @@ class NetworkBuilder:
 
 def compute_metrics(G: nx.DiGraph) -> Dict:
     """Return standard network metrics for a directed graph."""
+    n = G.number_of_nodes()
+    # k-sampled betweenness: exact for small graphs, approximated for large ones.
+    # k = sqrt(n)*4 balances accuracy and runtime; capped at n (exact) below 50
+    # nodes.  Without sampling, O(VE) becomes unusable at corpus scale (1 000+
+    # unique agents).
+    k_bc = n if n <= 50 else max(50, int(n ** 0.5 * 4))
     return {
         "degree_centrality":      nx.degree_centrality(G),
         "in_degree_centrality":   nx.in_degree_centrality(G),
         "out_degree_centrality":  nx.out_degree_centrality(G),
-        "betweenness_centrality": nx.betweenness_centrality(G, weight="weight"),
+        "betweenness_centrality": nx.betweenness_centrality(
+            G, weight="weight", k=k_bc, normalized=True,
+        ),
         "density":                nx.density(G),
         "num_weakly_connected_components": nx.number_weakly_connected_components(G),
     }
@@ -771,10 +1003,27 @@ def export_to_gexf(G: nx.DiGraph, filepath: str) -> None:
     """
     Export the transaction network to GEXF format for Gephi.
     Edge attributes 'weight' and 'count' are preserved.
+    The live graph G is never mutated — serialisation operates on a deep copy.
     """
     try:
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
-        nx.write_gexf(G, filepath)
+        # Deep-copy so that converting _tablets/_years sets to strings
+        # does not destroy provenance data on the caller's live graph.
+        G_export = copy.deepcopy(G)
+        G_export.graph["defaultedgetype"] = "directed"
+
+        # Convert internal provenance sets to GEXF-serializable strings.
+        # year_min / year_max are recognized by Gephi's Timeline plugin for
+        # diachronic filtering; "tablets" provides full provenance tracing.
+        for _u, _v, d in G_export.edges(data=True):
+            tablets = sorted(d.pop("_tablets", set()))
+            years   = sorted(d.pop("_years",   set()))
+            d["tablets"]  = ",".join(tablets)
+            d["year_min"] = years[0]  if years else ""
+            d["year_max"] = years[-1] if years else ""
+            d["years"]    = ",".join(str(y) for y in years)
+
+        nx.write_gexf(G_export, filepath)
         logger.info("Network exported to GEXF: %s", filepath)
     except OSError as exc:
         logger.error("Failed to write GEXF to %s: %s", filepath, exc)
@@ -788,7 +1037,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
 
     fieldnames = [
         "tablet_id", "issuer", "recipient",
-        "quantity", "unit", "commodity",
+        "quantity", "unit", "commodity", "tx_type",
         "date_king", "date_year_number", "date_year_name",
         "date_month", "date_day", "raw_date", "line_ref",
     ]
@@ -802,6 +1051,7 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
             "quantity":         tx.quantity if tx.quantity is not None else "",
             "unit":             tx.unit or "",
             "commodity":        tx.commodity or "",
+            "tx_type":          tx.tx_type or "",
             "date_king":        d.king if d else "",
             "date_year_number": d.year_number if d else "",
             "date_year_name":   d.year_name if d else "",
@@ -821,6 +1071,163 @@ def export_transactions_csv(transactions: List[Transaction], filepath: str) -> N
         logger.info("Transactions exported to CSV: %s (%d rows)", filepath, len(transactions))
     except OSError as exc:
         logger.error("Failed to write CSV to %s: %s", filepath, exc)
+
+
+# ---------------------------------------------------------------------------
+# Unresolved-name export
+# ---------------------------------------------------------------------------
+
+def export_unresolved_names(normalizer: Normalizer, filepath: str) -> None:
+    """
+    Write the set of names that could not be resolved deterministically,
+    one per line, sorted alphabetically.  Use this output to identify
+    candidates for NAME_MAP entries or an authority CSV before treating
+    any network output as scholarly evidence.
+    """
+    try:
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        names = sorted(normalizer.unresolved)
+        with open(filepath, "w", encoding="utf-8") as fh:
+            for name in names:
+                fh.write(name + "\n")
+        logger.info("Exported %d unresolved names to %s", len(names), filepath)
+    except OSError as exc:
+        logger.error("Failed to write unresolved names to %s: %s", filepath, exc)
+
+
+# ---------------------------------------------------------------------------
+# Validator
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ValidationResult:
+    """Per-field precision/recall scores against a BDTNS gold-standard."""
+    field: str
+    true_positives:  int = 0
+    false_positives: int = 0
+    false_negatives: int = 0
+
+    @property
+    def precision(self) -> float:
+        denom = self.true_positives + self.false_positives
+        return self.true_positives / denom if denom else 0.0
+
+    @property
+    def recall(self) -> float:
+        denom = self.true_positives + self.false_negatives
+        return self.true_positives / denom if denom else 0.0
+
+    @property
+    def f1(self) -> float:
+        p, r = self.precision, self.recall
+        return 2 * p * r / (p + r) if (p + r) else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"{self.field}: P={self.precision:.3f} R={self.recall:.3f} "
+            f"F1={self.f1:.3f} "
+            f"(TP={self.true_positives} FP={self.false_positives} "
+            f"FN={self.false_negatives})"
+        )
+
+
+class Validator:
+    """
+    Measure extraction precision/recall against a BDTNS gold-standard CSV.
+
+    The gold CSV must have columns:
+      tablet_id, issuer, recipient, quantity, commodity, date_year_number
+
+    Empty cells mean "not evaluated" for that field.
+
+    Usage::
+        v = Validator("gold_standard.csv")
+        results = v.evaluate(transactions)
+        for r in results.values():
+            print(r)
+    """
+
+    FIELDS: Tuple[str, ...] = (
+        "issuer", "recipient", "quantity", "commodity", "date_year_number"
+    )
+
+    def __init__(self, gold_filepath: str) -> None:
+        self._gold: Dict[str, Dict] = {}
+        self._load(gold_filepath)
+
+    def _load(self, filepath: str) -> None:
+        try:
+            with open(filepath, newline="", encoding="utf-8") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    tid = row.get("tablet_id", "").strip()
+                    if tid:
+                        self._gold[tid] = {k: v.strip() for k, v in row.items()}
+            logger.info(
+                "Validator loaded %d gold-standard records from %s",
+                len(self._gold), filepath,
+            )
+        except (OSError, KeyError) as exc:
+            logger.error("Failed to load gold standard %s: %s", filepath, exc)
+
+    def evaluate(
+        self, transactions: List[Transaction]
+    ) -> Dict[str, ValidationResult]:
+        """
+        Compare extracted transactions against the gold standard.
+        Returns one ValidationResult per evaluated field.
+        """
+        results: Dict[str, ValidationResult] = {
+            f: ValidationResult(field=f) for f in self.FIELDS
+        }
+        seen_tids: Set[str] = set()
+
+        for tx in transactions:
+            gold = self._gold.get(tx.tablet_id)
+            if gold is None:
+                continue
+            seen_tids.add(tx.tablet_id)
+            self._compare_tx(tx, gold, results)
+
+        # Any gold tablet not seen in extracted output is a false negative
+        for tid, gold in self._gold.items():
+            if tid not in seen_tids:
+                for f in self.FIELDS:
+                    if gold.get(f, ""):
+                        results[f].false_negatives += 1
+
+        return results
+
+    @staticmethod
+    def _norm(v: Optional[object]) -> str:
+        return str(v).strip().lower() if v is not None else ""
+
+    def _compare_tx(
+        self,
+        tx: Transaction,
+        gold: Dict,
+        results: Dict[str, ValidationResult],
+    ) -> None:
+        extracted_vals = {
+            "issuer":           tx.issuer,
+            "recipient":        tx.recipient,
+            "quantity":         tx.quantity,
+            "commodity":        tx.commodity,
+            "date_year_number": tx.date.year_number if tx.date else None,
+        }
+        for f, extracted in extracted_vals.items():
+            gold_val = gold.get(f, "").strip()
+            if not gold_val:
+                continue  # field not evaluated for this record
+            ext_str  = self._norm(extracted)
+            gold_str = self._norm(gold_val)
+            r = results[f]
+            if ext_str and ext_str == gold_str:
+                r.true_positives  += 1
+            elif ext_str and ext_str != gold_str:
+                r.false_positives += 1
+            else:
+                r.false_negatives += 1
 
 
 # ---------------------------------------------------------------------------
@@ -896,6 +1303,10 @@ def main() -> None:
             sulgi_slice,
             os.path.join(output_dir, "transactions_sulgi_45-48.csv"),
         )
+    export_unresolved_names(
+        normalizer,
+        os.path.join(output_dir, "unresolved_names.txt"),
+    )
 
 
 if __name__ == "__main__":
