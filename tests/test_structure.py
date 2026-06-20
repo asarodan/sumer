@@ -55,6 +55,41 @@ class TestMultiCommoditySplit:
         assert units == {"sila3", "gin2"}
 
 
+class TestRecordsPath:
+    """The hierarchical records path (extract_records) must mirror the
+    transaction path: split multi-commodity lines and propagate a sole staple."""
+
+    def _entries(self, ext, body):
+        summary = ext.extract_records(_tablet(*body), "P900000")
+        return [e for rec in summary.records for e in rec.entries]
+
+    def test_multi_commodity_line_splits(self, ext):
+        entries = self._entries(ext, [
+            "1. 5(disz) sila3 kasz 5(disz) sila3 ninda 5(disz) gin2 szum2",
+            "2. ki lugal-ta",
+        ])
+        comms = {e.commodity for e in entries if e.quantity}
+        assert "beer" in comms and "bread" in comms
+
+    def test_sole_commodity_propagates(self, ext):
+        entries = self._entries(ext, [
+            "1. 3(asz) gur lugal-ba",          # bare, pre-commodity
+            "2. 4(asz) sze gur a-kal-la",
+            "3. szunigin 7(asz) gur",
+        ])
+        grain = [e for e in entries if e.unit == "sila3"]
+        assert grain and all(e.commodity == "barley" for e in grain)
+
+    def test_multi_commodity_leaves_bare_none(self, ext):
+        entries = self._entries(ext, [
+            "1. 3(asz) gur lugal-ba",          # bare, pre-commodity → None
+            "2. 4(asz) sze gur a-kal-la",
+            "3. 6(asz) ziz2 gur a-kal-la",
+        ])
+        comms = {e.commodity for e in entries if e.unit == "sila3"}
+        assert {"barley", "emmer"} <= comms and None in comms
+
+
 class TestBasicTransaction:
     def test_issuer_and_quantity(self, ext):
         lines = _tablet("1. 8(asz) sze gur", "2. ki lugal-ta", "3. kiszib3 ur-saga")

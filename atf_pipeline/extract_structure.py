@@ -654,6 +654,27 @@ class StructureMixin:
         return results
 
     @staticmethod
+    def _propagate_records_commodity(records: List[TabletRecord]) -> None:
+        """Records-path analogue of :meth:`_propagate_tablet_commodity`.
+
+        When a tablet's record entries attest exactly one grain-capacity (sila3)
+        commodity, fill every bare sila3 entry with it; multi-commodity tablets
+        stay untouched. Operates across all records so a commodity named in one
+        section carries to a bare entry in another.
+        """
+        seen = {
+            e.commodity for rec in records for e in rec.entries
+            if e.unit == "sila3" and e.commodity is not None
+        }
+        if len(seen) != 1:
+            return
+        only = next(iter(seen))
+        for rec in records:
+            for e in rec.entries:
+                if e.unit == "sila3" and e.commodity is None:
+                    e.commodity = only
+
+    @staticmethod
     def _propagate_tablet_commodity(results: List[Transaction]) -> None:
         """
         Fill in commodity for bare grain-capacity lines from tablet context.
@@ -992,15 +1013,23 @@ class StructureMixin:
                 if self._looks_like_name(cand):
                     pending_dative = cand
 
-            # *** QUANTITY-FIRST: every quantity line → one RecordEntry ***
-            q, u = self.extract_quantity(clean)
-            if q is not None:
-                comm = c or pending_comm   # same-line commodity preferred
+            # *** QUANTITY-FIRST: every allotment on a line → one RecordEntry ***
+            # A line may pack several goods ("5 sila3 beer 5 gin2 onion"); split
+            # them so each becomes its own entry in its own unit. Single-
+            # commodity lines yield one segment and behave exactly as before.
+            segs = self._segment_allotments(clean)
+            made_entry = False
+            for seg in segs:
+                q, u = self.extract_quantity(seg)
+                if q is None:
+                    continue
+                seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
+                comm = seg_c or pending_comm   # same-line commodity preferred
                 if u == "head" and comm is None:
                     comm = "animal"
                 # sze gub-ba distribution lines carry the recipient inline:
                 # "1(asz) 1(barig) gur ur-e2-mah" → recipient = "ur-e2-mah"
-                inline_recip = self._extract_inline_qty_recipient(clean)
+                inline_recip = self._extract_inline_qty_recipient(seg)
                 entries.append(RecordEntry(
                     entry_idx=0,
                     recipient=inline_recip,
@@ -1008,6 +1037,8 @@ class StructureMixin:
                     unit=u,
                     commodity=comm,
                 ))
+                made_entry = True
+            if made_entry:
                 continue
 
             # Track previous name-like line (for standalone szu ba-ti)
@@ -1081,6 +1112,8 @@ class StructureMixin:
             lr = self._labor_record_from_lines(lines, tablet_id)
             if lr:
                 records = [lr]
+
+        self._propagate_records_commodity(records)
 
         for i, rec in enumerate(records, 1):
             rec.record_idx = i
