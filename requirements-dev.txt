@@ -1,0 +1,4 @@
+# Development / test dependencies.
+#   pip install -r requirements-dev.txt
+#   python3 -m pytest
+pytest>=7.0
