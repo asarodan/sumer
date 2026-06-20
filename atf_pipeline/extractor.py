@@ -50,7 +50,8 @@ class ATFExtractor(
       - u4 N(-kam)         Day line
 
     Quantity system (all normalised to sila3):
-      szar2=1,080,000  gesz'u=180,000  gesz2=18,000  asz/gur=300
+      szargal=64,800,000  szar'u=10,800,000  szar2=1,080,000
+      gesz'u=180,000  gesz2=18,000  asz/gur=300
       barig=60  ban2=10  disz/sila3=1
       Fractional coefficients (1/2(disz) etc.) are handled.
     """

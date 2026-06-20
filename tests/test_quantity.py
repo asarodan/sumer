@@ -84,3 +84,44 @@ class TestSegmentation:
         segs = ext._segment_allotments("5(disz) sila3 kasz 5(disz) gin2 szum2")
         results = [ext.extract_quantity(s) for s in segs]
         assert results == [(5.0, "sila3"), (5.0, "gin2")]
+
+
+class TestLargeGrainUnits:
+    def test_szar_u(self, ext):
+        # 1(szar'u) = 36,000 gur = 10,800,000 sila3
+        assert ext.extract_quantity("1(szar'u) sze gur") == (10_800_000.0, "sila3")
+
+    def test_szargal(self, ext):
+        # 1(szargal) = 216,000 gur = 64,800,000 sila3
+        assert ext.extract_quantity("1(szargal) sze gur") == (64_800_000.0, "sila3")
+
+    def test_compound_with_szar_u(self, ext):
+        # 3(szar'u) 1(gesz2) 4(asz) 3(barig) = 32,400,000 + 18,000 + 1,200 + 180 = 32,419,380 sila3
+        q, u = ext.extract_quantity("3(szar'u) 1(gesz2) 4(asz) 3(barig) sze gur")
+        assert u == "sila3"
+        assert q == 3 * 10_800_000 + 1 * 18_000 + 4 * 300 + 3 * 60
+
+    def test_szar2_still_works(self, ext):
+        # Regression: szar2 = 3,600 gur = 1,080,000 sila3
+        assert ext.extract_quantity("1(szar2) sze gur") == (1_080_000.0, "sila3")
+
+
+class TestBalanceLines:
+    def test_la2_ia3_suppressed(self, ext):
+        # la2-ia3 = deficit/shortfall — must never be counted as a transaction
+        assert ext.extract_quantity("la2-ia3 1(gesz2) 5(asz) gur") == (None, None)
+
+    def test_diri_trailing_suppressed(self, ext):
+        # "N gur diri" = surplus — the quantity is a residual, not a new movement
+        assert ext.extract_quantity("1(gesz2) 5(asz) gur diri") == (None, None)
+
+    def test_diri_leading_suppressed(self, ext):
+        assert ext.extract_quantity("diri 1(gesz2) 5(asz) gur") == (None, None)
+
+    def test_sza3_bi_ta_suppressed(self, ext):
+        assert ext.extract_quantity("sza3-bi-ta 3(asz) sze gur") == (None, None)
+
+    def test_normal_delivery_not_suppressed(self, ext):
+        # mu-kux delivery lines ARE real grain movements — must not be filtered
+        q, u = ext.extract_quantity("mu-kux 3(asz) sze gur")
+        assert q == 900.0 and u == "sila3"

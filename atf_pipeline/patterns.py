@@ -34,25 +34,29 @@ class ExtractorBase:
 
     # Grain capacity system (sila3 per unit)
     _GRAIN_CONV: Dict[str, float] = {
-        "szar2":  3600.0 * 300.0,
-        "gesz'u":  600.0 * 300.0,
-        "gesz2":    60.0 * 300.0,
-        "asz":         300.0,
-        "gur":         300.0,
-        "barig":        60.0,
-        "ban2":         10.0,
-        "disz":          1.0,
-        "sila3":         1.0,
-        "sila":          1.0,
+        "szargal": 216000.0 * 300.0,  # 64,800,000 sila3
+        "szar'u":   36000.0 * 300.0,  # 10,800,000 sila3
+        "szar2":    3600.0 * 300.0,
+        "gesz'u":    600.0 * 300.0,
+        "gesz2":      60.0 * 300.0,
+        "asz":           300.0,
+        "gur":           300.0,
+        "barig":          60.0,
+        "ban2":           10.0,
+        "disz":            1.0,
+        "sila3":           1.0,
+        "sila":            1.0,
     }
     # Pure sexagesimal counter for workers and other non-grain quantities:
     # gesz2 = 60, u = 10, disz = 1 (not multiplied by any grain factor).
     _LABOR_CONV: Dict[str, float] = {
-        "szar2":  3600.0,
-        "gesz'u":  600.0,
-        "gesz2":    60.0,
-        "u":        10.0,
-        "disz":      1.0,
+        "szargal": 216000.0,
+        "szar'u":   36000.0,
+        "szar2":    3600.0,
+        "gesz'u":    600.0,
+        "gesz2":      60.0,
+        "u":          10.0,
+        "disz":        1.0,
     }
     # Units that definitively mark a grain/capacity measurement.
     # gesz2/gesz'u/szar2 intentionally excluded: they are generic sexagesimal
@@ -109,6 +113,25 @@ class ExtractorBase:
     # follows a processed-product entry (bran, malt) to record the grain value.
     # It is not a separate delivery and must be skipped when collecting entries.
     _RE_SZE_BI = re.compile(r"^sze-bi\b", re.I)
+
+    # Accounting-balance lines: these are RESIDUALS (expected − delivered, or
+    # carry-forward subtotals) that are already embedded in the totals above.
+    # They must never contribute to a commodity total.
+    #   la2-ia3   = deficit / shortfall (expected − delivered)
+    #   sza3-bi-ta = "from its subtotal" — carry-forward already counted above
+    #   diri       = surplus / excess (standalone at start or end of a quantity line)
+    _RE_BALANCE_LINE = re.compile(
+        r"^la2-ia3\b"       # deficit at line start (after line-num strip)
+        r"|^sza3-bi-ta\b"   # carry-forward subtotal
+        r"|^diri\b"         # surplus at line start
+        r"|\s+diri\s*$",    # surplus trailing a quantity: "N gur diri"
+        re.I,
+    )
+
+    # Delivery-tally keyword: mu-kux(DU) = "was delivered into [granary]".
+    # When combined with sze-bi (expected yield) and la2-ia3 (deficit), this
+    # identifies a yield-balance ledger rather than a transaction tablet.
+    _RE_MU_KUX = re.compile(r"\bmu-kux\b", re.I)
 
     # Labor/worker-day line indicators — these are NEVER grain quantities
     _RE_LABOR_LINE = re.compile(r"\bgurusz\b|\bgeme2\b", re.I)

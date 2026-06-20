@@ -29,6 +29,12 @@ class StructureMixin:
         labor = sum(1 for l in lines if cls._RE_LABOR_LINE.search(l))
         transfer = sum(1 for l in lines if cls._RE_TRANSFER_SIGNAL.search(l))
         engar = sum(1 for l in lines if re.search(r"\bengar\b", l, re.I))
+        # Yield-balance ledger: sze-bi (expected grain yield from field area) +
+        # mu-kux (actual delivery) + la2-ia3 (deficit) identifies an agricultural
+        # accounting balance sheet — NOT a flat transaction list.
+        lines_text = " ".join(l.lower() for l in lines)
+        if ("sze-bi" in lines_text and "mu-kux" in lines_text and "la2-ia3" in lines_text):
+            return "yield_ledger"
         if engar >= 2:
             return "allocation"
         if labor >= 3 and labor >= transfer * 2:
@@ -937,6 +943,11 @@ class StructureMixin:
         date, raw_mu = self._parse_date(section)
 
         for line in content:
+            # Szunigin total closes the section; its quantity is the sum of what came
+            # before it — including it would double-count the entire section.
+            if self._RE_SZUNIGIN.match(line):
+                continue
+
             clean = self._strip_linenum(line)
 
             # Skip "sze-bi N gur" accounting conversion notes.

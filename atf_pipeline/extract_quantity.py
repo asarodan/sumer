@@ -164,6 +164,10 @@ class QuantityMixin:
         """
         if self._RE_NON_GRAIN.search(line):
             return None, None
+        # Accounting balance lines (deficit, surplus, carry-forward subtotals) represent
+        # residuals already embedded in surrounding totals — do not sum them.
+        if self._RE_BALANCE_LINE.search(line):
+            return None, None
         if self._RE_LABOR_LINE.search(line):
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)
