@@ -42,23 +42,33 @@ def main() -> None:
     barley_transactions: List[Transaction]  = []
     commodity_counts:    Dict[str, int]     = {}
     all_summaries:       List[TabletSummary] = []
-    entity_scanner = EntityScanner(normalizer)
 
+    # Pass 1: extract every tablet (raw, un-normalised).
+    raw_transactions: List[Transaction] = []
     for tablet_id, lines in corpus.items():
-        # Flat transaction pass (feeds existing network/CSV pipeline)
-        for tx in extractor.extract_transactions(lines, tablet_id):
-            tx = normalizer.normalize_transaction(tx)
-            all_transactions.append(tx)
-            if tx.commodity:
-                commodity_counts[tx.commodity] = commodity_counts.get(tx.commodity, 0) + 1
-            if tx.commodity == "barley":
-                barley_transactions.append(tx)
-
-        # Hierarchical pass (tablets → records → entries)
+        raw_transactions.extend(extractor.extract_transactions(lines, tablet_id))
         summary = extractor.extract_records(lines, tablet_id)
         if summary.n_records > 0:
             all_summaries.append(summary)
-            entity_scanner.scan(summary)
+
+    # Fit the normaliser on the full set of attested names so a grammatical
+    # case suffix is only merged when the bare form is independently attested.
+    normalizer.fit(
+        [who for tx in raw_transactions for who in (tx.issuer, tx.recipient, tx.agent)]
+        + [e.recipient for s in all_summaries for r in s.records for e in r.entries]
+    )
+
+    # Pass 2: normalise transactions and scan entities.
+    entity_scanner = EntityScanner(normalizer)
+    for tx in raw_transactions:
+        tx = normalizer.normalize_transaction(tx)
+        all_transactions.append(tx)
+        if tx.commodity:
+            commodity_counts[tx.commodity] = commodity_counts.get(tx.commodity, 0) + 1
+        if tx.commodity == "barley":
+            barley_transactions.append(tx)
+    for summary in all_summaries:
+        entity_scanner.scan(summary)
 
     n_total   = len(all_transactions)
     n_barley  = len(barley_transactions)

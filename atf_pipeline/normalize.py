@@ -163,14 +163,43 @@ class Normalizer:
         "ur-sa6-ga":        "Ur-saga",
     }
 
+    # Ergative -ke4 (and plural -ke4-ne) is a grammatical agreement marker that
+    # is never part of a personal-name root, so it can always be stripped.
+    _RE_ERGATIVE = re.compile(r"^(.+?)-ke4(?:-ne)?$")
+    # Other case markers (genitive -ka, dative -ra, ablative -ta, terminative
+    # -sze3) are ambiguous: a name can genuinely end in -ra (lu2-dingir-ra) or
+    # -ka. These are stripped only when the bare form is independently attested.
+    _RE_CASE_SUFFIX = re.compile(r"^(.+?)-(?:ka|ra|ta|sze3)$")
+
     def __init__(self, fuzzy_threshold: float = 0.85) -> None:
         self.fuzzy_threshold = fuzzy_threshold
         self._all: Dict[str, str] = {}
-        # Clean keys so determinatives ({d}, {gesz}, etc.) are stripped,
-        # matching the cleaned input in normalize_name lookups.
-        for src in (self.TITLE_MAP, self.INSTITUTION_MAP, self.NAME_MAP):
+        # Only role titles and institutions are translated to English; personal
+        # names are kept in canonical ATF transliteration so the output is one
+        # consistent representation instead of a mix of anglicised (Lu-Shara)
+        # and raw (lu2-nin-szubur) forms. NAME_MAP is retained for reference but
+        # intentionally not loaded into the lookup.
+        for src in (self.TITLE_MAP, self.INSTITUTION_MAP):
             for k, v in src.items():
                 self._all[self._clean(k)] = v
+        # Set of attested (cleaned) names; populated by fit() to gate the
+        # evidence-based case-suffix merge. None until fit() is called.
+        self._known_roots: Optional[set] = None
+
+    def fit(self, names) -> None:
+        """Record every attested name so that an ambiguous case suffix is only
+        merged when the bare form occurs on its own elsewhere in the corpus."""
+        self._known_roots = {self._clean(n) for n in names if n}
+
+    def _merge_case_suffix(self, cleaned: str) -> str:
+        m = self._RE_ERGATIVE.match(cleaned)
+        if m:
+            return m.group(1)
+        if self._known_roots is not None:
+            m = self._RE_CASE_SUFFIX.match(cleaned)
+            if m and m.group(1) in self._known_roots:
+                return m.group(1)
+        return cleaned
 
     def _clean(self, name: str) -> str:
         name = name.lower().strip()
@@ -208,7 +237,9 @@ class Normalizer:
         fuzzy = self._fuzzy_match(cleaned)
         if fuzzy:
             return fuzzy
-        return cleaned
+        # Personal name (no title/institution match): canonical ATF, with
+        # grammatical case suffixes folded so the same actor is one node.
+        return self._merge_case_suffix(cleaned)
 
     def normalize_transaction(self, tx: Transaction) -> Transaction:
         tx.issuer    = self.normalize_name(tx.issuer)
