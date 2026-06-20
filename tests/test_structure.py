@@ -143,6 +143,34 @@ class TestEnvelopeDeduplication:
         assert len([t for t in txs if t.quantity]) == 1
 
 
+class TestBracketedKeywords:
+    """CDLI square-bracket restorations must not defeat line-type filters."""
+
+    def test_bracketed_sze_bi_not_extracted(self, ext):
+        # "[sze-bi N gur]" = expected yield (damaged restoration); must be suppressed
+        lines = _tablet(
+            "1. [sze-bi 1(szar2) gur]",
+            "2. 3(gesz2) sze gur",    # actual delivery (54,000 sila3)
+            "3. mu-kux(DU)",
+            "4. la2-ia3 2(gesz2) gur",
+            "5. mu szul-gi lugal uri5{ki}-ma",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000") if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 1_080_000.0 not in qtys   # sze-bi must be suppressed
+        assert 54_000.0 in qtys           # delivery counted
+
+    def test_bracketed_diri_not_extracted(self, ext):
+        lines = _tablet(
+            "1. 5(asz) sze gur ki lugal-ta szu ba-ti",
+            "2. [diri] 1(asz) gur",   # surplus — must not add a second transaction
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000") if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 300.0 not in qtys or qtqs.count(300.0) <= 1   # diri not double-counted
+        assert 1500.0 in qtys
+
+
 class TestSzuniginNotDoubleCountedInRecords:
     """szunigin total must not produce an extra entry in the records path."""
 

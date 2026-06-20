@@ -112,7 +112,8 @@ class ExtractorBase:
     # "sze-bi" = "its barley (equivalent)" — an accounting conversion note that
     # follows a processed-product entry (bran, malt) to record the grain value.
     # It is not a separate delivery and must be skipped when collecting entries.
-    _RE_SZE_BI = re.compile(r"^sze-bi\b", re.I)
+    # The \[? allows for CDLI square-bracket restorations at line start.
+    _RE_SZE_BI = re.compile(r"^\[?sze-bi\b", re.I)
 
     # Accounting-balance lines: these are RESIDUALS (expected − delivered, or
     # carry-forward subtotals) that are already embedded in the totals above.
@@ -120,11 +121,12 @@ class ExtractorBase:
     #   la2-ia3   = deficit / shortfall (expected − delivered)
     #   sza3-bi-ta = "from its subtotal" — carry-forward already counted above
     #   diri       = surplus / excess (standalone at start or end of a quantity line)
+    # \[? at line start: accounts for CDLI square-bracket damaged-text restorations.
     _RE_BALANCE_LINE = re.compile(
-        r"^la2-ia3\b"       # deficit at line start (after line-num strip)
-        r"|^sza3-bi-ta\b"   # carry-forward subtotal
-        r"|^diri\b"         # surplus at line start
-        r"|\s+diri\s*$",    # surplus trailing a quantity: "N gur diri"
+        r"^\[?la2-ia3\b"       # deficit at line start (after line-num strip)
+        r"|^\[?sza3-bi-ta\b"   # carry-forward subtotal
+        r"|^\[?diri\b"         # surplus at line start
+        r"|\s+diri\s*$",       # surplus trailing a quantity: "N gur diri"
         re.I,
     )
 

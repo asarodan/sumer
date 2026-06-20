@@ -174,12 +174,23 @@ class TestBalanceLines:
         # la2-ia3 = deficit/shortfall — must never be counted as a transaction
         assert ext.extract_quantity("la2-ia3 1(gesz2) 5(asz) gur") == (None, None)
 
+    def test_la2_ia3_bracketed(self, ext):
+        # Square-bracket prefix (CDLI damaged text restoration) must still be caught
+        assert ext.extract_quantity("[la2-ia3] 1(gesz2) 5(asz) gur") == (None, None)
+
     def test_diri_trailing_suppressed(self, ext):
         # "N gur diri" = surplus — the quantity is a residual, not a new movement
         assert ext.extract_quantity("1(gesz2) 5(asz) gur diri") == (None, None)
 
     def test_diri_leading_suppressed(self, ext):
         assert ext.extract_quantity("diri 1(gesz2) 5(asz) gur") == (None, None)
+
+    def test_diri_bracketed(self, ext):
+        # [diri] at line start (damaged restoration) must also be suppressed
+        assert ext.extract_quantity("[diri] 1(szar2) 2(gesz'u) gur") == (None, None)
+
+    def test_sza3_bi_ta_bracketed(self, ext):
+        assert ext.extract_quantity("[sza3-bi-ta] 3(asz) sze gur") == (None, None)
 
     def test_sza3_bi_ta_suppressed(self, ext):
         assert ext.extract_quantity("sza3-bi-ta 3(asz) sze gur") == (None, None)
