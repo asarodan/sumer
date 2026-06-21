@@ -124,7 +124,7 @@ class ExtractorBase:
     # \[? at line start: accounts for CDLI square-bracket damaged-text restorations.
     _RE_BALANCE_LINE = re.compile(
         r"^\[?la2-ia3\b"       # deficit at line start (after line-num strip)
-        r"|^\[?sza3-bi-ta\b"   # carry-forward subtotal
+        r"|^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b"  # carry-forward (all damage forms)
         r"|^\[?diri\b"         # surplus at line start
         r"|\s+diri\s*$"        # surplus trailing a quantity: "N gur diri"
         r"|\bla2-ia3-am3\b"    # "it is the deficit" — copula suffix on total lines

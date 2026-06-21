@@ -180,6 +180,10 @@ class StructureMixin:
         any_issuer:        Optional[str]   = None
         # Each element: (quantity, unit, commodity_at_that_line)
         qty_entries: List[Tuple[float, str, Optional[str]]] = []
+        # sza3-bi-ta ("from the subtotal / carry-forward") is a two-line
+        # pattern: the label appears on one line, the actual balance amount
+        # on the next.  Suppress the amount that follows the header.
+        skip_carryforward = False
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
@@ -220,12 +224,22 @@ class StructureMixin:
             # to extract_quantity would no longer see, allowing the trailing
             # quantity to leak through the filter.
             if self._RE_BALANCE_LINE.search(clean):
+                # sza3-bi-ta appears without an inline amount; the carry-forward
+                # balance is on the NEXT content line.  Flag it so that line is skipped.
+                if re.match(r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b", clean, re.I):
+                    skip_carryforward = True
                 continue
             segs = self._segment_allotments(clean)
             for seg in segs:
                 q, u = self.extract_quantity(seg)
                 if q is None:
                     continue
+                # Only consume skip_carryforward on an actual grain quantity so
+                # that no-qty content lines (like "5(disz) [...]") don't absorb
+                # the flag prematurely before the real carry-forward amount.
+                if skip_carryforward and u == "sila3":
+                    skip_carryforward = False
+                    continue  # suppress this carry-forward grain quantity
                 seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
                 this_comm = seg_c or pending_commodity
                 if u == "head" and this_comm is None:
@@ -969,6 +983,7 @@ class StructureMixin:
         prev_name:      Optional[str] = None
         pending_comm:   Optional[str] = None   # last commodity seen on any line
         entries: List[RecordEntry] = []
+        skip_carryforward = False
 
         date, raw_mu = self._parse_date(section)
 
@@ -1062,6 +1077,8 @@ class StructureMixin:
             # a leading keyword stripped by the segmenter (e.g. "sza3 sze")
             # cannot leave the bare quantity visible to extract_quantity.
             if self._RE_BALANCE_LINE.search(clean):
+                if re.match(r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b", clean, re.I):
+                    skip_carryforward = True
                 continue
             segs = self._segment_allotments(clean)
             made_entry = False
@@ -1069,6 +1086,9 @@ class StructureMixin:
                 q, u = self.extract_quantity(seg)
                 if q is None:
                     continue
+                if skip_carryforward and u == "sila3":
+                    skip_carryforward = False
+                    continue  # suppress carry-forward grain quantity
                 seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
                 comm = seg_c or pending_comm   # same-line commodity preferred
                 if u == "head" and comm is None:

@@ -305,3 +305,32 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 1_104_000.0 not in qtys
         assert any(q > 800_000 for q in qtys)  # the real grain line survives
+
+    def test_sza3_bi_ta_carry_forward_suppressed(self, ext):
+        # "sza3-bi-ta" (carry-forward header) appears on one line and the
+        # carry-forward balance on the NEXT line.  Both must be excluded.
+        lines = _tablet(
+            "1. szunigin 3(gesz'u) gur",
+            "2. sza3-bi-ta",
+            "3. 3(gesz'u) gur",      # carry-forward amount — must NOT be a tx
+            "4. 5(asz) sze gur ki lu2-ta szu ba-ti",  # legitimate delivery
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 540_000.0 not in qtys  # carry-forward suppressed
+        assert 1_500.0 in qtys        # legitimate delivery survives
+
+    def test_sza3_bi_ta_damaged_form_suppressed(self, ext):
+        # Damaged "sza3-[bi-ta]" must also flag and suppress the following qty.
+        lines = _tablet(
+            "1. szunigin 3(gesz'u) gur",
+            "2. sza3-[bi-ta]",
+            "3. 3(gesz'u) gur",       # carry-forward amount
+            "4. 5(asz) sze gur ki lu2-ta szu ba-ti",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 540_000.0 not in qtys
+        assert 1_500.0 in qtys
