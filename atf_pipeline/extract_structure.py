@@ -64,14 +64,36 @@ class StructureMixin:
                 result.append(line)
         return result
 
+    # "szunigin2 sze-bi N(asz) guru7" — the combined barley-equivalent total
+    # has no inline grain quantity; it appears on the very next line.
+    _RE_SZUNIGIN_SZE_BI_GURU7 = re.compile(
+        r"^\d+[a-z]?[!?*'ʼ]?\.\s*\[?(?:szunigin2?|szu-nigin2?)\b.*\bsze-bi\b.*\bguru7\b",
+        re.I,
+    )
+
     def _split_sections(self, lines: List[str]) -> List[List[str]]:
         """Split tablet into sections at szunigin total lines only."""
         sections: List[List[str]] = []
         current: List[str] = []
+        absorb_next = False  # pull continuation line into current section
         for line in lines:
             stripped = line.strip()
+            if absorb_next:
+                # This line is the quantity continuation of a two-line szunigin;
+                # keep it in the current section so _extract_single_tx can filter it.
+                current.append(line)
+                absorb_next = False
+                continue
             if self._RE_SZUNIGIN.match(stripped):
                 current.append(line)
+                # Two-line szunigin: "szunigin2 sze-bi N(asz) guru7" with the
+                # grain total on the next line — include that line in this section.
+                if self._RE_SZUNIGIN_SZE_BI_GURU7.match(stripped):
+                    szu_clean = self._strip_linenum(stripped)
+                    q_szu, u_szu = self.extract_quantity(szu_clean)
+                    if q_szu is None or u_szu != "sila3":
+                        absorb_next = True
+                        continue  # don't close section yet; next line goes here too
                 sections.append(current)
                 current = []
             else:
@@ -184,6 +206,10 @@ class StructureMixin:
         # pattern: the label appears on one line, the actual balance amount
         # on the next.  Suppress the amount that follows the header.
         skip_carryforward = False
+        # "szunigin2 sze-bi N(asz) guru7" with no inline grain quantity:
+        # the combined barley-equivalent total is on the next line.  Suppress
+        # that continuation line to avoid counting the grand total twice.
+        skip_szunigin_continuation = False
         # sag-nig2-gur11-ra-kam ("it is the opening/income balance") marks
         # the boundary between the income section (already counted) and the
         # expenditure section that follows.  Entries after this label are
@@ -235,6 +261,14 @@ class StructureMixin:
             # Szunigin total closes the section; its quantity is the sum of
             # the entries already collected — do not add it as a new entry.
             if self._RE_SZUNIGIN.match(line.strip()):
+                # "szunigin2 sze-bi N(asz) guru7" — the combined barley-equivalent
+                # grand total has no inline grain quantity; it is on the next line.
+                szu_clean = self._strip_linenum(line.strip())
+                if (re.search(r"\bsze-bi\b", szu_clean, re.I) and
+                        re.search(r"\bguru7\b", szu_clean, re.I)):
+                    q_szu, u_szu = self.extract_quantity(szu_clean)
+                    if q_szu is None or u_szu != "sila3":
+                        skip_szunigin_continuation = True
                 continue
 
             clean = self._strip_linenum(line)
@@ -312,6 +346,11 @@ class StructureMixin:
                 if skip_carryforward and u == "sila3":
                     skip_carryforward = False
                     continue  # suppress this carry-forward grain quantity
+                # "szunigin2 sze-bi N guru7 / NAME AMOUNT sze gur" — the amount
+                # on the continuation line is a grand total, not a new entry.
+                if skip_szunigin_continuation and u == "sila3":
+                    skip_szunigin_continuation = False
+                    continue
                 seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
                 this_comm = seg_c or pending_commodity
                 if u == "head" and this_comm is None:
