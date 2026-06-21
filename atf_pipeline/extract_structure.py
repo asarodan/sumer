@@ -184,6 +184,12 @@ class StructureMixin:
         # pattern: the label appears on one line, the actual balance amount
         # on the next.  Suppress the amount that follows the header.
         skip_carryforward = False
+        # sag-nig2-gur11-ra-kam ("it is the opening/income balance") marks
+        # the boundary between the income section (already counted) and the
+        # expenditure section that follows.  Entries after this label are
+        # distributions of the received grain, NOT new inbound deliveries —
+        # counting them again would double the tablet's grain total.
+        skip_income_balance = False
         # mu-kux(DU) / la2-ia3 su-ga pattern: in multi-supervisor accounts,
         # a grain quantity between "mu-kux(DU)" and "la2-ia3 su-ga" records
         # a deficit repayment from a previous period — not a new delivery.
@@ -274,6 +280,12 @@ class StructureMixin:
             # strip a leading keyword (e.g. "sza3 sze") that the per-segment call
             # to extract_quantity would no longer see, allowing the trailing
             # quantity to leak through the filter.
+            # sag-nig2-gur11-ra-kam marks the end of the income section; all
+            # grain quantities from here onward in this section are expenditure
+            # distributions, not new inbound deliveries.
+            if re.search(r"\bsag-nig2-gur11-ra[#!?]*-kam[#!?]*\b", clean, re.I):
+                skip_income_balance = True
+                continue
             if self._RE_BALANCE_LINE.search(clean):
                 # la2-ia3 su-ga after mu-kux: delete post-mukux deficit
                 # repayment quantities that were tentatively collected.
@@ -289,6 +301,10 @@ class StructureMixin:
             for seg in segs:
                 q, u = self.extract_quantity(seg)
                 if q is None:
+                    continue
+                # After sag-nig2-gur11-ra-kam: all entries are expenditure
+                # distributions — skip them to avoid double-counting the income.
+                if skip_income_balance and u == "sila3":
                     continue
                 # Only consume skip_carryforward on an actual grain quantity so
                 # that no-qty content lines (like "5(disz) [...]") don't absorb
