@@ -197,14 +197,21 @@ class StructureMixin:
             return []
 
         # Pre-scan: mark content-list indices whose grain quantities are the
-        # immediate predecessor of a "la2-ia3 su-ga" label line.  That quantity
-        # is a deficit-repayment entry regardless of whether mu-kux(DU) appeared
-        # first (it may or may not be present in the same section).
-        _RE_LA2_SU_GA = re.compile(r"\bla2-ia3\b[^a-z]*su-ga\b", re.I)
+        # immediate predecessor of a label-only "la2-ia3 …" line.  Such lines
+        # record deficit labels (su-ga = repaid, kab2-du11-ga = assessed, etc.).
+        # The preceding grain quantity is the deficit amount — not a new delivery.
+        # Guard: if the la2-ia3 line itself carries an inline grain quantity the
+        # inline IS the deficit; the predecessor is a valid transaction.
+        _RE_LA2_PREFIX = re.compile(r"^\[?la2[#!?]*\]?-\[?ia3\b", re.I)
         la2_su_ga_suppress: set = set()
         for _i, _cline in enumerate(content):
             _cl = self._strip_linenum(_cline)
-            if _RE_LA2_SU_GA.search(_cl):
+            if _RE_LA2_PREFIX.search(_cl):
+                # If this la2-ia3 line has its own inline grain quantity, the
+                # inline value IS the deficit — predecessor is valid, skip.
+                _q_inline, _u_inline = self.extract_quantity(_cl)
+                if _q_inline is not None and _u_inline == "sila3":
+                    continue
                 # Look backwards up to 3 lines for the first grain quantity.
                 # Stop at mu-kux(DU) or another balance-line boundary.
                 for _j in range(_i - 1, max(_i - 4, -1), -1):
@@ -232,7 +239,7 @@ class StructureMixin:
             if self._RE_SZE_BI.match(clean):
                 continue
 
-            # Pre-scanned la2-ia3 su-ga predecessor: skip without extracting.
+            # Pre-scanned la2-ia3 deficit-label predecessor: skip without extracting.
             if idx in la2_su_ga_suppress:
                 continue
 

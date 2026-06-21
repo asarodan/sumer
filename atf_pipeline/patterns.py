@@ -123,7 +123,7 @@ class ExtractorBase:
     #   diri       = surplus / excess (standalone at start or end of a quantity line)
     # \[? at line start: accounts for CDLI square-bracket damaged-text restorations.
     _RE_BALANCE_LINE = re.compile(
-        r"^\[?la2-ia3\b"       # deficit at line start (after line-num strip)
+        r"^\[?la2[#!?]*\]?-\[?ia3\b"  # deficit at line start (handles [la2]-ia3 damage form)
         r"|^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b"  # carry-forward (all damage forms)
         r"|^\[?diri\b"         # surplus at line start
         r"|\s+diri\s*$"        # surplus trailing a quantity: "N gur diri"
@@ -131,6 +131,7 @@ class ExtractorBase:
         r"|^\[?sza3\s+sze\b"   # "inner-barley N gur" running-account balance
         r"|\bib2-tak4\b"       # ib2-tak4 = remainder/deficit balance
         r"|\bsu[#!?]*-\[?su\b"   # su-su repayment sub-entry in account tablets
+        r"|\bgur-kam\b"        # "it is N gur" copular — debt/rate statement, not a delivery
         r"|^\(\$\s*blank\s+space\s*\$\)",  # right-indented subtotal on tablet
         re.I,
     )

@@ -432,3 +432,20 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 720_000.0 not in qtys     # repayment suppressed
         assert 66_000.0 in qtys          # valid entry (3×60+40 gur = 220 gur) survives
+
+    def test_la2_ia3_kab2_du11_ga_suppressed(self, ext):
+        # "la2-ia3 kab2-du11-ga" = deficit-assessment label.  Like su-ga, it
+        # has NO inline grain quantity; the preceding grain amount is the
+        # assessed deficit and must be suppressed.
+        lines = _tablet(
+            "1. 1(gesz2) sze gur",           # valid delivery: 60 gur = 18,000 sila3
+            "2. sze nig2-gal2-la",           # commodity label
+            "3. 3(u) sze gur",               # deficit amount: 30 gur = 9,000 sila3
+            "4. la2-ia3 kab2-du11-ga",       # deficit-assessment label (no inline qty)
+            "5. szunigin 1(gesz2) sze gur",  # total = 18,000 sila3
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 9_000.0 not in qtys    # deficit assessment suppressed
+        assert 18_000.0 in qtys       # valid delivery survives
