@@ -22,23 +22,47 @@ class StructureMixin:
     @classmethod
     def _classify_tablet(cls, lines: List[str]) -> str:
         """
-        Classify a tablet as 'transfer', 'labor', or 'allocation'.
-        Labor accounts are characterised by many gurusz/geme2 lines
-        and few or no transfer-formula lines.
+        Classify a tablet by its primary administrative function.
+
+        Types (in priority order):
+          yield_ledger  — agricultural balance sheet (sze-bi + mu-kux + la2-ia3)
+          account       — reconciliation document (nig2-ka9-ak / nig2-kas7-ak)
+          labor         — day-labour tally (many gurusz/geme2 lines)
+          allocation    — field-farmer account (many engar lines)
+          receipt       — receipt of goods (szu ba-ti / in-ba-ti / ba-an-ti)
+          expenditure   — disbursement record (ba-zi dominant, no receipt formula)
+          transfer      — catch-all for bilateral transfers and unclassified documents
         """
-        labor = sum(1 for l in lines if cls._RE_LABOR_LINE.search(l))
-        transfer = sum(1 for l in lines if cls._RE_TRANSFER_SIGNAL.search(l))
-        engar = sum(1 for l in lines if re.search(r"\bengar\b", l, re.I))
-        # Yield-balance ledger: sze-bi (expected grain yield from field area) +
-        # mu-kux (actual delivery) + la2-ia3 (deficit) identifies an agricultural
-        # accounting balance sheet — NOT a flat transaction list.
         lines_text = " ".join(l.lower() for l in lines)
-        if ("sze-bi" in lines_text and "mu-kux" in lines_text and "la2-ia3" in lines_text):
+
+        # Yield-balance ledger: sze-bi + mu-kux + la2-ia3 together identify an
+        # agricultural accounting balance sheet, not a flat transaction list.
+        if "sze-bi" in lines_text and "mu-kux" in lines_text and "la2-ia3" in lines_text:
             return "yield_ledger"
+
+        # Balanced account / audit document
+        if re.search(r"\bnig2-ka9-ak\b|\bnig2-kas7-ak\b", lines_text):
+            return "account"
+
+        labor    = sum(1 for l in lines if cls._RE_LABOR_LINE.search(l))
+        transfer = sum(1 for l in lines if cls._RE_TRANSFER_SIGNAL.search(l))
+        engar    = sum(1 for l in lines if re.search(r"\bengar\b", l, re.I))
+
         if engar >= 2:
             return "allocation"
         if labor >= 3 and labor >= transfer * 2:
             return "labor"
+
+        # Receipt vs. expenditure — determined by the closing administrative formula.
+        has_receipt     = bool(re.search(
+            r"\bszu\s+ba-ti\b|\bin-ba-ti\b|\bba-an-ti\b", lines_text))
+        has_expenditure = bool(re.search(r"\bba-zi\b", lines_text))
+
+        if has_receipt and not has_expenditure:
+            return "receipt"
+        if has_expenditure and not has_receipt:
+            return "expenditure"
+
         return "transfer"
 
     @staticmethod
