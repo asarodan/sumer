@@ -370,3 +370,24 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 260_760.0 not in qtys   # blank-space subtotal suppressed
         assert 174_063.0 in qtys       # installment 1 survives
+
+    def test_la2_ia3_su_ga_after_mukux_suppressed(self, ext):
+        # In multi-supervisor grain accounts, a quantity between mu-kux(DU)
+        # and la2-ia3 su-ga records a deficit repayment from a prior period,
+        # not a new delivery.  The repayment amount must be suppressed.
+        lines = _tablet(
+            # Main delivery for supervisor (valid)
+            "1. 4(gesz'u) 1(gesz2) 4(u) 2(asz) 1(barig) 3(ban2) 5(disz) sila3 sze gur",
+            "2. mu-kux(DU)",
+            # Deficit repayment from previous period (should be suppressed)
+            "3. 1(gesz2) 5(u) 1(asz) 1(barig) 3(ban2) 5(disz) sila3 sze gur",
+            "4. la2-ia3 su-ga",
+            "5. ugula ur-{d}en-lil2-la2",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        # la2-ia3 su-ga repayment: 111 gur + 95 sila3 = 33,395 sila3
+        assert 33_395.0 not in qtys
+        # Main delivery: 2502 gur + 95 sila3 = 750,695 sila3
+        assert 750_695.0 in qtys

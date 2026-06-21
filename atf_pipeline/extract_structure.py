@@ -184,6 +184,13 @@ class StructureMixin:
         # pattern: the label appears on one line, the actual balance amount
         # on the next.  Suppress the amount that follows the header.
         skip_carryforward = False
+        # mu-kux(DU) / la2-ia3 su-ga pattern: in multi-supervisor accounts,
+        # a grain quantity between "mu-kux(DU)" and "la2-ia3 su-ga" records
+        # a deficit repayment from a previous period — not a new delivery.
+        # Track the index into qty_entries where the mu-kux window opened
+        # so we can delete those entries if la2-ia3 su-ga follows.
+        after_mukux = False
+        mukux_start_idx = 0
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
@@ -208,6 +215,14 @@ class StructureMixin:
                 if m:
                     first_linenum = m.group(1)
 
+            # mu-kux(DU) marks that preceding grain entries were delivered.
+            # Amounts that follow it before la2-ia3 su-ga are deficit
+            # repayments from a prior period, not new grain movements.
+            if re.search(r"\bmu-kux\(", clean, re.I):
+                after_mukux = True
+                mukux_start_idx = len(qty_entries)
+                continue
+
             # Commodity detection — update pending so it can carry to the
             # next quantity line when the commodity and quantity are on
             # adjacent lines rather than the same line.
@@ -224,6 +239,11 @@ class StructureMixin:
             # to extract_quantity would no longer see, allowing the trailing
             # quantity to leak through the filter.
             if self._RE_BALANCE_LINE.search(clean):
+                # la2-ia3 su-ga after mu-kux: delete post-mukux deficit
+                # repayment quantities that were tentatively collected.
+                if after_mukux and re.search(r"\bla2-ia3\b", clean, re.I) and "su-ga" in clean:
+                    del qty_entries[mukux_start_idx:]
+                after_mukux = False
                 # sza3-bi-ta appears without an inline amount; the carry-forward
                 # balance is on the NEXT content line.  Flag it so that line is skipped.
                 if re.match(r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b", clean, re.I):
