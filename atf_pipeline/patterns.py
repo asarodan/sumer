@@ -112,8 +112,18 @@ class ExtractorBase:
     # "sze-bi" = "its barley (equivalent)" — an accounting conversion note that
     # follows a processed-product entry (bran, malt) to record the grain value.
     # It is not a separate delivery and must be skipped when collecting entries.
-    # The \[? allows for CDLI square-bracket restorations at line start.
-    _RE_SZE_BI = re.compile(r"^\[?sze-bi\b", re.I)
+    # Variants caught:
+    #   sze-bi            — standard form
+    #   sze#-bi / sze!-bi / [sze]-bi  — CDLI damage markers between sze and -bi
+    #   sze bala-bi       — "its barley balance equivalent" (field-yield accounts)
+    #   sze-numun-bi      — "its seed grain equivalent" (conversion note, not a delivery)
+    _RE_SZE_BI = re.compile(
+        r"^\[?"               # optional leading restoration bracket
+        r"sze"
+        r"(?:[#!?]*\]?)"      # optional damage markers + optional closing bracket
+        r"(?:-bi\b|-numun[#!?]*-bi\b|\s+bala[#!?]*-bi\b)",
+        re.I,
+    )
 
     # Accounting-balance lines: these are RESIDUALS (expected − delivered, or
     # carry-forward subtotals) that are already embedded in the totals above.
