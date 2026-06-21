@@ -197,6 +197,28 @@ class TestSzuniginNotDoubleCountedInRecords:
         ])
         assert sum(e.quantity for e in entries) == 600.0  # one entry only
 
+    def test_bracketed_szunigin_excluded(self, ext):
+        # "[szunigin N gur]" = damaged-text restoration of the total line.
+        # The bracket around the keyword must not defeat the szunigin filter.
+        entries = self._entries(ext, [
+            "1. 3(asz) sze gur",
+            "2. 4(asz) sze gur",
+            "3. [szunigin 7(asz) sze gur]",
+        ])
+        qtys = sorted(e.quantity for e in entries)
+        assert qtys == [900.0, 1200.0]  # total line excluded
+
+    def test_bracketed_szunigin_transactions(self, ext):
+        # Same test via extract_transactions path.
+        lines = _tablet(
+            "1. 3(asz) sze gur",
+            "2. 4(asz) sze gur",
+            "3. [szunigin 7(asz) sze gur]",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000") if t.unit == "sila3"]
+        qtys = sorted(t.quantity for t in txs)
+        assert qtys == [900.0, 1200.0]
+
 
 class TestYieldLedger:
     """Yield-balance ledger tablets must be classified correctly."""

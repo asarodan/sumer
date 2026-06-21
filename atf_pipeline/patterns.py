@@ -285,7 +285,7 @@ class ExtractorBase:
 
     # --------------- Section boundaries ---------------
     _RE_SZUNIGIN = re.compile(
-        r"^\d+[a-z]?[!?*'ʼ]?\.\s*(?:szunigin|šunigin|szu-nigin2?|šu-nigin2?)\b",
+        r"^\d+[a-z]?[!?*'ʼ]?\.\s*\[?(?:szunigin|šunigin|szu-nigin2?|šu-nigin2?)\b",
         re.I,
     )
 
