@@ -223,6 +223,17 @@ class QuantityMixin:
             line = line[m_guru7.end():].strip()
             if not line:
                 return None, None
+        # Strip day-count date expressions globally: "u4 N(unit) [N(unit)][-suffix]"
+        # These trail dated grain delivery lines, e.g. "3(asz) sze gur u4 1(u) 7(disz)-kam".
+        # Compound form (two tokens) encodes days 11–30; both tokens must be removed so
+        # the bare N(u) / N(disz) tokens are not summed into the grain total.
+        line = re.sub(
+            r"\bu4\s+\d+(?:/\d+)?\([^)]+\)(?:\s+\d+(?:/\d+)?\([^)]+\))?(?:-(?:sze3|a|kam))?\b",
+            "",
+            line,
+        ).strip()
+        if not line:
+            return None, None
         if self._RE_LABOR_LINE.search(line):
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)

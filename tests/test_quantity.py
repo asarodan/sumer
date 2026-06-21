@@ -65,6 +65,28 @@ class TestLaborLines:
         assert q == 10.0 and u == "sila3"
 
 
+class TestDateExpressions:
+    """u4 N(unit)[-suffix] and compound u4 N(unit) N(unit)[-suffix] date
+    expressions must be stripped from ALL grain lines, not only labor lines."""
+
+    def test_u4_compound_on_grain_line(self, ext):
+        # "3(asz) sze gur u4 1(u) 7(disz)-kam" = 900 sila3 barley on day 17.
+        # The compound 1(u) + 7(disz) is a date, not grain; without the fix
+        # 1(u) gains grain_ind context from asz and adds 3,000 sila3.
+        q, u = ext.extract_quantity("3(asz) sze gur u4 1(u) 7(disz)-kam")
+        assert q == 900.0 and u == "sila3"
+
+    def test_u4_simple_on_grain_line(self, ext):
+        # "5(asz) 2(barig) sze gur u4 5(disz)-kam" = 1620 sila3, not 1620+5.
+        q, u = ext.extract_quantity("5(asz) 2(barig) sze gur u4 5(disz)-kam")
+        assert q == 1620.0 and u == "sila3"
+
+    def test_u4_compound_double_digit_day(self, ext):
+        # Day 25 = "u4 2(u) 5(disz)-kam"; neither token should add grain.
+        q, u = ext.extract_quantity("4(asz) sze gur u4 2(u) 5(disz)-kam")
+        assert q == 1200.0 and u == "sila3"
+
+
 class TestAnimalsAndNonGrain:
     def test_animal_head(self, ext):
         assert ext.extract_quantity("5(disz) gu4") == (5.0, "head")
