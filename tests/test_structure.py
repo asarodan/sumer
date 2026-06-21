@@ -230,6 +230,30 @@ class TestSzuniginNotDoubleCountedInRecords:
         assert qtys == [900.0, 1200.0]
 
 
+class TestArchaicTablet:
+    """Pre-Sargonic tablets with archaic @c large-unit tokens must be skipped."""
+
+    def test_archaic_large_unit_returns_no_transactions(self, ext):
+        # Tablets from Shuruppak (~2600 BCE) use szar'u@c / szar2@c tokens whose
+        # @c suffix is stripped before unit lookup, causing them to be read as
+        # full Ur III szar'u values (10,800,000 sila3 each) — 100× too large.
+        lines = _tablet(
+            "1. 4(szar'u@c) 5(szar2@c) 4(gesz'u@c) 2(gesz2) 5(u@c) 1(asz@c)",
+            "2. sze sila3",
+            "3. 1(asz) lu2 szu ba-ti",
+        )
+        txs = ext.extract_transactions(lines, "P900000")
+        assert txs == []
+
+    def test_archaic_large_unit_returns_empty_records(self, ext):
+        lines = _tablet(
+            "1. 4(szar'u@c) 5(szar2@c) 1(asz) lu2 szu ba-ti",
+        )
+        summary = ext.extract_records(lines, "P900000")
+        assert summary.tablet_type == "archaic"
+        assert summary.records == []
+
+
 class TestYieldLedger:
     """Yield-balance ledger tablets must be classified correctly."""
 
@@ -391,3 +415,20 @@ class TestBalanceLinesInContext:
         assert 33_395.0 not in qtys
         # Main delivery: 2502 gur + 95 sila3 = 750,695 sila3
         assert 750_695.0 in qtys
+
+    def test_la2_ia3_su_ga_direct_suppressed(self, ext):
+        # la2-ia3 su-ga can also appear WITHOUT a preceding mu-kux(DU).
+        # The grain quantity immediately before it is still a repayment and
+        # must be suppressed (e.g. "4(gesz'u) gur / [la2-ia3] su-ga sze-numun").
+        lines = _tablet(
+            "1. 3(gesz2) 4(u) sze gur",          # valid entry (120,000 sila3)
+            "2. sze nig2-gal2-la",               # label
+            "3. 4(gesz'u) gur",                  # repayment (720,000 sila3)
+            "4. la2-ia3 su-ga sze-numun",        # deficit-repayment label
+            "5. szunigin 4(gesz2) 4(u) sze gur", # szunigin = 132,000
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 720_000.0 not in qtys     # repayment suppressed
+        assert 66_000.0 in qtys          # valid entry (3×60+40 gur = 220 gur) survives

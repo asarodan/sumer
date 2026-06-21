@@ -196,7 +196,29 @@ class StructureMixin:
         if not content:
             return []
 
-        for line in content:
+        # Pre-scan: mark content-list indices whose grain quantities are the
+        # immediate predecessor of a "la2-ia3 su-ga" label line.  That quantity
+        # is a deficit-repayment entry regardless of whether mu-kux(DU) appeared
+        # first (it may or may not be present in the same section).
+        _RE_LA2_SU_GA = re.compile(r"\bla2-ia3\b[^a-z]*su-ga\b", re.I)
+        la2_su_ga_suppress: set = set()
+        for _i, _cline in enumerate(content):
+            _cl = self._strip_linenum(_cline)
+            if _RE_LA2_SU_GA.search(_cl):
+                # Look backwards up to 3 lines for the first grain quantity.
+                # Stop at mu-kux(DU) or another balance-line boundary.
+                for _j in range(_i - 1, max(_i - 4, -1), -1):
+                    _prev = self._strip_linenum(content[_j])
+                    if re.search(r"\bmu-kux\b", _prev, re.I):
+                        break
+                    if self._RE_BALANCE_LINE.search(_prev):
+                        break
+                    _q, _u = self.extract_quantity(_prev)
+                    if _q is not None and _u == "sila3":
+                        la2_su_ga_suppress.add(_j)
+                        break  # suppress only the immediate predecessor
+
+        for idx, line in enumerate(content):
             # Szunigin total closes the section; its quantity is the sum of
             # the entries already collected — do not add it as a new entry.
             if self._RE_SZUNIGIN.match(line.strip()):
@@ -210,6 +232,10 @@ class StructureMixin:
             if self._RE_SZE_BI.match(clean):
                 continue
 
+            # Pre-scanned la2-ia3 su-ga predecessor: skip without extracting.
+            if idx in la2_su_ga_suppress:
+                continue
+
             if first_linenum is None:
                 m = re.match(r"(\d+[a-z]?[!?*'ʼ]?)\.", line)
                 if m:
@@ -218,6 +244,9 @@ class StructureMixin:
             # mu-kux(DU) marks that preceding grain entries were delivered.
             # Amounts that follow it before la2-ia3 su-ga are deficit
             # repayments from a prior period, not new grain movements.
+            # The pre-scan above handles most cases; this state-machine
+            # catches the rare compound pattern where multiple quantities
+            # appear between mu-kux and la2-ia3 su-ga.
             if re.search(r"\bmu-kux\(", clean, re.I):
                 after_mukux = True
                 mukux_start_idx = len(qty_entries)
@@ -672,6 +701,13 @@ class StructureMixin:
                 return []
             if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", s, re.I):
                 return []
+        # Pre-Sargonic / Early Dynastic tablets use archaic curviform (@c) tokens
+        # for large grain units (szar'u@c, szar2@c, gesz'u@c).  The @c suffix is
+        # stripped during unit lookup, so these tokens are misread as Ur III
+        # values 100–10,000× too large.  Bail out before extracting anything.
+        _ARCHAIC_LARGE = re.compile(r"\((?:szar'u|szar2|gesz'u)@c\)", re.I)
+        if any(_ARCHAIC_LARGE.search(l) for l in lines):
+            return []
         # Require at least one administrative keyword before attempting extraction.
         # Metrological tables and lexical lists have numbers but no admin vocabulary.
         _ADMIN_KW = re.compile(
@@ -1173,6 +1209,11 @@ class StructureMixin:
         a section with barley + emmer + wheat yields three entries, not one.
         """
         lines = self._strip_secondary_sections(lines)
+        _ARCHAIC_LARGE = re.compile(r"\((?:szar'u|szar2|gesz'u)@c\)", re.I)
+        if any(_ARCHAIC_LARGE.search(l) for l in lines):
+            return TabletSummary(
+                tablet_id=tablet_id, tablet_type="archaic", records=[]
+            )
         tablet_type = self._classify_tablet(lines)
         records: List[TabletRecord] = []
 
