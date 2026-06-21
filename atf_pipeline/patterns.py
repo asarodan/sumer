@@ -132,6 +132,7 @@ class ExtractorBase:
         r"|\bib2-tak4\b"       # ib2-tak4 = remainder/deficit balance
         r"|\bsu[#!?]*-\[?su\b"   # su-su repayment sub-entry in account tablets
         r"|\bgur-kam\b"        # "it is N gur" copular — debt/rate statement, not a delivery
+        r"|^\[?nigin-ba\b"     # grand total ("overall balance") — already counted in szunigin above
         r"|^\(\$\s*blank\s+space\s*\$\)",  # right-indented subtotal on tablet
         re.I,
     )
