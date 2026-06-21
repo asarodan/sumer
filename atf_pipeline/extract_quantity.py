@@ -223,6 +223,20 @@ class QuantityMixin:
             line = line[m_guru7.end():].strip()
             if not line:
                 return None, None
+        # Animal ration lines: "N(szar2/gesz'u) ANIMAL RATE gur" — the large
+        # sexagesimal count before the animal word is a head-count, not grain.
+        # When bare_gur is set, GRAIN_CONV would inflate szar2 (×1,080,000) or
+        # gesz'u (×180,000) massively.  Strip everything up to and including the
+        # animal word so only the per-head rate is parsed.
+        m_anim = re.search(
+            r"\b(?:udu|gu4|ab2|sila4|masz2?|ansze)\b", line, re.I
+        )
+        if m_anim:
+            prefix = line[: m_anim.start()]
+            if re.search(r"\b(?:szar2|gesz'u|szar'u|szargal)\b", prefix, re.I):
+                line = line[m_anim.end() :].strip()
+                if not line:
+                    return None, None
         # Strip day-count date expressions globally: "u4 N(unit) [N(unit)][-suffix]"
         # These trail dated grain delivery lines, e.g. "3(asz) sze gur u4 1(u) 7(disz)-kam".
         # Compound form (two tokens) encodes days 11–30; both tokens must be removed so
