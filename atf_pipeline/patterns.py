@@ -129,7 +129,9 @@ class ExtractorBase:
         r"|\s+diri\s*$"        # surplus trailing a quantity: "N gur diri"
         r"|\bla2-ia3-am3\b"    # "it is the deficit" — copula suffix on total lines
         r"|^\[?sza3\s+sze\b"   # "inner-barley N gur" running-account balance
-        r"|\bib2-tak4\b",      # ib2-tak4 = remainder/deficit balance
+        r"|\bib2-tak4\b"       # ib2-tak4 = remainder/deficit balance
+        r"|\bsu[#!?]*-\[?su\b"   # su-su repayment sub-entry in account tablets
+        r"|^\(\$\s*blank\s+space\s*\$\)",  # right-indented subtotal on tablet
         re.I,
     )
 

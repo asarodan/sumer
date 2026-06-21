@@ -334,3 +334,39 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 540_000.0 not in qtys
         assert 1_500.0 in qtys
+
+    def test_su_su_repayment_suppressed(self, ext):
+        # "N gur su-su" lines are repayment sub-entries in account tablets,
+        # not independent transactions.
+        lines = _tablet(
+            "1. 1(gesz'u) 3(gesz2) 2(u) 3(asz) 4(barig) sze gur",
+            "2. sze gesz e3-a",
+            "3. 7(gesz2) gur su-su",   # repayment — must NOT be a tx
+            "4. ur-szu-ga-lam-ma",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 126_000.0 not in qtys   # 7(gesz2) gur = 126,000 suppressed
+
+    def test_blank_space_subtotal_suppressed(self, ext):
+        # "($ blank space $) N gur" lines are right-indented subtotals on the
+        # tablet — they summarise preceding installments and must not be
+        # counted as additional transactions.
+        lines = _tablet(
+            "1. 9(gesz2) 4(u) 3(disz) 1(barig) sze gur lugal",
+            "2. i3-dub a-ra2 1(disz)-kam",
+            "3. 6(gesz2) 5(u) 3(disz) 1(barig) gur",
+            "4. i3-dub a-ra2 2(disz)-kam",
+            "5. 1(gesz2) 5(u) 2(disz) 4(barig) gur",
+            "6. i3-dub a-ra2 3(disz)-kam",
+            "7. ($ blank space $) 1(gesz'u) 4(gesz2) 2(u) 9(asz) 1(barig) gur",
+            "8. 3(gesz2) 3(u) 3(asz) 4(barig) gur",
+            "9. i3-dub du6-ninku",
+            "10. szunigin 2(gesz'u) 2(gesz2) 3(asz) gur",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 260_760.0 not in qtys   # blank-space subtotal suppressed
+        assert 174_063.0 in qtys       # installment 1 survives
