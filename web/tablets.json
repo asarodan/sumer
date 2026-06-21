@@ -3026,6 +3026,21 @@
    "richness": 4
   },
   {
+   "id": "P108615",
+   "designation": "CT 10, pl. 20, BM 014308",
+   "commodity": "barley",
+   "sila3": 15932,
+   "tablet_total_sila3": 142186,
+   "litres": 15932,
+   "kg": 9878,
+   "person_days": 7966,
+   "people_year": 22.1,
+   "issuer": "nin-dingir",
+   "recipient": "gi4 ad-kup4",
+   "date": "Šulgi year 46",
+   "richness": 4
+  },
+  {
    "id": "P203578",
    "designation": "BM 020039",
    "commodity": "flour",
@@ -5632,21 +5647,6 @@
    "people_year": 5.0,
    "issuer": "ku-li",
    "recipient": "ur-da-mu",
-   "date": "Šulgi year 45",
-   "richness": 4
-  },
-  {
-   "id": "P116406",
-   "designation": "MVN 12, 144",
-   "commodity": "barley",
-   "sila3": 3600,
-   "tablet_total_sila3": 4690,
-   "litres": 3600,
-   "kg": 2232,
-   "person_days": 1800,
-   "people_year": 5.0,
-   "issuer": "ur-bad3-tibirx",
-   "recipient": "ma-an-szum2-na",
    "date": "Šulgi year 45",
    "richness": 4
   },

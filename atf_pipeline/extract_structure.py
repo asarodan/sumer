@@ -215,6 +215,12 @@ class StructureMixin:
             # ("5 sila3 beer 5 gin2 onion"); split them so capacity and weight
             # goods become separate entries rather than one conflated total.
             # Single-commodity lines return one segment and behave as before.
+            # Check balance filter on the full line first: _segment_allotments can
+            # strip a leading keyword (e.g. "sza3 sze") that the per-segment call
+            # to extract_quantity would no longer see, allowing the trailing
+            # quantity to leak through the filter.
+            if self._RE_BALANCE_LINE.search(clean):
+                continue
             segs = self._segment_allotments(clean)
             for seg in segs:
                 q, u = self.extract_quantity(seg)
@@ -1052,6 +1058,11 @@ class StructureMixin:
             # A line may pack several goods ("5 sila3 beer 5 gin2 onion"); split
             # them so each becomes its own entry in its own unit. Single-
             # commodity lines yield one segment and behave exactly as before.
+            # Balance-line guard: check the full line before segmenting so that
+            # a leading keyword stripped by the segmenter (e.g. "sza3 sze")
+            # cannot leave the bare quantity visible to extract_quantity.
+            if self._RE_BALANCE_LINE.search(clean):
+                continue
             segs = self._segment_allotments(clean)
             made_entry = False
             for seg in segs:

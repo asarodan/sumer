@@ -287,3 +287,21 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 1200.0 in qtys
         assert qtys.count(1200.0) == 1  # not doubled by sza3-bi-ta
+
+    def test_sza3_sze_not_double_counted_after_segmentation(self, ext):
+        # "sza3 sze N gur-kam" is a running-balance line; _segment_allotments
+        # splits it into ["sza3 sze", "1(szar2) 1(gesz2) 2(u) gur-kam"].
+        # The second segment must not leak through as a separate 1,104,000 sila3
+        # transaction.  The fix checks _RE_BALANCE_LINE on the full line BEFORE
+        # segmenting in both _extract_single_tx and _scan_section_quantity_first.
+        lines = _tablet(
+            "1. 4(gesz'u) 8(gesz2) 1(u) 7(asz) sila3 gur",
+            "2. ki ur-sa6-ga-ta",
+            "3. sza3 sze 1(szar2) 1(gesz2) 2(u) gur-kam",
+            "4. szunigin 4(gesz'u) 8(gesz2) 1(u) 7(asz) sila3 gur",
+        )
+        txs = [t for t in ext.extract_transactions(lines, "P900000")
+               if t.unit == "sila3"]
+        qtys = [t.quantity for t in txs]
+        assert 1_104_000.0 not in qtys
+        assert any(q > 800_000 for q in qtys)  # the real grain line survives
