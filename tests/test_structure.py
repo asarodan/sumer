@@ -219,6 +219,16 @@ class TestSzuniginNotDoubleCountedInRecords:
         qtys = sorted(t.quantity for t in txs)
         assert qtys == [900.0, 1200.0]
 
+    def test_szunigin2_excluded(self, ext):
+        # "szunigin2" (CDLI subscript-2 variant) must be suppressed just like "szunigin".
+        entries = self._entries(ext, [
+            "1. 3(asz) sze gur",
+            "2. 4(asz) sze gur",
+            "3. szunigin2 7(asz) sze gur",
+        ])
+        qtys = sorted(e.quantity for e in entries)
+        assert qtys == [900.0, 1200.0]
+
 
 class TestYieldLedger:
     """Yield-balance ledger tablets must be classified correctly."""

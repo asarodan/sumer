@@ -127,7 +127,9 @@ class ExtractorBase:
         r"|^\[?sza3-bi-ta\b"   # carry-forward subtotal
         r"|^\[?diri\b"         # surplus at line start
         r"|\s+diri\s*$"        # surplus trailing a quantity: "N gur diri"
-        r"|\bla2-ia3-am3\b",   # "it is the deficit" — copula suffix on total lines
+        r"|\bla2-ia3-am3\b"    # "it is the deficit" — copula suffix on total lines
+        r"|^\[?sza3\s+sze\b"   # "inner-barley N gur" running-account balance
+        r"|\bib2-tak4\b",      # ib2-tak4 = remainder/deficit balance
         re.I,
     )
 
@@ -285,7 +287,7 @@ class ExtractorBase:
 
     # --------------- Section boundaries ---------------
     _RE_SZUNIGIN = re.compile(
-        r"^\d+[a-z]?[!?*'ʼ]?\.\s*\[?(?:szunigin|šunigin|szu-nigin2?|šu-nigin2?)\b",
+        r"^\d+[a-z]?[!?*'ʼ]?\.\s*\[?(?:szunigin2?|šunigin2?|szu-nigin2?|šu-nigin2?)\b",
         re.I,
     )
 

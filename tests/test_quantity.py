@@ -264,6 +264,20 @@ class TestBalanceLines:
             "szunigin 9(gesz2) 8(asz) 3(barig) 5(ban2) gur la2-ia3-am3"
         ) == (None, None)
 
+    def test_sza3_sze_balance_suppressed(self, ext):
+        # "sza3 sze N gur" = running-account inner-barley balance; not a new delivery
+        assert ext.extract_quantity("sza3 sze 1(szar2) 1(gesz2) 2(u) gur-kam") == (None, None)
+
+    def test_ib2_tak4_suppressed(self, ext):
+        # ib2-tak4 = "remainder/deficit" — an accounting balance, not a delivery
+        assert ext.extract_quantity("ib2-tak4 1(asz) 3(barig) 1(ban2) 3(disz) sila3") == (None, None)
+
+    def test_ib2_tak4_trailing_suppressed(self, ext):
+        # ib2-tak4 trailing a szunigin total
+        assert ext.extract_quantity(
+            "szunigin 1(ban2) 5(disz) 1/2(disz) sila3 ib2-tak4"
+        ) == (None, None)
+
 
 class TestScribalCorrections:
     """CDLI <<...>> marks text the scribe crossed out; it must be stripped."""
