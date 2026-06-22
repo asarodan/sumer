@@ -438,6 +438,11 @@ class StructureMixin:
                     continue
                 seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
                 this_comm = seg_c or pending_commodity
+                # Precious metals are never measured in sila3/gur; if a gold or
+                # silver commodity is assigned to a grain quantity it came from a
+                # year-name or nearby metal-accounting line — clear the label.
+                if this_comm in ("gold", "silver") and u == "sila3":
+                    this_comm = None
                 if u == "head" and this_comm is None:
                     this_comm = "animal"
                 qty_entries.append((q, u, this_comm))
