@@ -98,8 +98,14 @@ class QuantityMixin:
                 #     via the normal path (context_gur doesn't activate when bare_sila3
                 #     is true).
                 _remainder = self._RE_QTY_CDLI.sub("", line).strip()
+                # Commodity determinatives: {gesz}=wood, {u2}=plant, {uruda}=copper…
+                # block context_gur because they mark non-grain commodity words.
+                # Exception: {d} divine and {ki} place appear in personal names.
+                # Exception: a determinative preceded by "-" is embedded in a
+                # hyphenated personal name compound (e.g. lugal-{gesz}gigir-re,
+                # ur-{gesz}kiri6) not on a standalone commodity word.
                 _has_det = bool(
-                    re.search(r'\{(?!d\b|ki\b)[^}]+\}', _remainder, re.I)
+                    re.search(r'(?<!-)\{(?!d\b|ki\b)[^}]+\}', _remainder, re.I)
                 )
                 _has_worker = bool(
                     re.search(r'\b(?:gurusz|geme2)\b', _remainder, re.I)
