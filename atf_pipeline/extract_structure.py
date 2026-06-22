@@ -857,8 +857,13 @@ class StructureMixin:
         # for large grain units (szar'u@c, szar2@c, gesz'u@c).  The @c suffix is
         # stripped during unit lookup, so these tokens are misread as Ur III
         # values 100–10,000× too large.  Bail out before extracting anything.
+        # Guard: only check non-szunigin lines; szunigin totals with gesz'u@c are
+        # already skipped during section extraction, so their large values never
+        # accumulate.  Tablets where only the total uses gesz'u@c (individual
+        # entries in gesz2@c, asz@c, ban2@c) can be safely extracted.
         _ARCHAIC_LARGE = re.compile(r"\((?:szar'u|szar2|gesz'u)@c\)", re.I)
-        if any(_ARCHAIC_LARGE.search(l) for l in lines):
+        if any(_ARCHAIC_LARGE.search(l) for l in lines
+               if not self._RE_SZUNIGIN.match(l.strip())):
             return []
         # Require at least one administrative keyword before attempting extraction.
         # Metrological tables and lexical lists have numbers but no admin vocabulary.
