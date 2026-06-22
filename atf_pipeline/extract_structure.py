@@ -337,6 +337,13 @@ class StructureMixin:
         # must not activate the context_gur pre-scan flag.  Hyphenated nig2 compounds
         # (nig2-gal2-la, nig2-ka9-ak, nig2-szid) are NOT matched by (?!-).
         _RE_NIG2_STANDALONE = re.compile(r"\bnig2\b(?!-)", re.I)
+        # Standalone szum2 (not preceded by hyphen) = garlic/onion commodity word.
+        # Garlic tablets use capacity units (barig, ban2) for bulk garlic measures,
+        # which would otherwise activate context_gur.  The verb form "given" is
+        # always hyphenated (ba-szum2, mu-szum2), so (?<!-) leaves verbs unaffected.
+        # Note: "5(disz) gin2 szum2" (onion priced in silver) has bare gin2 which
+        # already bypasses context_gur; this skip only affects capacity-unit lines.
+        _RE_SZUM2_STANDALONE = re.compile(r"(?<!-)\bszum2\b", re.I)
         _section_grain_context = False
         for _sl in content:
             _sc = self._strip_linenum(_sl)
@@ -344,7 +351,8 @@ class StructureMixin:
                     or self._RE_SZE_BI.match(_sc)
                     or _RE_SILA3_OR_GIN2.search(_sc)
                     or _RE_WORKER.search(_sc)
-                    or _RE_NIG2_STANDALONE.search(_sc)):
+                    or _RE_NIG2_STANDALONE.search(_sc)
+                    or _RE_SZUM2_STANDALONE.search(_sc)):
                 continue
             _sq, _su = self.extract_quantity(_sc)
             if _sq is not None and _su == "sila3":

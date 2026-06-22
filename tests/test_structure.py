@@ -49,7 +49,8 @@ class TestMultiCommoditySplit:
         assert "beer" in comms and "bread" in comms
 
     def test_capacity_and_weight_kept_separate(self, ext):
-        lines = _tablet("1. 5(disz) sila3 kasz 5(disz) gin2 szum2", "2. ki lugal-ta")
+        # szum2 (garlic) is now in _RE_NON_GRAIN; use i3 (oil) for gin2 segment
+        lines = _tablet("1. 5(disz) sila3 kasz 5(disz) gin2 i3", "2. ki lugal-ta")
         txs = [t for t in ext.extract_transactions(lines, "P900000") if t.quantity]
         units = {t.unit for t in txs}
         assert units == {"sila3", "gin2"}

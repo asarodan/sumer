@@ -106,9 +106,10 @@ class TestAnimalsAndNonGrain:
 
 class TestMixedCapacityWeight:
     def test_mixed_line_reports_capacity(self, ext):
-        # "5 sila3 beer + 5 gin2 onion" — the capacity portion wins the unit and
+        # "5 sila3 beer + 5 gin2 oil" — the capacity portion wins the unit and
         # the gin2 weight add-on is excluded from the sila3 total.
-        assert ext.extract_quantity("5(disz) sila3 kasz 5(disz) gin2 szum2") == (5.0, "sila3")
+        # (szum2 = garlic is now in _RE_NON_GRAIN and cannot be used here)
+        assert ext.extract_quantity("5(disz) sila3 kasz 5(disz) gin2 i3") == (5.0, "sila3")
 
     def test_pure_weight_unchanged(self, ext):
         # No capacity context → stays gin2 (3 + 2 shekels).
@@ -132,7 +133,7 @@ class TestSegmentation:
         assert ext._segment_allotments(line) == [line]
 
     def test_split_buckets_units_correctly(self, ext):
-        segs = ext._segment_allotments("5(disz) sila3 kasz 5(disz) gin2 szum2")
+        segs = ext._segment_allotments("5(disz) sila3 kasz 5(disz) gin2 i3")
         results = [ext.extract_quantity(s) for s in segs]
         assert results == [(5.0, "sila3"), (5.0, "gin2")]
 

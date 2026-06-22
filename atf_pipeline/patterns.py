@@ -123,8 +123,24 @@ class ExtractorBase:
                                # N"); appears in artisan inventory accounts (e.g. Ontario 2, 323).
         r"|\bnig2\s+a-ra2\b"   # nig2 a-ra2 N-kam = "items, Nth delivery installment" — round
                                # counts in multi-delivery artisan accounts, not grain.
-        r"|\blagab\b",         # lagab = compressed block/cake shape (garlic cake, bitumen cake);
+        r"|\blagab\b"          # lagab = compressed block/cake shape (garlic cake, bitumen cake);
                                # lagab N counts blocks, never grain-capacity measures.
+        r"|\bmuszen\b"         # muszen = bird determinative/classifier; "N(szar2) pa muszen"
+                               # = N bird-feathers — a large sexagesimal item count, never grain.
+        r"|\bin-nu\b"          # in-nu = straw/thatch — measured in gur in the Ur III system
+                               # but is a fodder commodity, NOT grain for human consumption.
+        r"|\bbur3\b|\bbur'u\b" # bur3 (= 3 iku) and bur'u (= 10 bur3) are agricultural area
+                               # units. Entries like "1(szar2) 2(bur'u) farmer-name" are
+                               # field-area sub-entries, not gur-scale grain allocations.
+                               # GAN2 (area summary word) is already blocked above; bur3/bur'u
+                               # cover continuation lines that omit the GAN2 word.
+        r"|(?<!-)\bszum2\b",   # szum2 = garlic/onion commodity; garlic tablets use capacity
+                               # units (barig, ban2, sila3, gesz2) identical to grain, causing
+                               # false positives when not blocked.  The verb "to give" is always
+                               # hyphenated (ba-szum2, mu-szum2), so (?<!-) correctly exempts
+                               # verbal conjugations.  Rare personal names starting with szum2-
+                               # (e.g. szum2-i-li) will produce false negatives on grain lines,
+                               # but this is an acceptable trade-off against the garlic FPs.
         re.I,
     )
 

@@ -124,7 +124,17 @@ class QuantityMixin:
                 _has_nig2 = bool(
                     re.search(r'\bnig2\b(?!-)', _remainder, re.I)
                 )
-                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread and not _has_nig2:
+                # szum2 standalone (not hyphenated) = garlic/onion commodity.
+                # Garlic tablets measure in capacity units (barig, ban2, gesz2/u/disz)
+                # identical to grain — but the content is garlic, not grain.
+                # Verbal form "given" is always hyphenated (ba-szum2, mu-szum2),
+                # so (?<!-) correctly exempts verb forms in grain delivery lines.
+                # Lines with explicit bare gin2 (onion silver price) already bypass
+                # the context_gur block (bare_gin2 is set → this block is skipped).
+                _has_szum2 = bool(
+                    re.search(r'(?<!-)\bszum2\b', _remainder, re.I)
+                )
+                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread and not _has_nig2 and not _has_szum2:
                     grain_ind = True
                     bare_gur  = True   # activates the 10-gur-per-u factor
             if not grain_ind and not bare_gur and not bare_sila3 and not bare_gin2:
