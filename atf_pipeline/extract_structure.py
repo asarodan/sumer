@@ -373,7 +373,12 @@ class StructureMixin:
             # otherwise mislabel the following barley amount as wheat).
             c = self._detect_commodity(clean)
             if c:
-                pending_commodity = c
+                # Precious metals are never measured in sila3; carrying gold/
+                # silver forward as pending_commodity would mislabel subsequent
+                # grain entries (sila3/gur) in the same section.  Only carry
+                # forward agricultural commodities.
+                if c not in ("gold", "silver"):
+                    pending_commodity = c
             elif self._RE_SECTION_LABEL.search(clean):
                 pending_commodity = None
 
