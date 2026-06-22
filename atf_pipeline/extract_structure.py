@@ -397,10 +397,19 @@ class StructureMixin:
                 if after_mukux and re.search(r"\bla2-ia3\b", clean, re.I) and "su-ga" in clean:
                     del qty_entries[mukux_start_idx:]
                 after_mukux = False
-                # sza3-bi-ta appears without an inline amount; the carry-forward
-                # balance is on the NEXT content line.  Flag it so that line is skipped.
+                # sza3-bi-ta: when the carry-forward amount appears on the
+                # NEXT line (bare label only), flag it.  When the amount is
+                # inline ("sza3-bi-ta N gur"), the carry-forward is already
+                # suppressed by the continue below — don't set the flag or
+                # the following legitimate quantity would be skipped too.
+                # Strip the prefix before calling extract_quantity because
+                # the parser can't read a quantity that starts with "sza3-bi-ta".
                 if re.match(r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b", clean, re.I):
-                    skip_carryforward = True
+                    _rest = re.sub(
+                        r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\s*", "", clean, flags=re.I)
+                    _cf_q, _cf_u = self.extract_quantity(_rest)
+                    if _cf_q is None or _cf_u != "sila3":
+                        skip_carryforward = True
                 continue
             segs = self._segment_allotments(clean)
             for seg in segs:
