@@ -892,6 +892,20 @@ class StructureMixin:
         except Exception as exc:
             logger.warning("Error in allocation pass for %s: %s", tablet_id, exc)
 
+        # Allocation tablets where _extract_allocations found nothing: fall back to the
+        # bilateral section pass.  This recovers grain from engar tablets that have a
+        # clear grain-then-farmer structure but lack a szabra (estate admin) header,
+        # which is what _extract_allocations requires to match groups.
+        if not results and tablet_type == "allocation":
+            try:
+                for section in self._split_sections(lines):
+                    for tx in self._extract_from_section(section, tablet_id):
+                        if tx.tx_type == "transfer":
+                            tx.tx_type = "allocation"
+                        results.append(tx)
+            except Exception as exc:
+                logger.warning("Error in bilateral fallback for %s: %s", tablet_id, exc)
+
         # If still empty, try ration list (N(asz) NAME without engar)
         if not results:
             try:
