@@ -326,9 +326,16 @@ class StructureMixin:
             # Commodity detection — update pending so it can carry to the
             # next quantity line when the commodity and quantity are on
             # adjacent lines rather than the same line.
+            # Reset pending at structural section-dividers (GAN2-gu4, i3-dub,
+            # e2-duru5, ki-su7, a-sza3, etc.) that separate sub-accounts: the
+            # commodity from the previous sub-account must not bleed into the
+            # next one (e.g. a "gig" entry before "GAN2-gu4 / N gur" would
+            # otherwise mislabel the following barley amount as wheat).
             c = self._detect_commodity(clean)
             if c:
                 pending_commodity = c
+            elif self._RE_SECTION_LABEL.search(clean):
+                pending_commodity = None
 
             # Quantity: a single ATF line can pack several allotments
             # ("5 sila3 beer 5 gin2 onion"); split them so capacity and weight

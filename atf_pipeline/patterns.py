@@ -187,6 +187,22 @@ class ExtractorBase:
     # ku3-bi = "its silver (value)" — a silver equivalent note, e.g.
     # "ku3-bi N gin2 M sze" where sze is the barleycorn weight sub-unit.
     _RE_SILVER = re.compile(r"\bku3-babbar\b|\bku3-bi\b|\bsilver\b", re.I)
+    # Structural section-divider labels that break commodity carry-forward.
+    # When one of these appears without its own commodity keyword, the pending
+    # commodity from the previous entry should NOT carry forward to the next
+    # quantity line (which belongs to a new sub-section or field category).
+    # Examples: GAN2-gu4 (plow-land), e2-duru5 NAME (named settlement),
+    # i3-dub (granary), ki-su7 (threshing floor), a-sza3 NAME (named field).
+    _RE_SECTION_LABEL = re.compile(
+        r"\bGAN2(?:-gu4(?:-suhub2?)?)?\b"   # plow-land categories
+        r"|\be2-duru5\b"                     # rural settlements
+        r"|\bi3-dub\b"                       # granary
+        r"|\bki-su7\b"                       # threshing floor
+        r"|\ba-sza3\b"                       # named field
+        r"|\bgu2-edin\b",                    # embankment/canal edge
+        re.I,
+    )
+
     # Operation-description phrases that contain "sze" but are NOT commodity markers:
     # "sze gesz ra(-a)" = threshing, "sze de2-a" = pouring grain, "sze e3" = grain outgo
     # "sze ur5-ra" = grain loan formula
