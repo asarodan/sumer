@@ -257,8 +257,10 @@ class QuantityMixin:
         # When bare_gur is set, GRAIN_CONV would inflate szar2 (×1,080,000) or
         # gesz'u (×180,000) massively.  Strip everything up to and including the
         # animal word so only the per-head rate is parsed.
+        # Guard: require the animal word to be whitespace-bounded (not part of a
+        # hyphenated compound personal name like "{d}nanna-masz-x").
         m_anim = re.search(
-            r"\b(?:udu|gu4|ab2|sila4|masz2?|ansze)\b", line, re.I
+            r"(?:^|(?<=\s))(?:udu|gu4|ab2|sila4|masz2?|ansze)(?=\s|$)", line, re.I
         )
         if m_anim:
             prefix = line[: m_anim.start()]

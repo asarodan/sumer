@@ -104,8 +104,9 @@ class ExtractorBase:
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
         r"|\bku6\b"        # ku6 = fish — never a grain context
         r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b"  # livestock compounds
-        r"|\bgu2\b",       # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
-                           # reed/timber/wool — the asz token is NOT a gur here
+        r"|\bgu2(?!\s+i7)\b",  # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
+                               # reed/timber/wool — the asz token is NOT a gur here.
+                               # Exception: "gu2 i7" = canal bank (a location), not a weight.
         re.I,
     )
 
