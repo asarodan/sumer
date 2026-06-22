@@ -330,13 +330,21 @@ class StructureMixin:
         # Lines with these are ration-rate entries ("N workers, M ban2 each"),
         # not grain allotments — they must not trigger grain-distribution context.
         _RE_WORKER = re.compile(r"\b(?:geme2|gurusz)\b", re.I)
+        # Standalone nig2 (not followed by hyphen) marks artisan item quantities
+        # ("2(barig) nig2 dabin" = flour items, "N nig2 PERSON" = delivery count).
+        # Such lines may carry explicit grain capacity units (barig/ban2) but they
+        # are artisan-allotment accounting, not grain-distribution entries, so they
+        # must not activate the context_gur pre-scan flag.  Hyphenated nig2 compounds
+        # (nig2-gal2-la, nig2-ka9-ak, nig2-szid) are NOT matched by (?!-).
+        _RE_NIG2_STANDALONE = re.compile(r"\bnig2\b(?!-)", re.I)
         _section_grain_context = False
         for _sl in content:
             _sc = self._strip_linenum(_sl)
             if (self._RE_SZUNIGIN.match(_sl.strip())
                     or self._RE_SZE_BI.match(_sc)
                     or _RE_SILA3_OR_GIN2.search(_sc)
-                    or _RE_WORKER.search(_sc)):
+                    or _RE_WORKER.search(_sc)
+                    or _RE_NIG2_STANDALONE.search(_sc)):
                 continue
             _sq, _su = self.extract_quantity(_sc)
             if _sq is not None and _su == "sila3":

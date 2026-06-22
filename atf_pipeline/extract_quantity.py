@@ -116,7 +116,15 @@ class QuantityMixin:
                 _has_bread = bool(
                     re.search(r'\bninda\b', _remainder, re.I)
                 )
-                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread:
+                # nig2 standalone (not hyphenated) = item/object count classifier
+                # in artisan-accountability lines: "N(gesz2) nig2 PERSON" or
+                # "N nig2 lu2-X" tallies manufactured items, never grain.
+                # Hyphenated forms (nig2-dag, nig2-bi, nig2-gal2-la) are unaffected
+                # because (?!-) blocks matches where nig2 is followed by a hyphen.
+                _has_nig2 = bool(
+                    re.search(r'\bnig2\b(?!-)', _remainder, re.I)
+                )
+                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread and not _has_nig2:
                     grain_ind = True
                     bare_gur  = True   # activates the 10-gur-per-u factor
             if not grain_ind and not bare_gur and not bare_sila3 and not bare_gin2:
