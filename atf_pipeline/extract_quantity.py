@@ -104,10 +104,11 @@ class QuantityMixin:
                 _has_worker = bool(
                     re.search(r'\b(?:gurusz|geme2)\b', _remainder, re.I)
                 )
-                # ninda = bread loaf counts (e.g. "ninda-bi 2(szar'u)" = 72k loaves,
-                # not 72k gur of grain); sa = bundle counts (sa gi, sa szum2, etc.)
+                # ninda = bread loaf counts (e.g. "5(gesz2) ninda-bi" = N loaves,
+                # not N gesz2 of grain).  Note: sa-bundle patterns (sa gi, sa szum2)
+                # are already blocked by _RE_NON_GRAIN before _parse_grain is called.
                 _has_bread = bool(
-                    re.search(r'\bninda\b|\bsa\b', _remainder, re.I)
+                    re.search(r'\bninda\b', _remainder, re.I)
                 )
                 if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread:
                     grain_ind = True
