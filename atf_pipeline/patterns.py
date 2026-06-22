@@ -134,13 +134,19 @@ class ExtractorBase:
                                # field-area sub-entries, not gur-scale grain allocations.
                                # GAN2 (area summary word) is already blocked above; bur3/bur'u
                                # cover continuation lines that omit the GAN2 word.
-        r"|(?<!-)\bszum2\b",   # szum2 = garlic/onion commodity; garlic tablets use capacity
+        r"|(?<!-)\bszum2\b"    # szum2 = garlic/onion commodity; garlic tablets use capacity
                                # units (barig, ban2, sila3, gesz2) identical to grain, causing
                                # false positives when not blocked.  The verb "to give" is always
                                # hyphenated (ba-szum2, mu-szum2), so (?<!-) correctly exempts
                                # verbal conjugations.  Rare personal names starting with szum2-
                                # (e.g. szum2-i-li) will produce false negatives on grain lines,
                                # but this is an acceptable trade-off against the garlic FPs.
+        r"|\bza-ha-din\b"      # za-ha-din = shallot/garlic variety (ATF form of Sumerian
+                               # za-ha-di-na); "N(szar2) sa za-ha-din N gin2-ta" = bundle
+                               # counts of shallots at N silver each — item counts, never grain.
+        r"|\bin-bul5\b",       # in-bul5 = coarse thatch grass / reed debris (distinct from
+                               # in-nu straw but same non-grain fodder category); appears in
+                               # large sexagesimal gur-scale entries in fodder accounts.
         re.I,
     )
 
