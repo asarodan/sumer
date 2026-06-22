@@ -281,6 +281,42 @@ class StructureMixin:
                         la2_su_ga_suppress.add(_j)
                         break  # suppress only the immediate predecessor
 
+        # Pre-scan: suppress all content lines that are breakdown allocations
+        # following a bare "sag-nig2-gur11-ra" (opening balance, no -kam) +
+        # "sza3-bi-ta" (carry-forward) pair.  Those lines distribute the
+        # opening balance across individual workers/fields — they are NOT new
+        # inbound transactions.  We scan the full section (including @column /
+        # @reverse markers, which are invisible in 'content') so that suppression
+        # stops at the next column or face boundary rather than bleeding into
+        # the rest of the tablet.
+        _RE_SAG_BARE = re.compile(r"\bsag-nig2-gur11-ra\b", re.I)
+        _RE_SZA3_BI_TA_START = re.compile(
+            r"^\[?sza3[#!?]*-\[?bi[#!?]*-\[?ta[#!?\]]*\b", re.I)
+        _RE_COL_BREAK = re.compile(r"^@(?:column|reverse|obverse)\b", re.I)
+        sag_breakdown_suppress: set = set()
+        _ci = 0          # tracks index in 'content'
+        _in_bd = False   # currently inside a sag breakdown zone
+        _prev_sag = False
+        for _fl in section:
+            _fs = _fl.strip()
+            if _RE_COL_BREAK.match(_fs):
+                _in_bd = False
+                _prev_sag = False
+                continue
+            if not self._is_content(_fs):
+                continue
+            _fc = self._strip_linenum(_fs)
+            if _RE_SAG_BARE.search(_fc) and not re.search(r"-kam\b", _fc, re.I):
+                _prev_sag = True
+            elif _prev_sag and _RE_SZA3_BI_TA_START.match(_fc):
+                _in_bd = True
+                _prev_sag = False
+            else:
+                _prev_sag = False
+            if _in_bd:
+                sag_breakdown_suppress.add(_ci)
+            _ci += 1
+
         for idx, line in enumerate(content):
             # Szunigin total closes the section; its quantity is the sum of
             # the entries already collected — do not add it as a new entry.
@@ -305,6 +341,10 @@ class StructureMixin:
 
             # Pre-scanned la2-ia3 deficit-label predecessor: skip without extracting.
             if idx in la2_su_ga_suppress:
+                continue
+
+            # Pre-scanned sag-nig2-gur11-ra (bare) + sza3-bi-ta breakdown: skip.
+            if idx in sag_breakdown_suppress:
                 continue
 
             if first_linenum is None:
