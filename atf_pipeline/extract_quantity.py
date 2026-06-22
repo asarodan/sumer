@@ -196,7 +196,36 @@ class QuantityMixin:
         """
         # Strip scribal corrections (crossed-out text): <<deleted>> → ""
         line = self._RE_SCRIBAL_CORR.sub("", line).strip()
-        if self._RE_NON_GRAIN.search(line):
+        # Field area + grain line: "N(esze3) N(iku) GAN2 N(asz) N(gur) FARMER"
+        # In field-accounting tablets, the area measurement precedes GAN2 and
+        # the grain allocation follows on the SAME line.  Strip the area+GAN2
+        # prefix so _parse_grain can extract the grain portion.
+        # Guard 1: left side must contain a known area unit (esze3/iku/bur3/
+        #          bur'u/sar) or a damaged restoration bracket "[...]" to confirm
+        #          GAN2 is functioning as the area-summary word, not a label.
+        # Guard 2: right side must contain a CDLI grain token.
+        # Guard 3: right side must NOT end with a -ta/-[ta rate suffix — those
+        #          mark per-area rates (P100089 pattern), not absolute totals.
+        # When the strip fires, bypass _RE_NON_GRAIN so that GAN2 inside a
+        # personal name on the right side (e.g. "lugal-GAN2-re6") doesn't
+        # re-block the already-validated grain content.
+        _skip_non_grain = False
+        _m_gan2 = re.search(r"\bGAN2[#!?\w-]*\s+", line, re.I)
+        if _m_gan2:
+            _gl = line[:_m_gan2.start()].strip()
+            _gr = line[_m_gan2.end():]
+            _left_has_area = bool(re.search(
+                r"\b(?:esze3|iku|bur3|bur'u|sar)\b|\[\.+\]", _gl, re.I
+            ))
+            _right_has_grain = bool(re.search(
+                r"\d+(?:/\d+)?\((?:asz|barig|ban2|gur|sila3|gesz2|szar2)\)",
+                _gr, re.I,
+            ))
+            _right_has_ta = bool(re.search(r"-ta\b|\[ta\b", _gr, re.I))
+            if _left_has_area and _right_has_grain and not _right_has_ta:
+                line = _gr
+                _skip_non_grain = True
+        if not _skip_non_grain and self._RE_NON_GRAIN.search(line):
             return None, None
         # Accounting balance lines (deficit, surplus, carry-forward subtotals) represent
         # residuals already embedded in surrounding totals — do not sum them.
