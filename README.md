@@ -128,7 +128,7 @@ All grain quantities are resolved to **sila3** (approximately 0.84 liters, the b
 | barig    | `barig`      | 60           | 6 ban2                       |
 | gur      | `asz` / `gur`| 300          | 5 barig; the standard jar    |
 | gesz2    | `gesz2`      | 18 000       | 60 gur                       |
-| gesz'u   | `gesz'u`     | 108 000      | 600 gur (6 gesz2)            |
+| gesz'u   | `gesz'u`     | 180 000      | 600 gur (10 gesz2)           |
 | szar2    | `szar2`      | 1 080 000    | 3 600 gur (60 gesz2)         |
 | szar'u   | `szar'u`     | 10 800 000   | 10 szar2                     |
 | szargal  | `szargal`    | 64 800 000   | 60 szar2                     |
