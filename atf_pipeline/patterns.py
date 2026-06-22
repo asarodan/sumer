@@ -116,7 +116,15 @@ class ExtractorBase:
         r"|\bgi-bi\b"          # gi-bi = "its reeds" — reed-accounting marker; lines like
                                # "gi-bi 7(szar2) sa" give reed-bundle totals, not grain.
         r"|\bnig2-dag\b"       # nig2-dag = threshing board (carpenter/artisan inventory)
-        r"|\bnig2-ki-luh\b",   # nig2-ki-luh = cleaning material / porcupine grass (not grain)
+        r"|\bnig2-ki-luh\b"    # nig2-ki-luh = cleaning material / porcupine grass (not grain)
+        r"|\bnig2\s+giri3\b"   # nig2 giri3 = "items via [responsible party]" — artisan-delivery
+                               # count lines; the large sexagesimal N is an item count, not gur.
+        r"|\bnig2-bi\b"        # nig2-bi N-am3 = scribal sub-total check note ("the total for it:
+                               # N"); appears in artisan inventory accounts (e.g. Ontario 2, 323).
+        r"|\bnig2\s+a-ra2\b"   # nig2 a-ra2 N-kam = "items, Nth delivery installment" — round
+                               # counts in multi-delivery artisan accounts, not grain.
+        r"|\blagab\b",         # lagab = compressed block/cake shape (garlic cake, bitumen cake);
+                               # lagab N counts blocks, never grain-capacity measures.
         re.I,
     )
 
