@@ -166,6 +166,27 @@ class TestLargeGrainUnits:
         assert u == "sila3"
         assert q == 49_610.0
 
+    def test_context_gur_blocked_for_large_denom_without_sub_gur(self, ext):
+        # Worker ration lines like "3(gesz'u) 4(gesz2) 2(u) 3(disz) worker-name"
+        # appear in brewer-ration tablets (SNAT 376 pattern) where gesz'u/gesz2
+        # count SILA3, not GUR.  The szunigin converts them to gur at section level.
+        # Without a sub-gur anchor (asz/barig/ban2), context_gur must NOT apply —
+        # those tokens would inflate by ×300 and give 2,063 gur instead of ~7 gur.
+        # With context_gur=True, the line should still return (None, None) because
+        # gesz2/gesz'u appear without asz/barig/ban2.
+        q, u = ext.extract_quantity("3(gesz'u) 4(gesz2) 2(u) 3(disz) ARAD2",
+                                    context_gur=True)
+        assert (q, u) == (None, None)
+
+    def test_context_gur_allowed_for_u_disz_only(self, ext):
+        # Pure u/disz entries (no gesz2+) in a proven grain section ARE in
+        # gur scale: "4(u) 5(disz) worker-name" = 40 gur + 5 sila3 = 12,005 sila3.
+        # u → 10 gur per u = 3,000 sila3; disz → 1 sila3 (GRAIN_CONV smallest unit).
+        # The trailing name keeps the remainder non-empty (empty remainder is
+        # always blocked to avoid summing bare numeric fragments).
+        q, u = ext.extract_quantity("4(u) 5(disz) ur-ni9-gar", context_gur=True)
+        assert u == "sila3" and q == 4 * 10 * 300 + 5
+
     def test_guru7_count_stripped(self, ext):
         # "N guru7 QUANTITY gur" — N is the granary count, not part of the grain.
         # 1(asz) guru7 = 1 granary; quantity = 1(gesz'u) 3(gesz2) 5(u) 4(asz) gur

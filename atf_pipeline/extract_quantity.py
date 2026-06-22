@@ -134,7 +134,17 @@ class QuantityMixin:
                 _has_szum2 = bool(
                     re.search(r'(?<!-)\bszum2\b', _remainder, re.I)
                 )
-                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread and not _has_nig2 and not _has_szum2:
+                # Large-denomination tokens (gesz2, gesz'u, szar2, …) without a
+                # sub-gur anchor (asz/barig/ban2) are sila3-scale ration entries.
+                # In individual ration lists, "3(gesz'u) 4(gesz2) worker-name"
+                # means 2,063 sila3 (~7 gur), NOT 2,063 gur — the szunigin at the
+                # bottom converts to gur.  Sub-gur tokens (asz = 1 gur, barig, ban2)
+                # are already in _GRAIN_IND, so their presence sets grain_ind=True
+                # above and this block is never reached.  If only gesz2+ appears
+                # here, the line is NOT in gur scale; skip context_gur.
+                _LARGE_DENOM = {"gesz2", "gesz'u", "szar2", "szar'u", "szargal"}
+                _has_large_denom = bool(units & _LARGE_DENOM)
+                if "[" not in _remainder and _remainder and not _has_det and not _has_worker and not _has_bread and not _has_nig2 and not _has_szum2 and not _has_large_denom:
                     grain_ind = True
                     bare_gur  = True   # activates the 10-gur-per-u factor
             if not grain_ind and not bare_gur and not bare_sila3 and not bare_gin2:
