@@ -104,9 +104,19 @@ class ExtractorBase:
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
         r"|\bku6\b"        # ku6 = fish — never a grain context
         r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b"  # livestock compounds
-        r"|\bgu2(?!\s+i7)\b",  # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
+        r"|\bgu2(?!\s+i7)\b"   # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
                                # reed/timber/wool — the asz token is NOT a gur here.
                                # Exception: "gu2 i7" = canal bank (a location), not a weight.
+        r"|\bsa\s+gi\b"        # sa gi = bundle(s) of reeds — large sexagesimal counts in
+                               # sa gi tablets (szar2/gesz'u scale) are NOT grain gur.
+        r"|\bsa\s+szum2\b"     # sa szum2-sikil = bundle(s) of leeks — same counting system
+                               # as reed bundles but commodity is vegetables, not grain.
+        r"|\ba2-bi\b"          # a2-bi = "its labor (value)" — appears in labor-day total
+                               # lines "a2-bi u4 N(szar'u)" where N is days, not grain gur.
+        r"|\bgi-bi\b"          # gi-bi = "its reeds" — reed-accounting marker; lines like
+                               # "gi-bi 7(szar2) sa" give reed-bundle totals, not grain.
+        r"|\bnig2-dag\b"       # nig2-dag = threshing board (carpenter/artisan inventory)
+        r"|\bnig2-ki-luh\b",   # nig2-ki-luh = cleaning material / porcupine grass (not grain)
         re.I,
     )
 

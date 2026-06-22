@@ -317,6 +317,32 @@ class StructureMixin:
                 sag_breakdown_suppress.add(_ci)
             _ci += 1
 
+        # Pre-scan: detect if this section is a grain-gur distribution.  When it
+        # is, lines containing ONLY large-sexagesimal tokens (gesz2, gesz'u, szar2)
+        # without a bare gur/sila3/gin2 word should be interpreted as gur-scale grain
+        # allocations.  A section qualifies when at least one non-szunigin,
+        # non-sze-bi content line successfully extracts a grain (sila3) quantity.
+        # Guard: exclude sila3-context lines (beer/ration) and gin2 lines (silver)
+        # from triggering the flag — those use the same gesz2 counters but at a
+        # different scale.
+        _RE_SILA3_OR_GIN2 = re.compile(r"(?:^|\s)(?:sila3?|gin2)\b", re.I)
+        # Worker terms: geme2 (female slave/worker) and gurusz (male worker).
+        # Lines with these are ration-rate entries ("N workers, M ban2 each"),
+        # not grain allotments — they must not trigger grain-distribution context.
+        _RE_WORKER = re.compile(r"\b(?:geme2|gurusz)\b", re.I)
+        _section_grain_context = False
+        for _sl in content:
+            _sc = self._strip_linenum(_sl)
+            if (self._RE_SZUNIGIN.match(_sl.strip())
+                    or self._RE_SZE_BI.match(_sc)
+                    or _RE_SILA3_OR_GIN2.search(_sc)
+                    or _RE_WORKER.search(_sc)):
+                continue
+            _sq, _su = self.extract_quantity(_sc)
+            if _sq is not None and _su == "sila3":
+                _section_grain_context = True
+                break
+
         for idx, line in enumerate(content):
             # Szunigin total closes the section; its quantity is the sum of
             # the entries already collected — do not add it as a new entry.
@@ -419,6 +445,10 @@ class StructureMixin:
             segs = self._segment_allotments(clean)
             for seg in segs:
                 q, u = self.extract_quantity(seg)
+                if q is None and _section_grain_context:
+                    # Retry with gur context: recovers "N(gesz2) PERSON" entries
+                    # in grain-distribution sections where the unit is implied.
+                    q, u = self.extract_quantity(seg, context_gur=True)
                 if q is None:
                     continue
                 # After sag-nig2-gur11-ra-kam: all entries are expenditure

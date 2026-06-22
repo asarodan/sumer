@@ -10,7 +10,9 @@ class QuantityMixin:
 
     _RE_LA2_MINUS = re.compile(r"\bla2\b(?!-ia3)", re.I)
 
-    def _parse_grain(self, line: str) -> Tuple[Optional[float], Optional[str]]:
+    def _parse_grain(
+        self, line: str, context_gur: bool = False
+    ) -> Tuple[Optional[float], Optional[str]]:
         """
         Parse commodity quantity; return (value_in_native_unit, unit_name).
 
@@ -20,6 +22,13 @@ class QuantityMixin:
           3. Bare-sila3 context: N(disz) sila3 → sila3  (small ration tablets)
           4. Bare-gin2 context: N(u)/N(disz) gin2 → gin2  (silver weight tablets)
           5. Animal count: N(disz) gu4/udu/… → head
+
+        When context_gur=True (caller knows we are inside a grain-distribution
+        section), lines containing ONLY large-sexagesimal tokens (gesz2, gesz'u,
+        szar2, u, disz) without a bare sila3/gin2 context word are treated as
+        gur-scale grain amounts.  This recovers entries like
+        "4(gesz2) du-ug-ga" or "1(gesz'u) 2(gesz2) szu-{d}utu" in grain-ration
+        tablets where each line's unit is implied by section context.
 
         The Sumerian subtraction operator "la2" ("lacking") is handled by parsing
         the portion before la2 as a positive quantity and the portion after as a
@@ -51,8 +60,8 @@ class QuantityMixin:
                 ctx_suffix = neg_tail
             pos_line = (pos_part + " " + ctx_suffix).strip()
             neg_line = neg_tail
-            q_pos, u_pos = self._parse_grain(pos_line)
-            q_neg, u_neg = self._parse_grain(neg_line)
+            q_pos, u_pos = self._parse_grain(pos_line, context_gur=context_gur)
+            q_neg, u_neg = self._parse_grain(neg_line, context_gur=context_gur)
             if q_pos is not None and q_neg is not None and u_pos == u_neg:
                 result = q_pos - q_neg
                 return (result, u_pos) if result > 0 else (None, None)
@@ -67,6 +76,37 @@ class QuantityMixin:
             bare_sila3 = bool(self._RE_BARE_SILA3.search(line))
             bare_gin2  = bool(self._RE_BARE_GIN2.search(line))
             grain_ind  = bool(units & self._GRAIN_IND)
+            # Context-gur: caller knows this section is a grain distribution.
+            # Treat lines with ONLY large-sexagesimal tokens (gesz2, gesz'u,
+            # szar2, u, disz) as gur-scale grain when no sila3/gin2 context
+            # word is present (those would indicate beer/silver allotments that
+            # happen to use the same counting units).
+            _GUR_SCALE = {"gesz2", "gesz'u", "szar2", "szar'u", "szargal", "u", "disz"}
+            if (context_gur and not grain_ind
+                    and not bare_sila3 and not bare_gin2
+                    and units and units <= _GUR_SCALE):
+                # Guard: the remainder after stripping all quantity tokens must not
+                # contain "[" (CDLI damaged-text bracket) — damaged text may hide a
+                # commodity word (e.g. "8(szar2) [...]" could be reed bundles).
+                # Also block when the remainder contains:
+                #   - A CDLI determinative other than {d} (divine) or {ki} (place):
+                #     {gesz}=wood, {u2}=plant/herb, {uruda}=copper, {kusz}=leather…
+                #     These mark commodities, never personal names.
+                #   - Worker terms (gurusz=male worker, geme2=female worker): lines
+                #     like "N(gesz2) gurusz u4 N-sze3" count labor days, not grain.
+                #     Lines with explicit grain indicators (sila3, ban2) still extract
+                #     via the normal path (context_gur doesn't activate when bare_sila3
+                #     is true).
+                _remainder = self._RE_QTY_CDLI.sub("", line).strip()
+                _has_det = bool(
+                    re.search(r'\{(?!d\b|ki\b)[^}]+\}', _remainder, re.I)
+                )
+                _has_worker = bool(
+                    re.search(r'\b(?:gurusz|geme2)\b', _remainder, re.I)
+                )
+                if "[" not in _remainder and not _has_det and not _has_worker:
+                    grain_ind = True
+                    bare_gur  = True   # activates the 10-gur-per-u factor
             if not grain_ind and not bare_gur and not bare_sila3 and not bare_gin2:
                 # Not grain — check for animal count before giving up
                 m_anim = self._RE_QTY_ANIMAL.search(line)
@@ -186,7 +226,9 @@ class QuantityMixin:
             return raw_val, raw_unit
         return None, None
 
-    def extract_quantity(self, line: str) -> Tuple[Optional[float], Optional[str]]:
+    def extract_quantity(
+        self, line: str, context_gur: bool = False
+    ) -> Tuple[Optional[float], Optional[str]]:
         """
         Parse grain quantity; return (value_in_sila3, primary_unit).
         Non-grain lines (worker-days, animals, area) return (None, None).
@@ -289,11 +331,11 @@ class QuantityMixin:
                 remainder = re.sub(
                     r"\bu4\s+\d+(?:/\d+)?\([^)]+\)(?:-(?:sze3|a|kam))?\b", "", parts[-1]
                 )
-                q, u = self._parse_grain(remainder)
+                q, u = self._parse_grain(remainder, context_gur=context_gur)
                 if q is not None:
                     return q, u
             return None, None
-        return self._parse_grain(line)
+        return self._parse_grain(line, context_gur=context_gur)
 
     def _segment_allotments(self, line: str) -> list:
         """
