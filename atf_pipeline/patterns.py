@@ -251,7 +251,8 @@ class ExtractorBase:
         r"|\bi3-dub\b"                       # granary
         r"|\bki-su7\b"                       # threshing floor
         r"|\ba-sza3\b"                       # named field
-        r"|\bgu2-edin\b",                    # embankment/canal edge
+        r"|\bgu2-edin\b"                     # embankment/canal edge
+        r"|\bapin-la2\b",                    # plow-fallow land category
         re.I,
     )
 

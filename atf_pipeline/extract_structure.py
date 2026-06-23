@@ -423,6 +423,7 @@ class StructureMixin:
                     pending_commodity = c
             elif self._RE_SECTION_LABEL.search(clean):
                 pending_commodity = None
+                prev_name = None  # section dividers are structural labels, not names
 
             # Quantity: a single ATF line can pack several allotments
             # ("5 sila3 beer 5 gin2 onion"); split them so capacity and weight
@@ -576,7 +577,12 @@ class StructureMixin:
 
             # Track previous name-like line for pattern G
             if self._looks_like_name(clean):
-                prev_name = self._clean_atf_name(clean)
+                # "NAME dub-sar" lines are scribal certification witnesses;
+                # section-label lines (GAN2-gu4, apin-la2, etc.) are structural
+                # dividers — neither should be used as a szu ba-ti recipient.
+                if (not re.search(r'\bdub-sar\b', clean, re.I)
+                        and not self._RE_SECTION_LABEL.search(clean)):
+                    prev_name = self._clean_atf_name(clean)
             elif not (self._RE_SHU_ALONE.match(clean)
                       or self._RE_BA_AN_SUM.search(clean)
                       or m_dat
@@ -1278,6 +1284,9 @@ class StructureMixin:
             c = self._detect_commodity(clean)
             if c:
                 pending_comm = c
+            elif self._RE_SECTION_LABEL.search(clean):
+                pending_comm = None
+                prev_name = None  # section dividers are structural labels, not names
 
             # Issuer patterns (ki NAME-ta, institution-ta, etc.)
             iss = self._extract_issuer(clean)
@@ -1382,7 +1391,12 @@ class StructureMixin:
 
             # Track previous name-like line (for standalone szu ba-ti)
             if self._looks_like_name(clean):
-                prev_name = self._clean_atf_name(clean)
+                # "NAME dub-sar" lines are scribal certification witnesses;
+                # section-label lines (GAN2-gu4, apin-la2, etc.) are structural
+                # dividers — neither should be used as a szu ba-ti recipient.
+                if (not re.search(r'\bdub-sar\b', clean, re.I)
+                        and not self._RE_SECTION_LABEL.search(clean)):
+                    prev_name = self._clean_atf_name(clean)
             elif not (self._RE_SHU_ALONE.match(clean)
                       or self._RE_BA_AN_SUM.search(clean)
                       or m_dat
