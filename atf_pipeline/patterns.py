@@ -144,9 +144,20 @@ class ExtractorBase:
         r"|\bza-ha-din\b"      # za-ha-din = shallot/garlic variety (ATF form of Sumerian
                                # za-ha-di-na); "N(szar2) sa za-ha-din N gin2-ta" = bundle
                                # counts of shallots at N silver each — item counts, never grain.
-        r"|\bin-bul5\b",       # in-bul5 = coarse thatch grass / reed debris (distinct from
+        r"|\bin-bul5\b"        # in-bul5 = coarse thatch grass / reed debris (distinct from
                                # in-nu straw but same non-grain fodder category); appears in
                                # large sexagesimal gur-scale entries in fodder accounts.
+        r"|(?<!-)\{u2\}"       # {u2} = plant/herb determinative ({u2}bur2, {u2}gug4, {u2}gil…).
+                               # Like {gesz} for wood, a line measuring a plant commodity
+                               # uses the same sexagesimal counters as grain but must not be
+                               # counted as a grain/silver transaction.
+        r"|\bki-la2-bi\b"      # ki-la2-bi = "its tare weight" — a weighing sub-entry giving the
+                               # container/packaging weight deducted from a gross total.  These
+                               # carry gin2 (shekel) or sar measurements of basket dimensions,
+                               # never grain-capacity quantities.
+        r"|\bpesz(?:-bi)?\b"   # pesz / pesz-bi = date palm frond; lines like "pesz-bi N gin2
+                               # murgu2" give frond-width in shekel/sar units, not grain measures.
+        r"|\bim-babbar2\b",    # im-babbar2 = gypsum/plaster; weighed in gin2, never a grain qty.
         re.I,
     )
 
