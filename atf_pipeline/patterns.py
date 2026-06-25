@@ -245,6 +245,11 @@ class ExtractorBase:
         "nu",     # negation prefix ("not")
         "ba",     # verbal element (allocative)
         "ib2",    # verbal infix / reed basket
+        # Administrative verbs that appear before szu ba-ti / i3-dab5 and can be
+        # mistaken for a recipient name (e.g. "sa10 szu ba-ti" = "was purchased")
+        "sa10",   # to buy/purchase
+        "ar3",    # to grind (sa-ad line in grain accounts)
+        "igi",    # in front of / witness particle (never standalone personal name)
     })
 
     # Commodities (ASCII ATF corpus)
