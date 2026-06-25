@@ -555,6 +555,10 @@ class ExtractorBase:
         "e2-udu",           # "sheep-house/sheep-pen" — livestock facility
         "e2-szu-tum",       # "enclosure/storage facility" — building
         "e2-sag-il2-la",    # "exalted house" — temple/building name
+        # Additional building/facility names confirmed as non-persons
+        "e2-mah",           # "great house" — appears as building in "from e2-mah" patterns
+        "e2-gu4",           # "ox-house/ox-pen" — livestock facility for oxen
+        "e2-da-na",         # "his father's house" — building/estate reference
     })
 
     # Commodities (ASCII ATF corpus)

@@ -276,6 +276,9 @@ class EntityScanner:
         "un-sa6-ga",
         # Building / livestock facility names
         "e2-udu", "e2-szu-tum", "e2-sag-il2-la",
+        "e2-mah",        # "great house" — building
+        "e2-gu4",        # "ox-house" — livestock facility
+        "e2-da-na",      # "his father's house" — estate
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
