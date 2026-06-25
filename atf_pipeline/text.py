@@ -74,7 +74,11 @@ class TextMixin:
         """Heuristic: does this look like a standalone personal name line?"""
         if self._RE_NOT_NAME.match(clean):
             return False
-        if re.search(r"\b(?:gur|barig|ban2|sila3|gin2)\b", clean):
+        # Damaged-bracket fragments like "[...]-mu" → after cleaning leave "-mu";
+        # a real name always starts with a letter or determinative brace.
+        if clean.startswith("-"):
+            return False
+        if re.search(r"\b(?:gur|barig|ban2|sila3|gin2|ninda)\b", clean):
             return False
         if re.search(r"\(\$", clean):      # CDLI editorial marker ($ blank space $)
             return False

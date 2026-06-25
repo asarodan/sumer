@@ -85,7 +85,12 @@ class EntityMixin:
         if m:
             qty = self._qty_from_u_sze(m.group(1))
             name = self._clean_atf_name(m.group(2))
-            if len(name) >= 2 and name.lower() not in self._GRAIN_UNIT_WORDS:
+            # Also reject "gur lugal", "barig nig2-gal2-la", etc. where the
+            # first word is a unit noun qualifying the measurement standard.
+            first_word = name.lower().split()[0] if name else ""
+            if (len(name) >= 2
+                    and name.lower() not in self._GRAIN_UNIT_WORDS
+                    and first_word not in self._GRAIN_UNIT_WORDS):
                 return name, qty
         return None, None
 

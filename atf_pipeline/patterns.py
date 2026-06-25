@@ -380,7 +380,9 @@ class ExtractorBase:
         r"|^(?:iti|mu|giri3|ki|ugula|kiszib3|szunigin|šunigin"
         r"|sze-ba|sza3-bi-ta|zi-ga|la2-ia3|nig2-ka9|sag-nig2"
         r"|engar|szabra|šabra|szu-a|sza3-gal"
-        r"|nu-banda3|kuruszda|muhaldim|szusz3|dub-sar)\b"
+        r"|nu-banda3|kuruszda|muhaldim|szusz3|dub-sar"
+        r"|szuku|kasz)\b"                   # "ration-of" genitive; beer commodity
+        r"|^dingir-re-ne\b"                 # "the gods" — deity collective, not a name
         r"|^u4\s"           # date day token (u4 N-kam) — "day N"
         r"|^sze\s"          # commodity formula (sze ur5-ra, sze-ba etc.) — not a name
         r"|^asz\s"          # asz (unit/number) followed by space — not a name start
