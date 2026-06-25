@@ -336,6 +336,10 @@ class ExtractorBase:
         "a-gar3",   # irrigation district / agricultural plot — location noun
         # Debit/accounting formulae
         "bi2-gu7-bi",  # "was consumed by it" — debit formula, not a person
+        # Animal subtypes extracted as false recipients
+        "szeg9-bar",  # type of pack animal / donkey — livestock subtype, not a person
+        # Administrative accounting terms
+        "igi-gal2",   # "what is present/receipts" — accounting category, not a person
     })
 
     # Commodities (ASCII ATF corpus)

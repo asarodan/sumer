@@ -128,6 +128,10 @@ class EntityScanner:
         "a-gar3",     # irrigation district / agricultural plot
         # Debit formulae
         "bi2-gu7-bi", # "was consumed by it" — debit/expenditure formula
+        # Animal subtypes
+        "szeg9-bar",  # type of pack animal — livestock subtype
+        # Accounting category terms
+        "igi-gal2",   # "receipts/what is present" — accounting category
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
