@@ -914,15 +914,19 @@ class StructureMixin:
             if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", s, re.I):
                 return []
         # Pre-Sargonic / Early Dynastic tablets use archaic curviform (@c) tokens
-        # for large grain units (szar'u@c, szar2@c, gesz'u@c).  The @c suffix is
-        # stripped during unit lookup, so these tokens are misread as Ur III
-        # values 100–10,000× too large.  Bail out before extracting anything.
-        # Guard: only check non-szunigin lines; szunigin totals with gesz'u@c are
-        # already skipped during section extraction, so their large values never
-        # accumulate.  Tablets where only the total uses gesz'u@c (individual
-        # entries in gesz2@c, asz@c, ban2@c) can be safely extracted.
-        _ARCHAIC_LARGE = re.compile(r"\((?:szar'u|szar2|gesz'u)@c\)", re.I)
-        if any(_ARCHAIC_LARGE.search(l) for l in lines
+        # on capacity and area units (szar'u@c, szar2@c, gesz'u@c, gesz2@c,
+        # asz@c, iku@c, ban2@c, barig@c).  The @c suffix is stripped during unit
+        # lookup, so these tokens are misread as Ur III values.  More importantly,
+        # archaic format has "qty commodity unit" ordering (vs. Ur III's "qty unit
+        # commodity") which causes commodity words like "i3" (oil) to be
+        # misidentified as recipient names.  Reject any tablet where a non-szunigin
+        # content line carries a capacity or area unit with @c.
+        # Guard: szunigin totals are already skipped during extraction so their
+        # values never accumulate — only non-total lines need checking.
+        _ARCHAIC_C = re.compile(
+            r"\((?:szar'u|szar2|gesz'u|gesz2|asz|iku|ban2|barig|sila)@c\)", re.I
+        )
+        if any(_ARCHAIC_C.search(l) for l in lines
                if not self._RE_SZUNIGIN.match(l.strip())):
             return []
         # Require at least one administrative keyword before attempting extraction.
@@ -1453,8 +1457,11 @@ class StructureMixin:
         a section with barley + emmer + wheat yields three entries, not one.
         """
         lines = self._strip_secondary_sections(lines)
-        _ARCHAIC_LARGE = re.compile(r"\((?:szar'u|szar2|gesz'u)@c\)", re.I)
-        if any(_ARCHAIC_LARGE.search(l) for l in lines):
+        _ARCHAIC_C = re.compile(
+            r"\((?:szar'u|szar2|gesz'u|gesz2|asz|iku|ban2|barig|sila)@c\)", re.I
+        )
+        if any(_ARCHAIC_C.search(l) for l in lines
+               if not self._RE_SZUNIGIN.match(l.strip())):
             return TabletSummary(
                 tablet_id=tablet_id, tablet_type="archaic", records=[]
             )
