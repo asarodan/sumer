@@ -94,6 +94,10 @@ class TextMixin:
             return False
         if len(clean) < 2 or len(clean) > 60:
             return False
+        # 2-char non-hyphenated tokens are damage fragments (na-[...] → "na",
+        # da-[...] → "da") or function words — never standalone personal names.
+        if len(clean) == 2 and '-' not in clean:
+            return False
         # Bare commodity/animal/material words cannot be standalone personal names.
         # Compound names containing these syllables (e.g. "udu-ni-ba") are safe —
         # the exact-match check only blocks the isolated word.

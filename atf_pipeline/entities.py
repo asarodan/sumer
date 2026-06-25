@@ -91,6 +91,7 @@ class EntityScanner:
         "ur5", "a2", "ga-a",
         "tul2", "nu", "ba", "ib2", "sa10", "ar3", "igi", "sag",
         "munu4", "numun", "sumun", "szim", "i3-bi",
+        "du", "har", "gal", "masz",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

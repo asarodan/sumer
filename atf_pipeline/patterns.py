@@ -260,6 +260,11 @@ class ExtractorBase:
         "szim",   # aromatic/spice (szim gur = a measure of aromatic)
         # Reference formulas (commodity sub-entries)
         "i3-bi",  # "its oil" — sub-entry cross-reference, not a person
+        # Grain quality / commodity modifiers
+        "du",     # ordinary/common grade (sze du = ordinary barley; kasz du = ordinary beer)
+        "har",    # ring/hoop of metal — object, not a person
+        "gal",    # large/big (size qualifier: sila3 gal = large sila measure)
+        "masz",   # interest / young goat (economic/animal term, not a standalone name)
     })
 
     # Commodities (ASCII ATF corpus)
