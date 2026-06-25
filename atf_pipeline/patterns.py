@@ -340,6 +340,22 @@ class ExtractorBase:
         "szeg9-bar",  # type of pack animal / donkey — livestock subtype, not a person
         # Administrative accounting terms
         "igi-gal2",   # "what is present/receipts" — accounting category, not a person
+        # Commodity possessive back-references (WORD + "-bi" = "its WORD") appearing as false recipients.
+        # In Ur III accounts, each commodity sub-entry lists the by-product with the possessive suffix.
+        "i3-nun-bi",      # "its ghee/clarified butter"
+        "esir2 e2-a-bi",  # "its house bitumen" — bitumen by-product reference
+        "igi-gal2-bi",    # "its receipts/counted items"
+        "igi-sag-bi",     # "its first/head portion"
+        "ga-ar3-bi",      # "its ga-ar3 flour allocation"
+        "sag-bi",         # "its principal" (accounting: principal vs. interest)
+        "sza3-bi",        # "its interior/midst" — spatial back-reference in accounts
+        "duh-bi",         # "its bran" — cereal processing by-product
+        "naga-bi",        # "its naga (alkali-plant)" — lye/soap by-product reference
+        "ga-bi",          # "its milk" — dairy sub-entry back-reference
+        "szu-bi",         # "its hand-allotment" — administrative sub-entry
+        # Divine ownership/attribution formulas (temple accounting designations)
+        "nanna-kam",      # "it is of Nanna" — attribution to the Nanna moon-god temple
+        "nansze-kam",     # "it is of Nanše" — attribution to the Nanše fishing-god temple
     })
 
     # Commodities (ASCII ATF corpus)

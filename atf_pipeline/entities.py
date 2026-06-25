@@ -132,6 +132,11 @@ class EntityScanner:
         "szeg9-bar",  # type of pack animal — livestock subtype
         # Accounting category terms
         "igi-gal2",   # "receipts/what is present" — accounting category
+        # Commodity possessive back-references (WORD + "-bi" = "its WORD")
+        "i3-nun-bi", "esir2 e2-a-bi", "igi-gal2-bi", "igi-sag-bi",
+        "ga-ar3-bi", "sag-bi", "sza3-bi", "duh-bi", "naga-bi", "ga-bi", "szu-bi",
+        # Divine ownership/attribution formulas
+        "nanna-kam", "nansze-kam",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
