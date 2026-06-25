@@ -377,8 +377,11 @@ class ExtractorBase:
     })
 
     # --------------- Date ---------------
+    # Month name group: each word token uses a negative lookahead to stop before
+    # a second "iti" keyword (date-range lines like "iti 1-a-kam iti 12-sze3"
+    # would otherwise swallow the trailing "iti ..." into the month name).
     _RE_ITI = re.compile(
-        r"^(?:\d+[a-z]?[!?*'ʼ]?\.\s*)?iti\s+(\S+(?:\s+\S+)*?)"
+        r"^(?:\d+[a-z]?[!?*'ʼ]?\.\s*)?iti\s+((?:(?!iti\b)\S)+(?:\s+(?:(?!iti\b)\S)+)*?)"
         r"(?:\s+u4[-\s](\d+)(?:-kam)?)?\s*(?:#.*)?$",
         re.I,
     )
