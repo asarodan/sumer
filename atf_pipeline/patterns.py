@@ -292,6 +292,9 @@ class ExtractorBase:
         # to ga-UD which normalizes to ga-ud. ga-ud-bi = "its ga-ud allocation".
         "ga-ud",
         "ga-ud-bi",
+        # Administrative and institutional terms
+        "nig2-ba",  # gift/allotment — administrative term, never a standalone name
+        "ga2-nun",  # storehouse/granary — institution, appears in ga2-nun-ta (from the storehouse)
     })
 
     # Commodities (ASCII ATF corpus)
