@@ -177,6 +177,28 @@ class EntityScanner:
         "ka-guru7",      # granary-gate
         # Administrative title (archivist role)
         "sza13-dub-ba",
+        # Oil commodity
+        "i3-erin",         # cedar/juniper oil
+        # Military/administrative category noun
+        "erin2 lugal",     # royal troops
+        # Accounting sub-formulas
+        "sza3-ba udu ugu2-bi", "szu-nigin2 udu hi-a",
+        # Transport verbal phrase
+        "ma2-a si-ga",     # "loaded onto a boat"
+        # Silver commodity
+        "ku3-babbar2",
+        # Geographic/landscape nouns
+        "ambar", "sza3-iri",
+        # Livestock
+        "uz-tur",          # young female donkey
+        # Grain commodity
+        "nig2-ar3",
+        # Agricultural/fishing nouns (not personal names)
+        "gur10", "ma2-gur8",
+        # Verbal form
+        "erin2-me",
+        # Area measurement formula
+        "sahar-bi sar",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

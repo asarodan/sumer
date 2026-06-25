@@ -415,6 +415,32 @@ class ExtractorBase:
         "ka-guru7",        # "granary-gate" — gate/portal
         # Administrative title not caught by TITLE_SUFFIX regex
         "sza13-dub-ba",    # "tablet-house official/archivist" — job title, not a name
+        # Oil commodity: cedar/juniper oil
+        "i3-erin",         # "cedar/juniper oil" — commodity (appears with other oil types)
+        # Military/administrative category noun
+        "erin2 lugal",     # "royal troops/soldiers" — administrative category, not a person
+        # Accounting sub-formulas
+        "sza3-ba udu ugu2-bi",  # "in it: sheep, their above-count" — accounting sub-formula
+        "szu-nigin2 udu hi-a",  # "total: mixed sheep" — accounting grand-total formula
+        # Loading/transport verbal phrases
+        "ma2-a si-ga",     # "loaded onto a boat" — verbal phrase for cargo shipment
+        # Silver commodity reference
+        "ku3-babbar2",     # silver type/standard — commodity not a personal name
+        # Geographic/landscape nouns
+        "ambar",           # reed-marsh/swampland — geographic/landscape noun
+        "sza3-iri",        # "city interior" — spatial/geographic term
+        # Livestock type
+        "uz-tur",          # "young female donkey" — livestock subtype
+        # Grain milling commodity
+        "nig2-ar3",        # "ground/milled grain" — commodity (cf. nig2-ar3-ra)
+        # Agricultural tools / harvesting context nouns
+        "gur10",           # sickle / "gur10{ku6}" (carp fish) — neither is a personal name
+        # Boat type used as institutional shorthand
+        "ma2-gur8",        # type of ceremonial/cargo boat — not a personal name
+        # Verbal/formulaic phrase
+        "erin2-me",        # "they are troops" — verbal form of erin2, not a personal name
+        # Area measurement formula
+        "sahar-bi sar",    # "its soil/dirt: X sar" — area measurement sub-entry
     })
 
     # Commodities (ASCII ATF corpus)
