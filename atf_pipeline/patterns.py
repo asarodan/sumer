@@ -265,6 +265,26 @@ class ExtractorBase:
         "har",    # ring/hoop of metal — object, not a person
         "gal",    # large/big (size qualifier: sila3 gal = large sila measure)
         "masz",   # interest / young goat (economic/animal term, not a standalone name)
+        # Geographic and contextual terms
+        "kur",    # mountain/foreign land (sze kur gur = barley from the highlands)
+        "sza",    # heart/inside — function word, not a personal name
+        "iri",    # city — geographic term, never a standalone personal name
+        "kar",    # quay/harbor — geographic/institutional, not a person
+        # Verbal elements and grammatical particles
+        "nam",    # destiny/status (nominalized verbal noun, function word)
+        "usz",    # 2nd quality (grain grade) or "to follow" — never a name
+        "us2",    # to die/follow — function word
+        "bi2",    # verbal infix
+        "bal",    # to cross/deliver — verbal element in accounting
+        "dab",    # to hold/take — verbal element (dab5 subscript dropped)
+        "za3",    # side/border — spatial term
+        # Livestock subtypes
+        "ud5",    # female goat — livestock, not a person
+        # Titles that appear standalone only as truncated damage fragments
+        "nin",    # Lady/Mistress — title, appears alone only in nin-[...] fragments
+        # Weight and container nouns
+        "gu2",    # neck/weight unit/tribute — economic term
+        "bur",    # deep bowl / area measure — vessel or measure, not a name
     })
 
     # Commodities (ASCII ATF corpus)
@@ -424,7 +444,7 @@ class ExtractorBase:
 
     # Lines that are not personal names
     _RE_NOT_NAME = re.compile(
-        r"^\d|^[@$#]"
+        r"^\d|^[@$#&]"
         r"|^(?:iti|mu|giri3|ki|ugula|kiszib3|szunigin|šunigin"
         r"|sze-ba|sza3-bi-ta|zi-ga|la2-ia3|nig2-ka9|sag-nig2"
         r"|engar|szabra|šabra|szu-a|sza3-gal"
