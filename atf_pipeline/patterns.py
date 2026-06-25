@@ -401,7 +401,8 @@ class ExtractorBase:
         r"\s+(?:nu-banda3(?:-gu4)?|szabra|šabra|dub-sar|kuruszda|muhaldim"
         r"|szusz3|šuš3|kas4|sukkal|engar|agrig|simug|nagar|tibira|azlag2"
         r"|nu-kiri6|szidim|aszgab|zadim|bahar2|bahar3|ma2-lah5|lu2-kikken2"
-        r"|aga3-us2|aga-us2|lu2-kin-gi4-a)\s*$",
+        r"|aga3-us2|aga-us2|lu2-kin-gi4-a"
+        r"|ka-guru7|guru7|i3-dub)\s*$",
         re.I,
     )
 
