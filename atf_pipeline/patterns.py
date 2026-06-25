@@ -441,6 +441,24 @@ class ExtractorBase:
         "erin2-me",        # "they are troops" — verbal form of erin2, not a personal name
         # Area measurement formula
         "sahar-bi sar",    # "its soil/dirt: X sar" — area measurement sub-entry
+        # Plant seed commodity (za3-hi-li appears with numun "seeds" and {sar} determinative)
+        "za3-hi-li",       # aromatic plant — commodity/seed, not a personal name
+        # Jar/vessel type used in commodity distribution records
+        "udul2",           # type of vessel/jar ("dug udul2") — container, not a person
+        # Grain quality grades (premium categories)
+        "sag-gal2",        # premium/first-quality grain grade — commodity descriptor
+        # Liquid commodity measured in sila3
+        "bur-zi",          # liquid commodity in sila3 jars — not a personal name
+        # City of Akkad/Agade (geographic proper noun, not a person)
+        "a-ga-de3",        # Akkad/Agade — major Mesopotamian city, not a personal name
+        # Commodity measured in ban2/gur
+        "a-la-pa-nu",      # commodity grade measured in ban2/gur — not a personal name
+        # Oil-processing sub-product
+        "nig2-i3-de2-a",   # "thing of oil-pouring" — oil processing by-product
+        # Spice/incense commodity
+        "gu4-ku-ru",       # aromatic/spice commodity (appears with SZIM incense)
+        # Commodity measured in sila3
+        "pa-li",           # commodity measured in sila3/ban2 — not a personal name
     })
 
     # Commodities (ASCII ATF corpus)

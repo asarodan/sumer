@@ -199,6 +199,18 @@ class EntityScanner:
         "erin2-me",
         # Area measurement formula
         "sahar-bi sar",
+        # Plant seed / aromatic commodity
+        "za3-hi-li",       # aromatic plant (with {sar} determinative in corpus)
+        # Vessel/jar type
+        "udul2",
+        # Grain quality grade
+        "sag-gal2",
+        # Liquid commodity
+        "bur-zi",
+        # City of Akkad (geographic proper noun)
+        "a-ga-de3",
+        # Commodity grades / aromatics
+        "a-la-pa-nu", "nig2-i3-de2-a", "gu4-ku-ru", "pa-li",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
