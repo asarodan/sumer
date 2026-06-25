@@ -356,6 +356,31 @@ class ExtractorBase:
         # Divine ownership/attribution formulas (temple accounting designations)
         "nanna-kam",      # "it is of Nanna" — attribution to the Nanna moon-god temple
         "nansze-kam",     # "it is of Nanše" — attribution to the Nanše fishing-god temple
+        # Bitumen commodity types and sub-entries
+        "esir2 e2-a",     # "house bitumen" — commodity (base form, without -bi)
+        "esir2 e2-a lugal",  # "royal house bitumen" — royal-grade bitumen commodity
+        "esir2 had2",     # "dried bitumen" — dried/solid bitumen variety
+        # Processed fat/dairy commodities
+        "ga-ar3",         # ghee/clarified butter — processed dairy commodity
+        # Iteration counter formula (not a name)
+        "a-ra2 -kam",     # "it is the Nth time" — iteration-counting formula in accounts
+        # Livestock grades and combinations (commodity descriptions, not names)
+        "szah2 niga",     # "first-quality pig" — livestock quality grade
+        "szah2 ze2-eh-tur",  # "small pig" — livestock size grade
+        "dara3-masz",     # mountain goat / ibex — wild livestock type
+        "ansze-edin-na",  # steppe donkey — livestock subtype
+        "udu-nita2 sila4 gub",  # "male sheep / standing lamb" — livestock combination
+        "masz2-gal masz2",  # "adult goat + young goat" — livestock combination
+        "masz2-gal sila4",  # "adult goat + lamb" — livestock combination
+        # Malt/grain processing commodity
+        "ba-ba munu4",    # "baba-malt" — processed grain product
+        # Accounting sub-category
+        "igi-gal2 ku3",   # "silver receipts" — accounting sub-category (not a name)
+        # Vine/fruit commodities
+        "gesztin had2",   # "dried grapes/raisins" — dried fruit commodity
+        "a-gesztin-na",   # "grape juice / vine-water" — liquid from grapes
+        # Plant/herbal commodity
+        "u2-kur",         # "distant plant / herb" — plant commodity (not a personal name)
     })
 
     # Commodities (ASCII ATF corpus)

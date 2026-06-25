@@ -137,6 +137,23 @@ class EntityScanner:
         "ga-ar3-bi", "sag-bi", "sza3-bi", "duh-bi", "naga-bi", "ga-bi", "szu-bi",
         # Divine ownership/attribution formulas
         "nanna-kam", "nansze-kam",
+        # Bitumen commodity types
+        "esir2 e2-a", "esir2 e2-a lugal", "esir2 had2",
+        # Processed fat/dairy commodities
+        "ga-ar3",
+        # Iteration counter formula
+        "a-ra2 -kam",
+        # Livestock grades and combinations
+        "szah2 niga", "szah2 ze2-eh-tur", "dara3-masz", "ansze-edin-na",
+        "udu-nita2 sila4 gub", "masz2-gal masz2", "masz2-gal sila4",
+        # Malt/grain processing commodity
+        "ba-ba munu4",
+        # Accounting sub-category
+        "igi-gal2 ku3",
+        # Vine/fruit commodities
+        "gesztin had2", "a-gesztin-na",
+        # Plant/herbal commodity
+        "u2-kur",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
