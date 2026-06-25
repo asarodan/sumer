@@ -534,6 +534,11 @@ class ExtractorBase:
         "nig2-ar3-ra-bi",   # "its ground grain" — cereal processing back-reference
         "ba-ba munu4-bi",   # "its ba-ba malt" — malt commodity back-reference
         "kusz gu4 u2-hab2-bi",  # "its dyed ox hide" — hide processing back-reference
+        # Building/pen names extracted as issuers via ki...ta
+        "e2-masz",          # "goat-house/goat-pen" — livestock facility, not a person
+        "e2-kikken-gibil",  # "new mill-house" — building name, not a person
+        # Collective noun extracted as issuer
+        "sipa-de3-ne",      # "the shepherds" — collective plural, not a named individual
     })
 
     # Commodities (ASCII ATF corpus)
@@ -730,7 +735,12 @@ class ExtractorBase:
         r"|szusz3|šuš3|kas4|sukkal|engar|agrig|simug|nagar|tibira|azlag2"
         r"|nu-kiri6|szidim|aszgab|zadim|bahar2|bahar3|ma2-lah5|lu2-kikken2"
         r"|aga3-us2|aga-us2|lu2-kin-gi4-a"
-        r"|ka-guru7|guru7|i3-dub|sanga)\s*$",
+        r"|ka-guru7|guru7|i3-dub|sanga"
+        r"|lukur(?:\s+\S+)?"    # lukur [DEITY] — temple-woman title with optional deity
+        r"|gu-za-la2"           # "throne-bearer" — court/administrative title
+        r"|zabar-dab5"          # "copper-caster" — craft title
+        r"|sza13-dub-ba"        # "tablet-house official" — archival title
+        r")\s*$",
         re.I,
     )
 

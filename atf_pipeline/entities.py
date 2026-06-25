@@ -257,6 +257,11 @@ class EntityScanner:
         "nig2-gal2-la", "ma2-bi", "sza3-ba udu ugu2", "sza3-ba",
         "nig2-sa10-bi", "nig2-ar3-ra-bi", "ba-ba munu4-bi",
         "kusz gu4 u2-hab2-bi",
+        # Building names extracted as issuers
+        "e2-masz",           # goat-house/pen
+        "e2-kikken-gibil",   # new mill-house
+        # Collective noun
+        "sipa-de3-ne",       # "the shepherds" (plural)
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
