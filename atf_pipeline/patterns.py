@@ -216,10 +216,21 @@ class ExtractorBase:
         r"\bs[zž]u\s+ba-ti\b|\bki\s+\S+-ta\b|\bba-zi\b|\bi3-dab5\b", re.I
     )
 
-    # Words that cannot be personal names
+    # Words that cannot be personal names (checked exact/standalone in _looks_like_name).
+    # These are capacity units, animals, raw materials, and commodity words that
+    # appear on their own content lines but are never standalone personal names.
+    # Compound names containing these syllables (e.g. "udu-ni-ba") are unaffected
+    # because the check is an exact-string match, not a substring match.
     _GRAIN_UNIT_WORDS = frozenset({
+        # Capacity units
         "gur", "barig", "ban2", "sila3", "sila", "asz",
         "gesz2", "szar2", "ziz2", "gig",
+        # Animals / livestock
+        "udu", "gu4", "masz2", "sila4", "ansze", "ab2", "amar",
+        # Raw materials and commodities
+        "i3", "uruda", "zabar", "siki", "na4", "gi", "mun",
+        # Accounting/administrative words (never standalone personal names)
+        "ma2", "la2", "duh", "ug3",
     })
 
     # Commodities (ASCII ATF corpus)

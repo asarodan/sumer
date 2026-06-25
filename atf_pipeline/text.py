@@ -84,4 +84,9 @@ class TextMixin:
             return False
         if len(clean) < 2 or len(clean) > 60:
             return False
+        # Bare commodity/animal/material words cannot be standalone personal names.
+        # Compound names containing these syllables (e.g. "udu-ni-ba") are safe —
+        # the exact-match check only blocks the isolated word.
+        if clean.lower() in self._GRAIN_UNIT_WORDS:
+            return False
         return True
