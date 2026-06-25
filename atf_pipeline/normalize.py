@@ -86,7 +86,6 @@ class Normalizer:
         "me-en-kar2":        "Menkara (field)",
         "la2-mah":           "Lahmah (field)",
         "la2-tur":           "Lahtur (field)",
-        "a-sza3":            "field",
         # Shara temple (common in Umma) — must be explicit to prevent fuzzy
         # match with 'szabra' (estate-administrator)
         "szara2":            "Shara-temple",

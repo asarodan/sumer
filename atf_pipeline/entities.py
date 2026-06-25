@@ -96,6 +96,16 @@ class EntityScanner:
         "ud5", "nin", "gu2", "bur", "sur",
         "ga-ud", "ga-ud-bi",
         "nig2-ba", "ga2-nun",
+        # Administrative titles (role references, not personal names)
+        "ensi2", "sanga",
+        # Temporal/geographic/purpose terms from ki...ta or giri3 lines
+        "za3-mu", "kaskal",
+        # Function words and verbal elements
+        "inim", "tuku", "gibil",
+        # Accounting formula for credit/loan
+        "ur5-ra",
+        # English translations produced by normalization
+        "woman", "man", "field",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

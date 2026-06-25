@@ -295,6 +295,24 @@ class ExtractorBase:
         # Administrative and institutional terms
         "nig2-ba",  # gift/allotment — administrative term, never a standalone name
         "ga2-nun",  # storehouse/granary — institution, appears in ga2-nun-ta (from the storehouse)
+        # Administrative titles that appear standalone (not as personal names)
+        "ensi2",    # governor title — standalone "ensi2" is a role reference, not a personal name
+        "sanga",    # temple administrator — "giri3 sanga" = via the temple-administrator (title, not name)
+        # Temporal/accounting formulas that appear in ki...ta source lines
+        "za3-mu",   # beginning of year — "ki za3-mu-ta" = from the year's beginning (date formula)
+        # Geographic/purpose terms extracted via ki...ta or giri3 lines
+        "kaskal",   # road/journey — "sze kaskal-sze3" = flour for the road (purpose, not name)
+        # Short function words/verbal elements
+        "inim",     # word/command — function word, never a standalone personal name
+        "tuku",     # to have/possess — verbal element, not a personal name
+        # Commodity qualifiers
+        "gibil",    # new/fresh — commodity modifier (kasz gibil = new beer)
+        # Accounting formula for credit/loan transactions
+        "ur5-ra",   # on credit/loan — "sze ur5-ra" = barley on loan (accounting formula, not a name)
+        # English translations produced by normalization (should never appear as entities)
+        "woman",    # English from TITLE_MAP "munus" → "woman" normalization
+        "man",      # English from TITLE_MAP "nita" → "man" normalization
+        "field",    # English from "a-sza3" appearing in ki...ta lines (belt-and-suspenders guard)
     })
 
     # Commodities (ASCII ATF corpus)
@@ -491,7 +509,7 @@ class ExtractorBase:
         r"|szusz3|šuš3|kas4|sukkal|engar|agrig|simug|nagar|tibira|azlag2"
         r"|nu-kiri6|szidim|aszgab|zadim|bahar2|bahar3|ma2-lah5|lu2-kikken2"
         r"|aga3-us2|aga-us2|lu2-kin-gi4-a"
-        r"|ka-guru7|guru7|i3-dub)\s*$",
+        r"|ka-guru7|guru7|i3-dub|sanga)\s*$",
         re.I,
     )
 
