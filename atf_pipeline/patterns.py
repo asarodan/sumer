@@ -520,6 +520,20 @@ class ExtractorBase:
         "nippur",           # City of Nippur — geographic noun
         "umma",             # City of Umma — major Ur III administrative center
         "isin",             # City of Isin — geographic noun
+        # Premium fat/butter commodities
+        "i3-nun",           # "fine/clarified butter" — fat commodity (measured in gur/sila3)
+        "i3-du10-nun-na",   # "sweet noble oil" — premium oil commodity
+        # Leather commodity
+        "kusz udu",         # "sheep hide/leather" — leather commodity
+        # Accounting terms / back-references
+        "nig2-gal2-la",     # "what is received/present" — accounting receipt term
+        "ma2-bi",           # "its boat" — boat capacity back-reference
+        "sza3-ba udu ugu2", # "in it: sheep, above-count" — accounting sub-formula (base form)
+        "sza3-ba",          # "in it/within" — accounting inside-reference formula
+        "nig2-sa10-bi",     # "its price/value" — silver-equivalent accounting back-reference
+        "nig2-ar3-ra-bi",   # "its ground grain" — cereal processing back-reference
+        "ba-ba munu4-bi",   # "its ba-ba malt" — malt commodity back-reference
+        "kusz gu4 u2-hab2-bi",  # "its dyed ox hide" — hide processing back-reference
     })
 
     # Commodities (ASCII ATF corpus)

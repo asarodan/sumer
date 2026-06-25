@@ -249,6 +249,14 @@ class EntityScanner:
         "cattle-inspector", "household-overseer",
         # City/geographic proper nouns (normalized to lowercase)
         "nippur", "umma", "isin",
+        # Premium fat/butter and oil commodities
+        "i3-nun", "i3-du10-nun-na",
+        # Leather commodity
+        "kusz udu",
+        # Accounting terms and back-references
+        "nig2-gal2-la", "ma2-bi", "sza3-ba udu ugu2", "sza3-ba",
+        "nig2-sa10-bi", "nig2-ar3-ra-bi", "ba-ba munu4-bi",
+        "kusz gu4 u2-hab2-bi",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
