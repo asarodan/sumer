@@ -287,6 +287,11 @@ class ExtractorBase:
         "bur",    # deep bowl / area measure — vessel or measure, not a name
         # Verbal elements that appear after quantities
         "sur",    # to drip/press — verbal element in oil/spice accounts
+        # Dairy/commodity allocation types (appear after quantities in ration tablets)
+        # ga-UD@g in CDLI ATF = a type of milk/dairy allocation; @g modifier stripped
+        # to ga-UD which normalizes to ga-ud. ga-ud-bi = "its ga-ud allocation".
+        "ga-ud",
+        "ga-ud-bi",
     })
 
     # Commodities (ASCII ATF corpus)
