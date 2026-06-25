@@ -89,4 +89,9 @@ class TextMixin:
         # the exact-match check only blocks the isolated word.
         if clean.lower() in self._GRAIN_UNIT_WORDS:
             return False
+        # All-uppercase tokens are CDLI's notation for signs with uncertain reading
+        # (e.g. KA, SZIM, LAM) — never personal names.
+        first_word = clean.split()[0] if clean.split() else clean
+        if first_word.isupper() and len(first_word) >= 2:
+            return False
         return True
