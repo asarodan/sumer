@@ -116,7 +116,7 @@ class EntityMixin:
             for m in self._RE_PATRONYM.finditer(clean):
                 name   = self._clean_atf_name(m.group(1))
                 father = self._clean_atf_name(m.group(2))
-                if (len(name) >= 2 and len(father) >= 2
+                if (len(name) >= 3 and len(father) >= 3
                         and name[:1].isalpha() and father[:1].isalpha()
                         and father.lower() not in self._PATRONYM_STOP
                         and self._looks_like_name(name)

@@ -14,10 +14,14 @@ class TextMixin:
     # wrote and then crossed out.  It must be removed before quantity parsing
     # so that the original (wrong) tokens are not summed alongside the correction.
     _RE_SCRIBAL_CORR = re.compile(r"<<[^>]*>>")
+    # CDLI ATF italic markup: _text_ marks Sumerian logograms in Akkadian context.
+    # Strip the underscore delimiters but keep the textual content.
+    _RE_ATF_ITALIC = re.compile(r"_")
 
     def _strip_linenum(self, line: str) -> str:
         line = self._RE_LINENUM.sub("", line).strip()
-        return self._RE_SCRIBAL_CORR.sub("", line).strip()
+        line = self._RE_SCRIBAL_CORR.sub("", line).strip()
+        return self._RE_ATF_ITALIC.sub("", line).strip()
 
     @staticmethod
     def _is_content(line: str) -> bool:
@@ -35,6 +39,7 @@ class TextMixin:
         name = re.sub(r"<([^>]*)>", r"\1", name)
         name = re.sub(r"[!?*#]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
+        name = re.sub(r"\[[^\]]*$", "", name)    # unclosed bracket at end of string
         # Strip all ATF determinatives ({d}, {gesz}, {ki}, {gar}, etc.) and
         # phonetic complements that appear inside or after sign readings.
         # Also handles unclosed braces ({gar without closing }) from damaged lines.
