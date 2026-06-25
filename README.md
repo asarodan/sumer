@@ -39,7 +39,7 @@ sumer/
 │   ├── chronology.py      # King → regnal year mapping
 │   ├── network.py         # NetworkBuilder → GEXF export
 │   └── export.py          # CSV export helpers
-├── tests/                 # pytest test suite (142 tests)
+├── tests/                 # pytest test suite (144 tests)
 │   ├── test_quantity.py
 │   ├── test_structure.py
 │   ├── test_dates.py
@@ -76,7 +76,7 @@ For development (tests):
 
 ```bash
 pip install pytest
-pytest                    # runs all 142 tests
+pytest                    # runs all 144 tests
 ```
 
 ---
