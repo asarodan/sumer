@@ -13,21 +13,33 @@ class DateMixin:
         lower = year_str.lower()
         for key, (canonical, frags) in KING_YEAR_MAP.items():
             if key in lower:
+                if canonical != date.king:
+                    # King is changing: year_number from the previous king must
+                    # not bleed into this king's date record.
+                    date.year_number = None
                 date.king = canonical
                 for yr_num, fragments in frags.items():
                     if all(frag.lower() in lower for frag in fragments):
                         date.year_number = yr_num
                         break
                 return
+        # No explicit king found in this year-name string.
+        # Apply the default king only when no explicit king has been identified
+        # yet, or when the current king is already the default (same-king
+        # accumulation across multiple mu-lines on the same tablet).
+        # Never let the default override an explicit king match from an earlier
+        # mu-line — that would re-contaminate the king field with the default.
         if self._default_king:
-            date.king = self._default_king
-            for key, (canonical, frags) in KING_YEAR_MAP.items():
-                if canonical != self._default_king:
-                    continue
-                for yr_num, fragments in frags.items():
-                    if all(frag.lower() in lower for frag in fragments):
-                        date.year_number = yr_num
-                        return
+            if date.king is None:
+                date.king = self._default_king
+            if date.king == self._default_king:
+                for key, (canonical, frags) in KING_YEAR_MAP.items():
+                    if canonical != self._default_king:
+                        continue
+                    for yr_num, fragments in frags.items():
+                        if all(frag.lower() in lower for frag in fragments):
+                            date.year_number = yr_num
+                            return
 
     def _parse_date(
         self, lines: List[str]
