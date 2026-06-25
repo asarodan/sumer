@@ -154,6 +154,17 @@ class EntityScanner:
         "gesztin had2", "a-gesztin-na",
         # Plant/herbal commodity
         "u2-kur",
+        # Administrative titles appearing standalone
+        "sukkal-mah",    # "Grand Vizier" role
+        "nam-sza3-tam",  # "administrator/manager" role
+        # Accounting formula for regular deliveries
+        "sa2-du11",      # "regular delivery/scheduled offering"
+        # Institution nouns
+        "i3-dub",        # "granary"
+        # English translations from TITLE_MAP / INSTITUTION_MAP
+        "overseer (ugula)", "mill-house", "child/son-of",
+        # Verbal directional phrases mis-extracted via ki...ta pattern
+        "lugal-sze3 ba-gen-na-a", "lugal-sze3 ba-e-re-sza-a",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

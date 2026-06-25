@@ -381,6 +381,20 @@ class ExtractorBase:
         "a-gesztin-na",   # "grape juice / vine-water" — liquid from grapes
         # Plant/herbal commodity
         "u2-kur",         # "distant plant / herb" — plant commodity (not a personal name)
+        # Administrative titles that appear standalone (not attached to a personal name)
+        "sukkal-mah",     # "Grand Vizier" — senior administrative role, not a personal name
+        "nam-sza3-tam",   # "administrator/manager" — institutional role title
+        # Accounting formula for scheduled/regular deliveries
+        "sa2-du11",       # "regular delivery/scheduled offering" — accounting category noun
+        # Institution nouns extracted as issuers via ki...ta patterns
+        "i3-dub",         # "granary" — storage facility, not a person (also in SECTION_LABEL)
+        # English translations from TITLE_MAP / INSTITUTION_MAP that leak as entities
+        "overseer (ugula)",   # English for ugula — job description, not a named person
+        "mill-house",         # English for e2-kikken — institutional building, not a person
+        "child/son-of",       # English for dumu — kinship term, not a personal name
+        # Administrative source tokens that fire the ki...ta pattern as verbal phrases
+        "lugal-sze3 ba-gen-na-a",    # "went to the king's place" — directional verb phrase
+        "lugal-sze3 ba-e-re-sza-a",  # "they went to the king's place" — directional verb phrase
     })
 
     # Commodities (ASCII ATF corpus)
