@@ -107,6 +107,16 @@ class EntityMixin:
         "dumu lugal-ezem". Status descriptors (dumu lugal = prince, dumu eridu =
         citizen-of) are filtered out.
         """
+        # Skip non-Sumerian tablets: Akkadian, Eblaite, Emesal, Hittite.
+        # These share the "dumu" logogram but their personal names are Akkadian /
+        # Semitic, not Ur III Sumerian, so their patronymics would contaminate
+        # the Ur III name roster.
+        for hdr in lines[:10]:
+            h = hdr.strip()
+            if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", h, re.I):
+                return []
+            if re.match(r"#atf:\s+use\s+(lexical|bilingual|literary|emesal)", h, re.I):
+                return []
         pairs = []
         for raw in lines:
             s = raw.strip()
