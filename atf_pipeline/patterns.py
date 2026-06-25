@@ -313,6 +313,19 @@ class ExtractorBase:
         "woman",    # English from TITLE_MAP "munus" → "woman" normalization
         "man",      # English from TITLE_MAP "nita" → "man" normalization
         "field",    # English from "a-sza3" appearing in ki...ta lines (belt-and-suspenders guard)
+        # Common Sumerian nouns that appear in ki...ta source lines as location references
+        "a-sza3",   # "field/agricultural land" — location noun, not a personal name
+        # English role-title translations produced by TITLE_MAP normalization
+        # These are job descriptions, not named individuals
+        "musician", "carpenter", "fuller", "cloth-fuller", "potter",
+        "smith", "barber", "metalworker", "female-worker", "male-worker",
+        "leather-worker", "gem-cutter", "miller", "soldier/guard",
+        "farmer/field-manager (engar)",
+        # Commodity phrase components extracted as false recipients
+        "imgaga3",  # salt commodity — "nig2-ar3-ra imgaga3" = ground salt
+        "nig2-ar3-ra",  # ground/pounded flour — commodity description, not a name
+        "i3-sag",   # fine/first-quality oil — commodity qualifier
+        "masz2-bi",  # "its goat count" / interest accounting reference
     })
 
     # Commodities (ASCII ATF corpus)

@@ -106,6 +106,18 @@ class EntityScanner:
         "ur5-ra",
         # English translations produced by normalization
         "woman", "man", "field",
+        # Common Sumerian nouns used as location references in ki...ta lines
+        "a-sza3",   # "field/agricultural land" — location noun, not a personal name
+        # English role-title translations from TITLE_MAP (job descriptions, not named individuals)
+        "musician", "carpenter", "fuller", "cloth-fuller", "potter",
+        "smith", "barber", "metalworker", "female-worker", "male-worker",
+        "leather-worker", "gem-cutter", "miller", "soldier/guard",
+        "farmer/field-manager (engar)",
+        # Commodity terms extracted as false recipients
+        "imgaga3",    # salt commodity
+        "nig2-ar3-ra",  # ground flour — commodity description
+        "i3-sag",     # fine oil — commodity qualifier
+        "masz2-bi",   # "its goat count" accounting reference
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
