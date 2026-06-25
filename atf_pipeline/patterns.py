@@ -326,6 +326,16 @@ class ExtractorBase:
         "nig2-ar3-ra",  # ground/pounded flour — commodity description, not a name
         "i3-sag",   # fine/first-quality oil — commodity qualifier
         "masz2-bi",  # "its goat count" / interest accounting reference
+        # Administrative title genitive forms (not personal names)
+        "ensi2-ka",  # "of the governor" — genitive of ensi2; always institutional
+        # Livestock subtypes used as false recipients
+        "udu-nita",  # "male sheep" — livestock commodity subtype
+        # Commodity sub-entry references with possessive
+        "esir2-bi",  # "its bitumen" — commodity back-reference in accounts
+        # Location/geographic terms appearing in ki...ta source lines
+        "a-gar3",   # irrigation district / agricultural plot — location noun
+        # Debit/accounting formulae
+        "bi2-gu7-bi",  # "was consumed by it" — debit formula, not a person
     })
 
     # Commodities (ASCII ATF corpus)

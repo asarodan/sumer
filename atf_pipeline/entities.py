@@ -118,6 +118,16 @@ class EntityScanner:
         "nig2-ar3-ra",  # ground flour — commodity description
         "i3-sag",     # fine oil — commodity qualifier
         "masz2-bi",   # "its goat count" accounting reference
+        # Administrative title genitive forms
+        "ensi2-ka",   # "of the governor" — genitive, not a personal name
+        # Livestock commodity subtypes
+        "udu-nita",   # "male sheep" — livestock subtype
+        # Commodity back-references with possessive suffix
+        "esir2-bi",   # "its bitumen" — commodity sub-entry reference
+        # Location/geographic terms
+        "a-gar3",     # irrigation district / agricultural plot
+        # Debit formulae
+        "bi2-gu7-bi", # "was consumed by it" — debit/expenditure formula
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
