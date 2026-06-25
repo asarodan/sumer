@@ -239,6 +239,12 @@ class ExtractorBase:
         "lu2", "dumu", "szu", "nig2",
         # Sumerian function words and role nouns (not personal names)
         "u3", "u4", "geme2", "dam",
+        # Infrastructure nouns (not personal names)
+        "tul2",   # well / water hole
+        # Short grammatical/prefix elements never used as standalone personal names
+        "nu",     # negation prefix ("not")
+        "ba",     # verbal element (allocative)
+        "ib2",    # verbal infix / reed basket
     })
 
     # Commodities (ASCII ATF corpus)

@@ -498,7 +498,7 @@ class StructureMixin:
             m_kiszib = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
             if m_kiszib and kiszib_name is None:
                 cand = self._clean_atf_name(m_kiszib.group(1))
-                if len(cand) >= 2 and cand.lower() not in self._GRAIN_UNIT_WORDS:
+                if len(cand) >= 2 and self._looks_like_name(cand):
                     kiszib_name = cand
 
             # Patterns A-D: issuer.
@@ -1318,7 +1318,7 @@ class StructureMixin:
             m_k = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
             if m_k and kiszib_name is None:
                 cand = self._clean_atf_name(m_k.group(1))
-                if len(cand) >= 2:
+                if len(cand) >= 2 and self._looks_like_name(cand):
                     kiszib_name = cand
 
             # Recipient — inline szu ba-ti
