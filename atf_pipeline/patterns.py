@@ -231,9 +231,10 @@ class ExtractorBase:
         "i3", "uruda", "zabar", "siki", "na4", "gi", "mun",
         "naga", "ga", "ga-a", "gazi", "lal3", "zu2", "u2",
         "gesz", "ku3", "e2", "ur5", "a2",
+        "tug2", "u8", "du8",
         # Accounting/administrative words (never standalone personal names)
         "ma2", "la2", "duh", "ug3", "sar", "ur", "saga", "sza3",
-        "lu2", "dumu", "szu",
+        "lu2", "dumu", "szu", "nig2",
     })
 
     # Commodities (ASCII ATF corpus)
