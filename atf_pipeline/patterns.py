@@ -545,6 +545,16 @@ class ExtractorBase:
         "a-na",             # Akkadian "to/for" — preposition, not a personal name
         # Collective noun for herdsmen (plural form)
         "unu3-e-ne",        # "the herdsmen" — plural collective noun, not an individual
+        # Akkadian fragment mis-extracted as entity
+        "im-ma",            # Akkadian "anything/something" — not a Sumerian personal name
+        # Grain variety measured in asz volume units
+        "dumu-da-ba",       # grain variety measured in asz — commodity, not a person
+        # Collective group designation
+        "un-sa6-ga",        # "the good/beautiful people" — collective group, not an individual
+        # Building / livestock facility names extracted via ki...ta
+        "e2-udu",           # "sheep-house/sheep-pen" — livestock facility
+        "e2-szu-tum",       # "enclosure/storage facility" — building
+        "e2-sag-il2-la",    # "exalted house" — temple/building name
     })
 
     # Commodities (ASCII ATF corpus)
@@ -746,6 +756,7 @@ class ExtractorBase:
         r"|gu-za-la2"           # "throne-bearer" — court/administrative title
         r"|zabar-dab5"          # "copper-caster" — craft title
         r"|sza13-dub-ba"        # "tablet-house official" — archival title
+        r"|ra2-gaba"            # "horse-attendant/rider" — equestrian administrative title
         r")\s*$",
         re.I,
     )

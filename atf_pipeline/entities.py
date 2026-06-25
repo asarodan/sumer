@@ -268,6 +268,14 @@ class EntityScanner:
         "a-na",              # Akkadian "to/for" — preposition
         # Collective herdsmen noun
         "unu3-e-ne",         # "the herdsmen" (plural)
+        # Akkadian fragment
+        "im-ma",
+        # Grain variety measured in asz
+        "dumu-da-ba",
+        # Collective group designation
+        "un-sa6-ga",
+        # Building / livestock facility names
+        "e2-udu", "e2-szu-tum", "e2-sag-il2-la",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
