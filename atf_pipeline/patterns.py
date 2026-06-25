@@ -285,6 +285,8 @@ class ExtractorBase:
         # Weight and container nouns
         "gu2",    # neck/weight unit/tribute — economic term
         "bur",    # deep bowl / area measure — vessel or measure, not a name
+        # Verbal elements that appear after quantities
+        "sur",    # to drip/press — verbal element in oil/spice accounts
     })
 
     # Commodities (ASCII ATF corpus)
