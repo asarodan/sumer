@@ -242,6 +242,13 @@ class EntityScanner:
         "kusz gu4 u2-hab2", "gesztin duru5",
         # Oil allocation term
         "i3-ba",
+        # English TITLE_MAP translations not yet blocked
+        "male-laborer",     # gurusz
+        # English INSTITUTION_MAP translations not yet blocked
+        "sealed-goods-office", "daughter-of", "kitchen",
+        "cattle-inspector", "household-overseer",
+        # City/geographic proper nouns (normalized to lowercase)
+        "nippur", "umma", "isin",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

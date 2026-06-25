@@ -508,6 +508,18 @@ class ExtractorBase:
         "gesztin duru5",    # "fresh grapes" — agricultural commodity
         # Oil allocation formula
         "i3-ba",            # "oil ration/allocation" — commodity distribution term
+        # English translations from TITLE_MAP not yet blocked (administrative labor category)
+        "male-laborer",     # English for gurusz — workforce category, not a named person
+        # English translations from INSTITUTION_MAP not yet blocked
+        "sealed-goods-office",  # English for e2-kiszib-ba — administrative building
+        "daughter-of",      # English for dumu-munus — kinship term, not a personal name
+        "kitchen",          # English for e2-muhaldim — kitchen building
+        "cattle-inspector", # English for nu-banda3-gu4 — administrative title
+        "household-overseer",  # English for ugula-e2 — supervisory role
+        # City/geographic proper nouns leaking as entities
+        "nippur",           # City of Nippur — geographic noun
+        "umma",             # City of Umma — major Ur III administrative center
+        "isin",             # City of Isin — geographic noun
     })
 
     # Commodities (ASCII ATF corpus)
