@@ -232,9 +232,13 @@ class ExtractorBase:
         "naga", "ga", "ga-a", "gazi", "lal3", "zu2", "u2",
         "gesz", "ku3", "e2", "ur5", "a2",
         "tug2", "u8", "du8",
+        # Grain/crop commodities
+        "sze",
         # Accounting/administrative words (never standalone personal names)
         "ma2", "la2", "duh", "ug3", "sar", "ur", "saga", "sza3",
         "lu2", "dumu", "szu", "nig2",
+        # Sumerian function words and role nouns (not personal names)
+        "u3", "u4", "geme2", "dam",
     })
 
     # Commodities (ASCII ATF corpus)
