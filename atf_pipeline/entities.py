@@ -211,6 +211,37 @@ class EntityScanner:
         "a-ga-de3",
         # Commodity grades / aromatics
         "a-la-pa-nu", "nig2-i3-de2-a", "gu4-ku-ru", "pa-li",
+        # Accounting summary formulas
+        "szu-nigin2", "nigin2-ba gu4",
+        # Livestock types
+        "szah2", "gu4-hu-nu", "udu-nita2 sila4", "udu-nita2 sila4 ba-ur4",
+        "kir11 udu", "szah2 u2",
+        "asz2-gar3 niga sila4", "asz2-gar3 masz2",
+        "masz2-nita2 masz2 du", "masz2-gal niga sila4",
+        # Animal organ commodities
+        "mur-gu4", "mur-gu4-bi",
+        # Bitumen types
+        "esir2", "esir2 su-ba", "esir2 e2",
+        # Condiments / plant commodities
+        "bar-szum", "nu-ur2-ma",
+        # Area measurement formulas
+        "kin-bi sar", "a-sza3-bi sar",
+        # Administrative role descriptions
+        "sipa ur-gi7", "lu2-nin-gir2-su e2-udu",
+        # Material / geographic nouns
+        "sahar", "kar-ra",
+        # Quality grade
+        "sig15",
+        # Alkali plant variant
+        "nagga",
+        # Commodities measured in sila3
+        "da-ri2-sza", "ka3-ma-am3-tum", "nig2-ku5",
+        # Accounting formula with king name
+        "sa2-du11 szul-gi",
+        # Hide and fruit commodities
+        "kusz gu4 u2-hab2", "gesztin duru5",
+        # Oil allocation term
+        "i3-ba",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

@@ -459,6 +459,55 @@ class ExtractorBase:
         "gu4-ku-ru",       # aromatic/spice commodity (appears with SZIM incense)
         # Commodity measured in sila3
         "pa-li",           # commodity measured in sila3/ban2 — not a personal name
+        # Accounting summary/total formulas
+        "szu-nigin2",       # "grand total" — accounting summation formula, not a name
+        "nigin2-ba gu4",    # "total oxen" — livestock accounting grand total
+        # Livestock types (all measured by count, not appearing as named persons)
+        "szah2",            # pig — livestock animal
+        "gu4-hu-nu",        # "juvenile bull" — young ox, livestock type
+        "udu-nita2 sila4",  # "male sheep + lamb" — livestock combination
+        "udu-nita2 sila4 ba-ur4",  # "male sheep + shorn lamb" — livestock processing formula
+        "kir11 udu",        # "young sheep" — small livestock animal
+        "szah2 u2",         # "grass-fed pig" — livestock quality grade
+        "asz2-gar3 niga sila4",  # "premium donkey + lamb" — livestock combination
+        "asz2-gar3 masz2",  # "donkey + young goat" — livestock combination
+        "masz2-nita2 masz2 du",  # "walking male goat + young goat" — livestock combination
+        "masz2-gal niga sila4",  # "premium adult goat + lamb" — livestock combination
+        # Organ/tissue commodities (animal by-products)
+        "mur-gu4",          # "ox lung" — animal organ commodity
+        "mur-gu4-bi",       # "its ox lung" — organ back-reference
+        # Bitumen types / sub-entries
+        "esir2",            # bitumen (base form — commodity, not a person)
+        "esir2 su-ba",      # "caulked bitumen" — bitumen processed for caulking
+        "esir2 e2",         # "house bitumen" — bitumen for building (cf. esir2 e2-a)
+        # Condiment/spice
+        "bar-szum",         # "garlic rind/peel" — condiment commodity
+        "nu-ur2-ma",        # pomegranate ({gesz} tree-determinative in corpus)
+        # Area measurement sub-entry formulas
+        "kin-bi sar",       # "its work-area: X sar" — area measurement formula
+        "a-sza3-bi sar",    # "its field: X sar" — field area sub-entry formula
+        # Administrative role description (not a personal name)
+        "sipa ur-gi7",      # "shepherd of the dog-pen" — role description
+        "lu2-nin-gir2-su e2-udu",  # "man of Ningirsu, sheep-pen" — role description
+        # Material/geographic nouns
+        "sahar",            # "soil/dirt/earth" — raw material, not a personal name
+        "kar-ra",           # "quay/harbor/merchant district" — geographic noun
+        # Quality grade
+        "sig15",            # "fine/premium" quality grade — commodity descriptor
+        # Variant spelling of already-blocked alkali plant
+        "nagga",            # alkali plant (variant spelling of "naga" which is blocked)
+        # Commodities measured in sila3
+        "da-ri2-sza",       # commodity measured in sila3/ban2
+        "ka3-ma-am3-tum",   # commodity measured in sila3
+        "nig2-ku5",         # "cut thing" — processed commodity sub-entry
+        # Compound accounting formula with historical king name
+        "sa2-du11 szul-gi", # "regular delivery (for/of) Shulgi" — accounting category
+        # Ox hide commodity variant
+        "kusz gu4 u2-hab2", # "ox hide (dyed/treated)" — hide processing commodity
+        # Fresh fruit commodity
+        "gesztin duru5",    # "fresh grapes" — agricultural commodity
+        # Oil allocation formula
+        "i3-ba",            # "oil ration/allocation" — commodity distribution term
     })
 
     # Commodities (ASCII ATF corpus)
