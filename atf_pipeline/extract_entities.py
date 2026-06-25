@@ -90,7 +90,8 @@ class EntityMixin:
             first_word = name.lower().split()[0] if name else ""
             if (len(name) >= 2
                     and name.lower() not in self._GRAIN_UNIT_WORDS
-                    and first_word not in self._GRAIN_UNIT_WORDS):
+                    and first_word not in self._GRAIN_UNIT_WORDS
+                    and self._looks_like_name(name)):
                 return name, qty
         return None, None
 

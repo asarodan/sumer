@@ -582,7 +582,12 @@ class StructureMixin:
                 # dividers — neither should be used as a szu ba-ti recipient.
                 if (not re.search(r'\bdub-sar\b', clean, re.I)
                         and not self._RE_SECTION_LABEL.search(clean)):
-                    prev_name = self._clean_atf_name(clean)
+                    candidate = self._clean_atf_name(clean)
+                    # Damage brackets like "[...] sze szuku-ra engar" pass the
+                    # raw _looks_like_name check but reveal a commodity prefix
+                    # once brackets are stripped. Validate the cleaned form too.
+                    if self._looks_like_name(candidate):
+                        prev_name = candidate
             elif not (self._RE_SHU_ALONE.match(clean)
                       or self._RE_BA_AN_SUM.search(clean)
                       or m_dat
@@ -682,6 +687,9 @@ class StructureMixin:
                 # Strip trailing commodity/unit words
                 name = re.sub(r"\s*(?:sze|gur|ziz2|gig)\s*$", "", name).strip()
                 name = self._clean_atf_name(name)
+                # "sze szuku-ra engar" = ration-field farmers (category, not a name)
+                if not self._looks_like_name(name):
+                    name = ""
                 events.append(("engar", (name, q_inline, u_inline, comm_inline)))
                 continue
 
@@ -741,11 +749,11 @@ class StructureMixin:
                     qty  = q_inline  if q_inline  is not None else pending_qty
                     unit = u_inline  if q_inline  is not None else pending_unit
                     comm = comm_inline or pending_comm or "barley"
-                    if qty is not None and name and len(name) >= 2:
+                    if qty is not None:
                         results.append(Transaction(
                             tablet_id=tablet_id,
                             issuer=issuer,
-                            recipient=name,
+                            recipient=name if (name and len(name) >= 2) else None,
                             quantity=qty,
                             unit=unit,
                             commodity=comm,
@@ -1114,6 +1122,9 @@ class StructureMixin:
                 name = re.sub(r"\s+(?:GAN2|a-sza3)\b.*$", "", name, flags=re.I).strip()
                 name = re.sub(r"\s*(?:sze|gur|ziz2|gig)\s*$", "", name).strip()
                 name = self._clean_atf_name(name)
+                # "sze szuku-ra engar" = ration-field farmers (category, not a name)
+                if not self._looks_like_name(name):
+                    name = ""
                 events.append(("engar", (name, q_inline, u_inline, comm_inline)))
                 continue
             q, u = self.extract_quantity(clean)
@@ -1396,7 +1407,9 @@ class StructureMixin:
                 # dividers — neither should be used as a szu ba-ti recipient.
                 if (not re.search(r'\bdub-sar\b', clean, re.I)
                         and not self._RE_SECTION_LABEL.search(clean)):
-                    prev_name = self._clean_atf_name(clean)
+                    candidate = self._clean_atf_name(clean)
+                    if self._looks_like_name(candidate):
+                        prev_name = candidate
             elif not (self._RE_SHU_ALONE.match(clean)
                       or self._RE_BA_AN_SUM.search(clean)
                       or m_dat
