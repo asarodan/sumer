@@ -411,6 +411,17 @@ class ExtractorBase:
         r"|^dumu\s+\S",     # "son of NAME" parentage formula (not a standalone name)
         re.I,
     )
+    # Receipt/debit/transfer formulae that appear anywhere in a line and prove
+    # the whole line is an action clause, not a personal name.
+    # Note: bare "ba-zi" is intentionally excluded — it doubles as a personal
+    # name (Ba-zi); the debit formula is ba-zi *at end of line* which is already
+    # handled by _RE_SHU_ALONE / the prev_name reset logic in extract_structure.
+    _RE_ACTION_FORMULA = re.compile(
+        r"\bs[zž]u\s+ba-(?:an-)?ti\b"   # szu ba-ti / szu ba-an-ti (received)
+        r"|\bi3-dab5\b|\bin-dab5\b"      # i3-dab5 / in-dab5 (received)
+        r"|\bba-an-s[zž]um2?\b",         # ba-an-szum2 (given)
+        re.I,
+    )
 
     # Administrative titles used for name+title recipient extraction
     _ADMIN_TITLES = re.compile(

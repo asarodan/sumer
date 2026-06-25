@@ -79,6 +79,10 @@ class TextMixin:
         """Heuristic: does this look like a standalone personal name line?"""
         if self._RE_NOT_NAME.match(clean):
             return False
+        # Lines that contain action verbs (received, given, expended) anywhere
+        # are administrative formulae, not personal name lines.
+        if self._RE_ACTION_FORMULA.search(clean):
+            return False
         # Damaged-bracket fragments like "[...]-mu" → after cleaning leave "-mu";
         # a real name always starts with a letter or determinative brace.
         if clean.startswith("-"):
@@ -94,9 +98,14 @@ class TextMixin:
         # the exact-match check only blocks the isolated word.
         if clean.lower() in self._GRAIN_UNIT_WORDS:
             return False
+        # If the FIRST word is a commodity/function word, the line cannot be a
+        # personal name even if other words follow (e.g. "ur ba-zi" = expended).
+        words = clean.split()
+        first_word = words[0] if words else clean
+        if first_word.lower() in self._GRAIN_UNIT_WORDS:
+            return False
         # All-uppercase tokens are CDLI's notation for signs with uncertain reading
         # (e.g. KA, SZIM, LAM) — never personal names.
-        first_word = clean.split()[0] if clean.split() else clean
         if first_word.isupper() and len(first_word) >= 2:
             return False
         return True

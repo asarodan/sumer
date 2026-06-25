@@ -79,6 +79,18 @@ class EntityScanner:
         n_edges = sum(len(f) for f in self._fathers.values())
         logger.info("Patronymics: %s (%d name→father edges)", filepath, n_edges)
 
+    # Bare commodity/function words that should never appear as entity names,
+    # even after normalization collapses a suffixed form (e.g. "ur-sze3" → "ur").
+    _BLOCKLIST = frozenset({
+        "gur", "barig", "ban2", "sila3", "sila", "asz", "gesz2", "szar2",
+        "udu", "gu4", "masz2", "sila4", "ansze", "ab2", "amar",
+        "i3", "uruda", "zabar", "siki", "na4", "gi", "mun", "naga", "ga",
+        "gazi", "lal3", "zu2", "u2", "gesz", "ku3", "tug2", "u8", "du8",
+        "sze", "ma2", "la2", "duh", "ug3", "sar", "ur", "saga", "sza3",
+        "lu2", "dumu", "szu", "nig2", "u3", "u4", "geme2", "dam", "e2",
+        "ur5", "a2", "ga-a",
+    })
+
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
         name = raw_name.strip()
         if not name or len(name) < 2:
@@ -86,6 +98,11 @@ class EntityScanner:
         canonical = (
             self._norm.normalize_name(name) if self._norm else None
         ) or name
+        # Block commodity/function words that survived normalization
+        # (e.g. the normalizer may collapse "ur-sze3" → "ur" when "ur" is
+        # in the known-roots set, producing a false entity).
+        if canonical.lower() in self._BLOCKLIST:
+            return
         if canonical not in self._roster:
             self._roster[canonical] = {
                 "tablets": set(),
