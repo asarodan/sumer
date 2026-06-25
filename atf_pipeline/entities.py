@@ -262,6 +262,12 @@ class EntityScanner:
         "e2-kikken-gibil",   # new mill-house
         # Collective noun
         "sipa-de3-ne",       # "the shepherds" (plural)
+        # Grain type / agricultural estate
+        "ar-za-na",          # ar-za-na grain variety
+        # Akkadian preposition
+        "a-na",              # Akkadian "to/for" — preposition
+        # Collective herdsmen noun
+        "unu3-e-ne",         # "the herdsmen" (plural)
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

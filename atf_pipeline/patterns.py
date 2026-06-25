@@ -539,6 +539,12 @@ class ExtractorBase:
         "e2-kikken-gibil",  # "new mill-house" — building name, not a person
         # Collective noun extracted as issuer
         "sipa-de3-ne",      # "the shepherds" — collective plural, not a named individual
+        # Grain type / agricultural estate name extracted as entity
+        "ar-za-na",         # "ar-za-na grain" — a specific grain variety measured in gur
+        # Akkadian preposition leaked as issuer/recipient
+        "a-na",             # Akkadian "to/for" — preposition, not a personal name
+        # Collective noun for herdsmen (plural form)
+        "unu3-e-ne",        # "the herdsmen" — plural collective noun, not an individual
     })
 
     # Commodities (ASCII ATF corpus)
