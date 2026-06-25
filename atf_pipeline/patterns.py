@@ -395,6 +395,26 @@ class ExtractorBase:
         # Administrative source tokens that fire the ki...ta pattern as verbal phrases
         "lugal-sze3 ba-gen-na-a",    # "went to the king's place" — directional verb phrase
         "lugal-sze3 ba-e-re-sza-a",  # "they went to the king's place" — directional verb phrase
+        # Agricultural/livestock commodity types (all appear measured by sila3, ban2, or gur)
+        "bu-rum",          # agricultural product measured in gur — commodity, not a person
+        "zi-bi2-tum",      # grain variety "sze zi-bi2-tum" — commodity
+        "kusz gu4 mu",     # "ox hide of year X" — commodity + year-reference phrase
+        "masz2-nita2 masz2 gub",  # "male goat + young goat standing" — livestock combination
+        "ur-e2-dar-a",     # commodity measured in sila3
+        "al-la-ha-ru",     # commodity measured in sila3 (e.g. "fresh al-la-ha-ru")
+        "szi-ip-ku",       # commodity measured in sila3/ban2
+        # English translations produced by INSTITUTION_MAP normalization
+        "granary",         # English for guru7 — storage facility
+        "granary-gate",    # English for ka-guru7 — gate/portal
+        "royal granary",   # English for gur lugal — royal storage
+        "scribe (dub-sar)",    # English for dub-sar — job title
+        "village-household",   # English for e2-duru5 — rural settlement building
+        # Sumerian institution/building nouns extracted as entities
+        "e2-gal",          # "palace/great-house" — institutional building, not a person
+        "guru7",           # "granary" — storage facility (source of "granary" false entity)
+        "ka-guru7",        # "granary-gate" — gate/portal
+        # Administrative title not caught by TITLE_SUFFIX regex
+        "sza13-dub-ba",    # "tablet-house official/archivist" — job title, not a name
     })
 
     # Commodities (ASCII ATF corpus)

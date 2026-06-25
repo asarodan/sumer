@@ -165,6 +165,18 @@ class EntityScanner:
         "overseer (ugula)", "mill-house", "child/son-of",
         # Verbal directional phrases mis-extracted via ki...ta pattern
         "lugal-sze3 ba-gen-na-a", "lugal-sze3 ba-e-re-sza-a",
+        # Agricultural/livestock commodity types (all appear measured by volume units)
+        "bu-rum", "zi-bi2-tum", "kusz gu4 mu",
+        "masz2-nita2 masz2 gub", "ur-e2-dar-a", "al-la-ha-ru", "szi-ip-ku",
+        # English translations from INSTITUTION_MAP
+        "granary", "granary-gate", "royal granary",
+        "scribe (dub-sar)", "village-household",
+        # Sumerian institution/building nouns
+        "e2-gal",        # palace/great-house
+        "guru7",         # granary (source of "granary" English entity)
+        "ka-guru7",      # granary-gate
+        # Administrative title (archivist role)
+        "sza13-dub-ba",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
