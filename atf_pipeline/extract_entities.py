@@ -16,7 +16,7 @@ class EntityMixin:
         m = self._RE_KI_TA.match(clean)
         if m:
             cand = self._clean_atf_name(m.group(1))
-            if len(cand) >= 2:
+            if len(cand) >= 2 and self._looks_like_name(cand):
                 return cand
 
         # B: ki NAME (abbreviated ablative, no -ta) — strip any trailing debit
@@ -28,7 +28,8 @@ class EntityMixin:
             # Reject known non-ablative ki compounds (threshing floor su7, geographic masz)
             if (len(cand) >= 2
                     and not cand.startswith(("su7", "masz", "en-gi"))
-                    and "{ki}" not in cand):
+                    and "{ki}" not in cand
+                    and self._looks_like_name(cand)):
                 return cand
 
         # C: NAME ki at line end
@@ -39,14 +40,15 @@ class EntityMixin:
                 # Reject if candidate contains CDLI quantity tokens like 3(asz)
                 if (len(cand) >= 2
                         and not cand.startswith(("$", "#"))
-                        and not re.search(r"\d+\(", cand)):
+                        and not re.search(r"\d+\(", cand)
+                        and self._looks_like_name(cand)):
                     return cand
 
         # D: institution name + -ta (without ki prefix)
         m3 = self._RE_INST_ABL.match(clean)
         if m3:
             cand = self._clean_atf_name(m3.group(1))
-            if len(cand) >= 2:
+            if len(cand) >= 2 and self._looks_like_name(cand):
                 return cand
 
         return None
@@ -132,6 +134,6 @@ class EntityMixin:
                     r"\s+(?:dub-sar|sukkal|szagina|ensi2|szabra|ugula"
                     r"|nu-banda3|dumu\s+lugal|lu2\s+kin-gi4-a)\s*$", "", cand
                 ).strip()
-                if len(cand) >= 2:
+                if len(cand) >= 2 and self._looks_like_name(cand):
                     return cand
         return None
