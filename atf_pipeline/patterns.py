@@ -250,6 +250,16 @@ class ExtractorBase:
         "sa10",   # to buy/purchase
         "ar3",    # to grind (sa-ad line in grain accounts)
         "igi",    # in front of / witness particle (never standalone personal name)
+        # Grain quality qualifiers that appear after commodity words
+        # e.g. "N(asz) sze gur sag" where sag = principal/first-quality
+        "sag",    # principal / first-quality (grain qualifier)
+        # Grain varieties and processing states (appear after sze/gur)
+        "munu4",  # malt
+        "numun",  # seed grain (sze gur numun = seed barley)
+        "sumun",  # old/last-year grain (sze sumun = old barley)
+        "szim",   # aromatic/spice (szim gur = a measure of aromatic)
+        # Reference formulas (commodity sub-entries)
+        "i3-bi",  # "its oil" — sub-entry cross-reference, not a person
     })
 
     # Commodities (ASCII ATF corpus)
@@ -336,7 +346,7 @@ class ExtractorBase:
         r"^(e2-\S+|guru7\S*|a-sza3\s+\S+|sza3\s+\S+)-ta\s*(?:#.*)?$", re.I
     )
     # E: kiszib3 NAME (seal authority – fallback issuer); also inline mid-line
-    _RE_KISZIB        = re.compile(r"^kiszib3#?\s+(.+?)(?:\s*(?:#.*)?)?$")
+    _RE_KISZIB        = re.compile(r"^kiszib3#?\s+(.+?)(?:\s+#.*)?$")
     _RE_KISZIB_INLINE = re.compile(r"\bkiszib3#?\s+([a-z{}\-0-9\[\]]+(?:\s+[a-z{}\-0-9\[\]]+)*?)(?:\s+(?:kiszib3|giri3|mu|iti|u3)\b|$)", re.I)
 
     # --------------- Recipient patterns ---------------
@@ -361,15 +371,15 @@ class ExtractorBase:
     _RE_DATIVE_RA = re.compile(r"^(.+?)-ra\s*(?:#.*)?$")
     _RE_BA_AN_SUM = re.compile(r"\bba-an-s[zž]um2?\b")
     # K2: sa2-du11 NAME – regular/statutory payment to named institution or person
-    _RE_SA2_DU11  = re.compile(r"^sa2-du11\s+(.+?)(?:\s*(?:#.*)?)?$", re.I)
+    _RE_SA2_DU11  = re.compile(r"^sa2-du11\s+(.+?)(?:\s+#.*)?$", re.I)
 
     # --------------- Field allocation patterns ---------------
     _RE_SZABRA = re.compile(r"^(.+?)\s+s[zž]abra\b")
     _RE_ENGAR  = re.compile(r"^(.*?)\s+engar\b")
 
     # --------------- Agent ---------------
-    _RE_GIRI3  = re.compile(r"^giri3#?\s+(.+?)(?:\s*(?:#.*)?)?$")
-    _RE_UGULA  = re.compile(r"^ugula#?\s+(.+?)(?:\s*(?:#.*)?)?$")
+    _RE_GIRI3  = re.compile(r"^giri3#?\s+(.+?)(?:\s+#.*)?$")
+    _RE_UGULA  = re.compile(r"^ugula#?\s+(.+?)(?:\s+#.*)?$")
 
     # --------------- Parentage (patronymic) ---------------
     # "NAME dumu FATHER" / "NAME dumu-munus FATHER" — child-of formula. Both are

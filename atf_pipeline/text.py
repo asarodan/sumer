@@ -40,6 +40,7 @@ class TextMixin:
         name = re.sub(r"[!?*#]", "", name)
         name = re.sub(r"\[.*?\]", "", name)
         name = re.sub(r"\[[^\]]*$", "", name)    # unclosed bracket at end of string
+        name = re.sub(r"\]", "", name)            # lone closing bracket (no matching open)
         # Strip all ATF determinatives ({d}, {gesz}, {ki}, {gar}, etc.) and
         # phonetic complements that appear inside or after sign readings.
         # Also handles unclosed braces ({gar without closing }) from damaged lines.
