@@ -431,7 +431,10 @@ class QuantityMixin:
             return None
         if self._looks_like_name(stripped):
             name = self._clean_atf_name(stripped)
-            return name if name else None
+            # Re-check the cleaned form: stripping can reveal commodity words
+            # (e.g. "udu   -ta" → "udu" after stripping sze from sze-ta then -ta).
+            if name and self._looks_like_name(name):
+                return name
         return None
 
     def _detect_commodity(self, line: str) -> Optional[str]:
