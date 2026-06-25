@@ -425,6 +425,10 @@ class QuantityMixin:
         stripped = stripped.strip()
         if not stripped or "(" in stripped or ")" in stripped:
             return None
+        # If what remains after stripping qty/unit tokens is itself a commodity
+        # word (e.g. "i3-gesz", "dabin", "i3-szah2"), it is not a personal name.
+        if self._detect_commodity(stripped):
+            return None
         if self._looks_like_name(stripped):
             name = self._clean_atf_name(stripped)
             return name if name else None
