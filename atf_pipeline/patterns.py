@@ -609,6 +609,18 @@ class ExtractorBase:
         # Batch 22
         "rib-ba",           # herb/plant ({u2}rib-ba plant determinative); ki rib-ba = location
         "di-ku5-a-ni",      # "his judge" — title phrase in royal inscriptions
+        # Batch 23
+        "lugal ki-en-gi",   # "King of Sumer" — royal designation
+        "lugal ur5-ra",     # "that king" — royal phrase
+        "sipa ur",          # herdsman + ur fragment
+        "mun-gazi tur-tur", # small aromatic plant
+        "kunga2-nita2 mu",  # male equid + year
+        "udu-nita2 sila4 du", # livestock description
+        "apin-la2-da ba-a", # plow not-available phrase
+        "ud-disz-ma ana",   # Akkadian per-day date phrase
+        "nigin2-ba masz2",  # accounting total phrase
+        "lugal -numun",     # damaged fragment
+        "lugal-numun",      # alternate form
     })
 
     # Commodities (ASCII ATF corpus)
@@ -811,6 +823,12 @@ class ExtractorBase:
         r"|zabar-dab5"          # "copper-caster" — craft title
         r"|sza13-dub-ba"        # "tablet-house official" — archival title
         r"|ra2-gaba"            # "horse-attendant/rider" — equestrian administrative title
+        r"|sagi"                # "cupbearer" — court servant title
+        r"|sza3-tam"            # "treasurer/administrator" — storage official
+        r"|gala"                # "lamentation singer" — temple musician title
+        r"|ab-ba-iri"           # "city elder" — civic title
+        r"|igi-du8"             # "doorkeeper/inspector" — gatekeeper title
+        r"|gudu4"               # "purification priest" — cultic title
         r")\s*$",
         re.I,
     )

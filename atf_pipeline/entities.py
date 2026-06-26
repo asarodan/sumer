@@ -323,6 +323,20 @@ class EntityScanner:
         # Batch 22
         "rib-ba",         # herb ({u2}rib-ba plant determinative)
         "di-ku5-a-ni",    # "his judge" title phrase in royal inscriptions
+        # Batch 23: English-translated title forms and multi-word false positives
+        "estate-administrator (šabra)",  # normalized form of szabra title compound
+        "inspector (nu-banda3)",         # normalized form of nu-banda3 compound
+        "lugal ki-en-gi",  # "King of Sumer" — royal designation, not person
+        "lugal ur5-ra",    # "that king" — royal designation phrase
+        "sipa ur",         # "herdsman ur" — title + fragment
+        "mun-gazi tur-tur",  # small aromatic plant
+        "kunga2-nita2 mu",   # male equid + year notation
+        "udu-nita2 sila4 du",  # livestock description phrase
+        "apin-la2-da ba-a",    # "plow not-available" status phrase
+        "ud-disz-ma ana",      # Akkadian date/per-day phrase
+        "nigin2-ba masz2",     # "their total goats" accounting phrase
+        "lugal -numun",        # damaged fragment
+        "lugal-numun",         # alternate form
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
