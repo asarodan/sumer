@@ -288,6 +288,16 @@ class EntityScanner:
         "tul2-ta",       # cistern/well place name
         "bala",          # rotation/turn-of-duty term
         "gesztin",       # wine/grape commodity and place name
+        # Batch 19
+        "general (šagina)", "cook (muhaldim)", "lahmah (field)",
+        "gara2",         # cream/butter
+        "sa udu",        # sheep sinew
+        "kunga2",        # hybrid equid
+        "asznan",        # grain goddess, not person
+        "banda3",        # administrative/deity term
+        "siskur2",       # ritual offering
+        "kal",           # Akkadian adjective fragment
+        "er3",           # name-prefix fragment
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

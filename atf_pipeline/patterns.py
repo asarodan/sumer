@@ -568,6 +568,18 @@ class ExtractorBase:
         "tul2-ta",          # cistern/well place name (from ki tul2-ta-ta)
         "bala",             # rotation/turn-of-duty administrative term
         "gesztin",          # wine/grape commodity and place name
+        # Batch 19: English translation leakage, commodities, fragments
+        "general (šagina)", # English form of šagina military title
+        "cook (muhaldim)",  # English form of muhaldim kitchen title
+        "lahmah (field)",   # English translation of field name
+        "gara2",            # cream/butter dairy commodity
+        "sa udu",           # sheep sinew/wool commodity
+        "kunga2",           # hybrid equid (donkey-horse)
+        "asznan",           # grain goddess {d}asznan — deity, not person
+        "banda3",           # "junior" administrative/deity term
+        "siskur2",          # ritual offering term
+        "kal",              # Akkadian adjective fragment
+        "er3",              # name-prefix fragment (er3-zu-dan, er3-re-eb)
     })
 
     # Commodities (ASCII ATF corpus)
