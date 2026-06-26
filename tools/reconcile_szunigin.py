@@ -52,6 +52,18 @@ _QTY_TOKEN = re.compile(r"\d+(?:/\d+)?\((?:asz|barig|ban2|sila3|gur|gesz2|gesz'u
 # quantity — any tablet with such a line is uncheckable (I6).
 _LINE_START_ERASED = re.compile(r"^\d+[a-z']?\.\s*\[\.+\]")
 
+# "$ broken" — an entire face is physically missing; items on it cannot be summed.
+_BROKEN_FACE = re.compile(r"^\$\s+broken\b", re.I)
+
+# "la2-ia3" = deficit/balance-forward note — identifies running-balance and
+# donkey-fodder accounts where the szunigin is not a simple item sum.
+_LA2_IA3 = re.compile(r"\bla2-ia3\b", re.I)
+
+# "sza3-bi-ta" = "from within it" — marks tablets where the opening stock
+# quantity comes before the keyword and equals the szunigin total; summing
+# the opening stock as a line item would double-count the total.
+_SZA3_BI_TA = re.compile(r"\bsza3-bi-ta\b", re.I)
+
 # Reconciliation tolerance. Sexagesimal capacity arithmetic is exact, so we
 # expect exact integer agreement; allow 1 sila3 for half-sila3 rounding.
 _TOL = 1.0
@@ -67,6 +79,21 @@ def _has_damaged_quantity(lines) -> bool:
         if _LINE_START_ERASED.match(ln):
             return True
     return False
+
+
+def _is_genre1(lines) -> bool:
+    """False for tablet genres where szunigin ≠ sum(items):
+      - broken face    ($ broken): items missing
+      - la2-ia3 notes: running-balance / donkey-fodder account
+      - sza3-bi-ta:    opening-stock tablet; first quantity IS the total
+    """
+    for ln in lines:
+        if _BROKEN_FACE.match(ln.strip()):
+            return False
+        s = ln.strip()
+        if _LA2_IA3.search(s) or _SZA3_BI_TA.search(s):
+            return False
+    return True
 
 
 def main() -> None:
@@ -120,6 +147,13 @@ def main() -> None:
             continue
 
         tally["grain_sections"] += 1
+
+        # Genre-1 content check: exclude tablets whose structure means
+        # szunigin ≠ sum(items) by design (broken face, balance accounts,
+        # opening-stock / sza3-bi-ta tablets).
+        if not _is_genre1(lines):
+            tally["uncheckable_damaged"] += 1
+            continue
 
         # Any damaged quantity line anywhere → uncheckable (I6): a missing or
         # uncertain item makes the sum an unfair comparison against the total.

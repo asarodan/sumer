@@ -374,6 +374,11 @@ class QuantityMixin:
                 q, u = self._parse_grain(remainder, context_gur=context_gur)
                 if q is not None:
                     return q, u
+                # Grain may precede the labor keyword: "N sze-ba gurusz NAME"
+                # (ration-to-workers lines where gurusz marks the recipient type).
+                q2, u2 = self._parse_grain(parts[0].strip(), context_gur=context_gur)
+                if q2 is not None:
+                    return q2, u2
             return None, None
         return self._parse_grain(line, context_gur=context_gur)
 
