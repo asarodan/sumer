@@ -785,6 +785,15 @@ class EntityScanner:
         "szen uruda sza",            # "copper tablet of" — artifact phrase
         "su i3-ba lu2 lu2 su-am3",   # accounting phrase
         "esir2 e3",                  # "bitumen came out" — variant spelling
+        # Batch 37: final multi-word false extractions
+        "i-di lu2 sza i-ki isz-pu-ku",  # Akkadian wages/hire phrase fragment
+        "gar3-szum szu-szi an-dah-szum",  # three Akkadian names merged (variant)
+        # Batch 37: single-word possessive back-references not yet blocked
+        "gu-nigin2-bi",              # "its total" — accounting back-reference
+        "e2-mah-ki-bi",              # "its great-house place" — building back-reference
+        "za3-bar-bi",                # "its za3-bar metal" — commodity back-reference
+        "nimgir-di-ne",              # "heralds of the legal case" — collective noun
+        "a-bi",                      # Akkadian "father" possessive — not a personal name
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
