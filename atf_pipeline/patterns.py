@@ -625,6 +625,21 @@ class ExtractorBase:
         "sza3-tam-e-ne",   # "the treasurers" — Sumerian plural of sza3-tam
         "sagi-ne",          # "the cupbearers" — Sumerian plural of sagi
         "ab-ba-iri",        # "city elder" — standalone civic title
+        # Batch 25: accounting back-references and -bi possessive forms
+        "su3-he2-bi",       # "its fine quality [silver weight]" — accounting notation
+        "gu4-apin-na",      # plow oxen (agricultural term, counted in head)
+        "gu4-ku-ru-bi",     # aromatic commodity + possessive back-reference
+        "igi-bi",           # "its face/equivalent" — accounting reference phrase
+        "masz-bi",          # goat/interest + possessive
+        "gazi-bi",          # aromatic herb commodity + possessive
+        "za3-hi-li-bi",     # za3-hi-li commodity + possessive
+        "e2-ur2-bi",        # "its main building" — building back-reference
+        "e2-a-lu2-bi",      # house + people + possessive
+        "e2-a-lu-bi",       # alternate form
+        "lu2-bi",           # "his man/person" — pronoun reference
+        "nig2-sa10-am3-bi", # "its purchase price" — accounting
+        "a-sza3-bi",        # "its field area" — agricultural accounting
+        "szul-gi-kalam-ma-me-te-bi",  # royal epithet phrase
     })
 
     # Commodities (ASCII ATF corpus)

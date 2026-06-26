@@ -341,6 +341,16 @@ class EntityScanner:
         "sza3-tam-e-ne",   # "the treasurers" plural
         "sagi-ne",         # "the cupbearers" plural
         "ab-ba-iri",       # city elder civic title
+        # Batch 25
+        "su3-he2-bi",      # fine silver accounting notation
+        "gu4-apin-na",     # plow oxen
+        "gu4-ku-ru-bi",    # aromatic commodity back-reference
+        "igi-bi",          # "its equivalent" accounting phrase
+        "masz-bi", "gazi-bi", "za3-hi-li-bi",  # commodity + possessive
+        "e2-ur2-bi", "e2-a-lu2-bi", "e2-a-lu-bi",  # building back-references
+        "lu2-bi",          # pronoun reference
+        "nig2-sa10-am3-bi", "a-sza3-bi",  # accounting back-references
+        "szul-gi-kalam-ma-me-te-bi",  # royal epithet phrase
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
