@@ -869,7 +869,7 @@ class ExtractorBase:
         r"|igi-du8"             # "doorkeeper/inspector" — gatekeeper title
         r"|gudu4"               # "purification priest" — cultic title
         r"|dam-gar3"            # "merchant" — trade/commercial title
-        r"|unu3"                # "herdsman" — livestock management title
+        r"|unu(?:2|3)?"         # "herdsman" — unu/unu2/unu3 alternate sign readings
         r"|ku3-dim2"            # "goldsmith/silversmith" — metalworking craft title
         r"|sa12-du5"            # "judge" — judicial title
         r"|di-ku5"              # "judge/decision-maker" — alternative judicial title

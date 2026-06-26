@@ -519,6 +519,38 @@ class EntityScanner:
         "szesz-szesz iszib",         # "many brothers, libation priest" — role phrase
         "gudu4 nun-gal",             # "great purification priest" — title compound
         "gudu4 gu-la",               # "great purification priest" — title compound
+        # Batch 32: livestock, commodity, and accounting phrase false extractions
+        "ba-ba munu4 saga",          # "first-quality malt porridge" — commodity quality phrase
+        "haszhur had2",              # "dried apple" — fruit commodity
+        "ur5-sze3 masz2",            # "goats for that [purpose]" — accounting phrase
+        "inim-szara2 ga",            # "decree of Szara + milk" — administrative phrase
+        "usz-bar-sze3 gen-na",       # "went for weaving" — verbal administrative phrase
+        "ba-ri2-ga gesz e3-a",       # "ba-ri2-ga wood that came out" — material phrase
+        "nigin2-ba udu hi-a",        # "total various sheep" — livestock accounting total
+        "sza3-ga-du3 gada kug-bi masz",  # complex commodity phrase
+        "ku-ta-ni ansze",            # "donkey [of/named] ku-ta-ni" — commodity phrase
+        "al ak",                     # "hoe work" — agricultural labor phrase
+        "ma-szum e2-a",              # Akkadian name + location phrase
+        # Batch 32: geographic/institutional phrases
+        "a-ga2-la2 kesz2-ra2",       # "of the canal, of Kish" — geographic reference
+        "nin-hur-sag gu-la",         # "the great Ninhursag" — deity epithet
+        "gu-za ur-namma",            # "throne of Ur-Namma" — royal attribute phrase
+        "lu2-eb-gal ad-kup4",        # "Ebgal building, reed-mat-weaver" — institutional phrase
+        # Batch 32: verbal/accounting phrase false extractions
+        "su-ga lu2-nin-gir2-su",     # "returned [goods], man of Ningirsu" — accounting verb + person
+        "lu2-igi-ma-sze3 u2-du-lu",  # complex administrative phrase
+        "sa6-a-ga lu2 kin-gi4-a lugal",  # "good, royal messenger" — role phrase
+        # Batch 32: uncertain compounds (all have 0 confirmed fathers)
+        "puzur4 esz18-dar",          # uncertain compound — no patronymics
+        "ku-ul-ti sipa ur",          # "ku-ul-ti, shepherd, ur" — role phrase fragments
+        "lu2-ba-li2-it, sipa ur",    # name + shepherd + ur fragment
+        "ur-mes tur",                # "the young ur-mes" — age adjective phrase
+        # Batch 32: later Babylonian/Akkadian formula fragments (OB/post-Ur-III)
+        "qa-bal-ti kur-ia ansze-gam-mal ina ina kas-pi",  # OB Akkadian property clause
+        "suen lugal dingir-mesz sza2 an-e",  # Suen royal title from later period
+        "ta-ab-li-it-ti gu4 gesz",   # OB Akkadian compound phrase
+        "marduk-mu-sza-lim a-bi erin2",  # OB Akkadian name + military title
+        "kar3-szum bu-ra-szum",      # two Akkadian names merged (no conjunction)
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -591,6 +623,17 @@ class EntityScanner:
         # case, or verbal suffixes detached from their stem by a clay tablet edge.
         # Verified: 0 entities with " -" in this corpus have confirmed fathers.
         if " -" in cn:
+            return
+        # Block CDLI transcription artifacts starting with "=" (editorial notes).
+        if cn.startswith("="):
+            return
+        # Block "NAME u3" where the conjunction u3 is the LAST token (the u3 being
+        # at string end rather than mid-string, so the " u3 " check above missed it).
+        if cn.endswith(" u3"):
+            return
+        # Block "NAME a-na" where Akkadian "a-na" (to/for) is the trailing token.
+        # The extractor picks up the line "NAME a-na [next-line]" as one entity.
+        if cn.endswith(" a-na"):
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
