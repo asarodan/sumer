@@ -371,6 +371,78 @@ class EntityScanner:
         "babbar2 hi-sar",  # white hi-sar seed
         "ma-na igi-gal2",  # accounting notation
         "nig2-sar",        # measured item term
+        # Batch 29: possessive back-references (WORD + "-bi" = "its WORD")
+        # All of these have 0 fathers and appear only in recipient/accounting roles
+        "udu-bi",          # "its sheep"
+        "a2-bi",           # "its wages/labor value"
+        "gesz-i3-bi",      # "its sesame oil"
+        "nagga-bi",        # "its nagga alkali"
+        "lugal-bi",        # "its king" — attribution phrase
+        "u4-bi",           # "its day"
+        "ensi2-ka-bi",     # "of its governor" — genitive back-reference
+        "geme2-bi",        # "its female worker"
+        "mur-bi",          # "its interior/lung"
+        "zu2-bi",          # "its ivory/tooth"
+        "mun-bi",          # "its salt"
+        "a-ab-ba-bi",      # "its sea/ocean"
+        "gesz-bi",         # "its tree/wood"
+        "kar-bi",          # "its quay/harbor"
+        "u2-kur-bi",       # "its u2-kur plant"
+        "a-ra2-ni-bi",     # "its N-th installment"
+        "du-bi",           # "its du (ordinary/regular)" — grade back-reference
+        "ba-ba munu3-bi",  # malt-porridge back-reference (variant of ba-ba munu4-bi)
+        # Batch 30: collective plural role terms (not individual names)
+        # -mesz = Akkadian plural marker; -ne/-e-ne = Sumerian ergative plural
+        "mar-tu-mesz",     # "Amorites" — collective ethnic plural
+        "aga-us2-mesz",    # "soldiers" — collective military plural
+        "dam-gar3-ne",     # "the merchants" — collective occupational plural
+        "sipa-e-ne",       # "the shepherds" — collective occupational plural
+        "sipa-ne",         # "the shepherds" — alternate plural form
+        "masz-masz-e-ne",  # "the diviners/exorcists" — collective plural
+        "simug-ne",        # "the smiths" — collective craft plural
+        "aga3-us2-ne",     # "the soldiers" — alternate collective plural
+        "szandana-ne",     # "the szandana officials" — collective administrative plural
+        "unu3-de3-ne",     # "the herdsmen" — collective occupational plural
+        "mar-tu-ne",       # "the Amorites" — alternate collective ethnic plural
+        # Accounting formula fragments extracted as false entities
+        "i3-dab5",         # "it was received" — verbal receipt formula
+        "giri3 szesz-kal-la",  # "via Szesz-kalla" — transport agent notation
+        "ki lugal-e2-mah-e",   # "from Lugal-e2-mah-e" — source location notation
+        "szu-nigin2-nigin2",   # "total total" — accounting summary formula
+        "nig2-gur11-ra-kam",   # "it is the property" — accounting formula
+        "nig2-gur11-ra-ni",    # "his property" — accounting phrase
+        # Administrative phrase fragments
+        "a2-na erin2 e2-sukkal",  # "wages of workers of the sukkal-house"
+        "erin2 he2-dab5",         # "workers to be seized" — administrative directive
+        "lu2-dab5-ba ga2-nun gesz-ka gub-ba",  # "arrested man stationed at timber storehouse"
+        "sa10-am3 ansze",         # "purchased donkeys" — transaction phrase
+        "kusz gu4",               # "ox hide" — commodity compound
+        "u6-di kalam-ma-ka",      # "inspection of the land" — administrative phrase
+        "gesz-gid2 szu",          # "under authority of the long staff" — administrative
+        "i-di lu2 hun-ga2",       # "wages of the hired man" — labor phrase
+        "ge6-par4 had2",          # "dried cloister goods" — commodity phrase
+        "asz2-gar3 sila4",        # "lamb of the asz2-gar3 type" — livestock phrase
+        "nigin2-ba udu",          # "total sheep" — livestock accounting total
+        "nig2-sa10 uruda",        # "copper purchase price" — commercial phrase
+        "sa2-sag hu-ul-hu-ul",    # "joy inspection" or Akkadian phrase — administrative
+        "ur3-re-ba-du7 szu-gi4",  # "szu-gi4 returned" — transaction formula + name
+        "du-szu -a",              # name fragment with trailing grammatical suffix
+        "dusu2-nita2 mu",         # "male basket-carrier, year..." — phrase fragment
+        "ba-ba saga",             # "first-quality porridge" — commodity
+        "gukkal udu a-lum",       # "fat-tailed sheep, ordinary sheep, a-lum type" — livestock
+        "dumu-mesz e2",           # "sons of the house" — institutional/collective phrase
+        "zi dub-dub",             # accounting disbursement formula
+        "geme2-bi u4",            # "its female worker, day..." — back-reference phrase
+        "me udu hi-a",            # "various sheep entries" — livestock accounting
+        "haszhur duru5",          # "fresh apple" — fruit commodity compound
+        "sa imgaga3",             # "bundle of salt" — commodity compound
+        "lugal-sze3 ba-de6",      # "was taken to the king" — transfer phrase
+        "lugal zabar gar-ra",     # "king wearing bronze" — royal epithet phrase
+        "lugal sumun",            # "old king" or "old barley" phrase — not a personal name
+        "sanga ba-gara2",         # "temple administrator of Ba-gara2" — institutional role
+        "sanga nin-szubur",       # "temple administrator of Nin-szubur" — institutional role
+        "li2-iq-tum al-la-ha-ru", # two Akkadian names merged without conjunction
+        "ni2 dub2-bu-da-ni",      # "his own trembling" — psychological/literary phrase
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -384,6 +456,58 @@ class EntityScanner:
         # (e.g. the normalizer may collapse "ur-sze3" → "ur" when "ur" is
         # in the known-roots set, producing a false entity).
         if canonical.lower() in self._BLOCKLIST:
+            return
+        # Block two-person list extractions: "NAME u3 NAME2" where u3 = "and".
+        # The parser occasionally extracts a line listing two people joined by the
+        # Sumerian conjunction u3 as a single entity.
+        if " u3 " in canonical.lower():
+            return
+        # Block trailing grammatical particle: "NAME lu2" where lu2 = "the person/man".
+        # Ur III scribes sometimes append lu2 as a classifier after a name; it is
+        # never part of the canonical personal name.
+        if canonical.lower().endswith(" lu2"):
+            return
+        # Block Akkadian fraction / line-break artifacts: "/" never appears in
+        # genuine Sumerian or Akkadian personal names in the CDLI ATF corpus.
+        if "/" in canonical:
+            return
+        # Block CDLI compound-sign readings used as standalone entities: names
+        # that BEGIN with "|" are sign-reading notations (|diszx2u|, |ninda2x|),
+        # not personal names.  Personal names that contain "|" embedded in them
+        # (e.g. "lugal-uszurx(|.|)") are legitimate and are NOT blocked here.
+        if cn.startswith("|"):
+            return
+        # Block digit-starting entities: numeric fragments from damaged or
+        # mis-parsed lines (e.g. "1 nu gu4 su-su im-ma").
+        if canonical[0].isdigit():
+            return
+        # Block very long strings (> 45 chars): all confirmed personal names and
+        # institutional names in the Ur III corpus are under 35 characters; strings
+        # above 45 are invariably Akkadian sentence fragments or Old Babylonian
+        # legal clause extractions.
+        if len(canonical) > 45:
+            return
+        # Block sibling-reference compounds: "NAME szesz NAME2" or "szesz NAME"
+        # where szesz (space-separated) means "brother of". Legitimate names that
+        # include szesz are always hyphenated (szesz-kal-la, szesz-a-ni, etc.).
+        cn = canonical.lower()
+        if " szesz" in cn or cn.startswith("szesz "):
+            return
+        # Block two-name extractions ending in " szar2-ra-ab-du": a common Akkadian
+        # personal name that appears after another name when the parser merges adjacent
+        # lines.  The bare "szar2-ra-ab-du" entity is legitimate and is NOT blocked.
+        if cn.endswith(" szar2-ra-ab-du"):
+            return
+        # Block Akkadian preposition-phrase fragments: "i-na" and "ina" are the
+        # Akkadian preposition "in/at" — never the start of a personal name.
+        # "a-na-ku" = Akkadian "I (myself)" — first-person clause fragment.
+        if cn.startswith("i-na ") or cn.startswith("ina ") or cn.startswith("a-na-ku "):
+            return
+        # Block ordinal formula fragments: " -kam" (space + hyphen + kam) is a
+        # scribal ordinal suffix ("N-th") used in date formulas.  The space before
+        # the hyphen means the number token was separated; always a formula, never
+        # a personal name.
+        if " -kam" in cn:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {

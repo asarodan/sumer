@@ -868,6 +868,25 @@ class ExtractorBase:
         r"|ab-ba-iri"           # "city elder" — civic title
         r"|igi-du8"             # "doorkeeper/inspector" — gatekeeper title
         r"|gudu4"               # "purification priest" — cultic title
+        r"|dam-gar3"            # "merchant" — trade/commercial title
+        r"|unu3"                # "herdsman" — livestock management title
+        r"|ku3-dim2"            # "goldsmith/silversmith" — metalworking craft title
+        r"|sa12-du5"            # "judge" — judicial title
+        r"|di-ku5"              # "judge/decision-maker" — alternative judicial title
+        r"|szandana"            # "šandana" — administrative official type
+        r"|lunga"               # "brewer" — beverage production title
+        r"|mar-tu"              # "Amorite" — ethnic label appended to non-Sumerian names
+        r"|szabra-e2"           # "house-administrator" — compound steward title
+        r"|lu2\s+lunga"         # "man of the brewery" — compound occupation label
+        r"|lu2\s+ur3-ra"        # "street sweeper" — compound menial role label
+        r"|gala-mah(?:\s+\S+)?" # "chief lamentation singer" + optional temple affiliation
+        r"|masz-szu-gid2-gid2"  # "dream interpreter/diviner" — divination title
+        r"|nimgir"              # "herald/town crier" — administrative messenger title
+        r"|szitim"              # "builder/construction worker" — craft title
+        r"|sipa\s+gu4"          # "cowherd" — compound herd title
+        r"|sipa\s+ansze?"       # "donkey herdsman" — compound herd title (ansze/anse)
+        r"|sipa\s+ur-gi7(?:-ra)?"   # "dog keeper" — compound herd title (+ genitive)
+        r"|i3-du8"              # "gatekeeper/porter" — alternate form of igi-du8
         r")\s*$",
         re.I,
     )
