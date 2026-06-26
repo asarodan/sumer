@@ -313,6 +313,13 @@ class EntityScanner:
         "szen sza",       # parsing artifact
         "erin2 im nu",    # administrative phrase fragment
         "sa2",            # Akkadian adjective
+        # Batch 21
+        "bar-ta gal2-la", # administrative status phrase
+        "bala-bi",        # accounting rotation term
+        "szi-ba-la elam", # Elamite commodity
+        "sa-bi",          # date formula fragment
+        "sa-a",           # accounting comparison term
+        "a-ra2",          # name-element extracted as standalone fragment
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

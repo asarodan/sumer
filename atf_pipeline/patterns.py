@@ -599,6 +599,13 @@ class ExtractorBase:
         "szen sza",         # parsing artifact
         "erin2 im nu",      # "troops clay not" — administrative phrase fragment
         "sa2",              # Akkadian adjective "equal/matching"
+        # Batch 21: administrative phrases, date formula fragments, Elamite commodity
+        "bar-ta gal2-la",   # "outside, available" — administrative status phrase
+        "bala-bi",          # "its rotation amount" — accounting term
+        "szi-ba-la elam",   # Elamite commodity measured in sila3
+        "sa-bi",            # suffix of date formula "mu us2-sa-bi" (year after)
+        "sa-a",             # accounting comparison term (al-sa-a = matching)
+        "a-ra2",            # name-element fragment (standalone; safe in compounds)
     })
 
     # Commodities (ASCII ATF corpus)
