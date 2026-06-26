@@ -822,6 +822,14 @@ class EntityScanner:
         # genuine Sumerian or Akkadian personal names in the CDLI ATF corpus.
         if "/" in canonical:
             return
+        # Block ATF editorial/bilingual notation artifacts:
+        # "%" = language-switch marker (%a = Akkadian, %s = Sumerian)
+        # "~" = approximate/uncertain reading marker
+        # '"' = ATF quotation/repeat marker in literary or lexical texts
+        # "=" = Sumerian–Akkadian equivalence marker in bilingual lexical lists
+        # None of these characters can appear in genuine personal names.
+        if any(c in canonical for c in ('%', '~', '"', '=')):
+            return
         cn = canonical.lower()
         # Block CDLI compound-sign readings used as standalone entities: names
         # that BEGIN with "|" are sign-reading notations (|diszx2u|, |ninda2x|),
