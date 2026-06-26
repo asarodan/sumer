@@ -123,8 +123,10 @@ class ExtractorBase:
                                # N"); appears in artisan inventory accounts (e.g. Ontario 2, 323).
         r"|\bnig2\s+a-ra2\b"   # nig2 a-ra2 N-kam = "items, Nth delivery installment" — round
                                # counts in multi-delivery artisan accounts, not grain.
-        r"|\blagab\b"          # lagab = compressed block/cake shape (garlic cake, bitumen cake);
+        r"|(?<!-)\blagab\b"    # lagab = compressed block/cake shape (garlic cake, bitumen cake);
                                # lagab N counts blocks, never grain-capacity measures.
+                               # (?<!-) exempts hyphenated building/personal-name compounds
+                               # such as e2-LAGAB-a (storehouse) and nin-LAGAB (person).
         r"|\bmuszen\b"         # muszen = bird determinative/classifier; "N(szar2) pa muszen"
                                # = N bird-feathers — a large sexagesimal item count, never grain.
         r"|\bin-nu\b"          # in-nu = straw/thatch — measured in gur in the Ur III system

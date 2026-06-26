@@ -46,16 +46,25 @@ _EQUIV_BI = re.compile(r"\b\S+-bi\b", re.I)
 # A CDLI capacity/count token, e.g. "4(asz)", "1(ban2)", "2(gesz2)".
 _QTY_TOKEN = re.compile(r"\d+(?:/\d+)?\((?:asz|barig|ban2|sila3|gur|gesz2|gesz'u|szar2|szar'u|u|disz)[^)]*\)", re.I)
 
+# Lines where the ENTIRE beginning is erased: "7. [...] person-name" or
+# "7'. [...] person-name" (prime notation for uncertain obv/rev).
+# No QTY_TOKEN is visible, but the missing text almost certainly held a
+# quantity — any tablet with such a line is uncheckable (I6).
+_LINE_START_ERASED = re.compile(r"^\d+[a-z']?\.\s*\[\.+\]")
+
 # Reconciliation tolerance. Sexagesimal capacity arithmetic is exact, so we
 # expect exact integer agreement; allow 1 sila3 for half-sila3 rounding.
 _TOL = 1.0
 
 
 def _has_damaged_quantity(lines) -> bool:
-    """True if any quantity-bearing line also carries a damage mark — such a
-    tablet cannot be fairly reconciled (a missing/uncertain item, I6)."""
+    """True if any quantity-bearing line carries a damage mark, OR if any
+    data line begins with '[...]' (quantity entirely erased) — either makes
+    the tablet uncheckable (I6)."""
     for ln in lines:
         if _QTY_TOKEN.search(ln) and _DAMAGE.search(ln):
+            return True
+        if _LINE_START_ERASED.match(ln):
             return True
     return False
 
