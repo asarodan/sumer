@@ -580,6 +580,25 @@ class ExtractorBase:
         "siskur2",          # ritual offering term
         "kal",              # Akkadian adjective fragment
         "er3",              # name-prefix fragment (er3-zu-dan, er3-re-eb)
+        # Batch 20: livestock combos, place names, parsing fragments
+        "uru11",            # city name (uru11{ki})
+        "gukkal masz2",     # fat-tailed sheep + goat livestock combo
+        "gukkal sila4",     # fat-tailed sheep + lamb livestock combo
+        "kir11 sila4",      # ewe + lamb livestock combo
+        "kir11 masz2",      # ewe + goat livestock combo
+        "kid dagal ma2",    # wide reed mat for boat ({gi} determinative)
+        "geszimmar tur",    # small date palm ({gesz} determinative)
+        "had2",             # "dried" — adjective fragment (siki had2, esir2 had2)
+        "esz3",             # sanctuary/shrine — location, not person
+        "eme5",             # herding station/geographic unit
+        "kad4",             # bundle/tied package (proto-cuneiform KAD4)
+        "n gesz",           # damaged-text fragment (n = unknown count + wood)
+        "n udu",            # damaged-text fragment (n + sheep)
+        "n lugal",          # damaged-text fragment (n + royal)
+        "lugal ur5",        # "this/that king" — royal designation phrase
+        "szen sza",         # parsing artifact
+        "erin2 im nu",      # "troops clay not" — administrative phrase fragment
+        "sa2",              # Akkadian adjective "equal/matching"
     })
 
     # Commodities (ASCII ATF corpus)

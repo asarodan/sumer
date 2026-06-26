@@ -298,6 +298,21 @@ class EntityScanner:
         "siskur2",       # ritual offering
         "kal",           # Akkadian adjective fragment
         "er3",           # name-prefix fragment
+        # Batch 20
+        "uru11",         # city name
+        "gukkal masz2", "gukkal sila4",   # livestock combos
+        "kir11 sila4",  "kir11 masz2",   # ewe + lamb/goat
+        "kid dagal ma2",  # reed mat for boat
+        "geszimmar tur",  # small date palm
+        "had2",           # "dried" adjective fragment
+        "esz3",           # sanctuary/shrine
+        "eme5",           # herding station
+        "kad4",           # bundle
+        "n gesz", "n udu", "n lugal",  # damaged-text fragments
+        "lugal ur5",      # royal designation phrase
+        "szen sza",       # parsing artifact
+        "erin2 im nu",    # administrative phrase fragment
+        "sa2",            # Akkadian adjective
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
