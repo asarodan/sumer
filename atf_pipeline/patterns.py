@@ -888,6 +888,8 @@ class ExtractorBase:
         r"|sipa\s+gu4"          # "cowherd" — compound herd title
         r"|sipa\s+ansze?"       # "donkey herdsman" — compound herd title (ansze/anse)
         r"|sipa\s+ur-gi7(?:-ra)?"   # "dog keeper" — compound herd title (+ genitive)
+        r"|sipa\s+szah2"            # "swine herdsman" — compound herd title
+        r"|sipa\s+udu(?:\s+\S+)?"  # "sheep herdsman" (+ optional qualifier)
         r"|i3-du8"              # "gatekeeper/porter" — alternate form of igi-du8
         r"|sipa"                # "shepherd/herdsman" — livestock management title
         r"|szu-ku6"             # "fisherman" — aquatic resource management title

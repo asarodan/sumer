@@ -685,6 +685,78 @@ class EntityScanner:
         "ugu2 lu2-dingir-ra",        # "above lu2-dingir-ra" — allocation phrase
         "lugal-nir-gal2 ma2",        # "boat of lugal-nir-gal2" — boat reference
         "ur5-ta e3-a",               # debt clearance phrase (duplicate - fine)
+        # Batch 35: livestock and commodity phrases
+        "masz2-gal niga masz2 niga", # double prime goat grade phrase
+        "udu-nita2-mesz masz2",      # ewes collective + goat combo
+        "niga udu u2 masz2",         # prime sheep + plant + goat combo
+        "ad3 udu",                   # "old sheep" — livestock age phrase
+        "ad3 gu4 niga hi-a",         # "old prime cattle, various" — livestock
+        "am gu4 mu",                 # "wild bull + ox + year" — livestock age
+        "a am mu",                   # "water/milk + wild bull + year" — livestock
+        "sila4-ga masz2 ga",         # "suckling lamb + goat + milk" — livestock
+        "el-li-tum masz",            # Akkadian name + goat — false extraction
+        "lim me ansze munu4",        # "1000 divine-powers + donkeys + malt" — phrase
+        "udu-nita2-mesz masz2",      # already added — duplicate fine
+        "szi2-im ansze hi-a",        # "various donkeys with load" — livestock phrase
+        "u2-ku-ul-ti2 ansze hi-a",   # "various donkeys for fodder" — livestock phrase
+        # Batch 35: administrative/accounting phrases
+        "gu4-numun ur-lamma",        # "plow-oxen of ur-lamma" — livestock + person
+        "nir2 babbar2",              # "white necklace" — luxury commodity variant
+        "ukusz2 dusu",               # "heavy-load basket" — container commodity
+        "gu-nigin2 a2 u4-da",        # "daily wages total" — accounting formula
+        "kusz gu4-bi",               # "its ox hide" — commodity back-reference
+        "szitim gub-ba-am3",         # "builder, it is stationed" — occupational status
+        "en mah-di an",              # "en-priest, great one of the sky" — title phrase
+        "sza-lim lugal",             # "shalom/well-being of the king" — Akkadian phrase
+        "gun an-na i-id-dan",        # "tribute, Anu will give" — ritual phrase
+        "szu-szi ansze",             # "60 donkeys" — numeric commodity phrase
+        "szu-igi-sze3 du",           # "went toward the front" — directional phrase
+        "ur-gigir sza3-gu4",         # "ur-gigir's ox heart" — anatomical phrase
+        "u2-bi sar",                 # "its plant, garden" — agricultural phrase
+        "a-di2-in an-na",            # "given to Anu" — offering phrase
+        "gurusz-bi u4",              # "its workers, day" — labor accounting
+        "be-li2-i3-li2 e2",          # "house of Beli-ili" — building reference
+        "a-di2-in la2",              # "given, lacking" — accounting phrase
+        "ni-isz-qu2-ul an-na",       # Akkadian name + "heavenly" — phrase
+        "ku3-babbar uk",             # "silver + uk" — silver commodity phrase
+        "bara2 iri-sa12-rig7",       # "dais of Irisagrig" — institutional phrase
+        "asz2-qul2 a-na sza-hi-ri-in",  # Akkadian name + preposition + city
+        "utu lugal-ga2-sze3 mi-ni-gam",  # "went to the king's Utu" — verbal phrase
+        "ad-di gu4 am-mesz ti-la-mesz",  # "added live wild bulls" — livestock phrase
+        "sza2 ki-mah szu-a-tu2 bad-u2",  # Akkadian phrase fragment
+        "lim me ansze munu4",        # already added — duplicate fine
+        "li gur2-gur2",              # "li fruit trees twisting" — agricultural
+        "sah-le2-e naga si",         # "naga-si of sah-le2-e" — commodity phrase
+        "a gazi",                    # "water/milk of gazi plant" — commodity
+        "da-na esz2-gid2",           # "rope of a danna" — measurement phrase
+        "gamun2 bala-bi",            # "its cumin rotation" — commodity
+        "bappir saga gaz",           # "crushed first-quality beer bread" — commodity
+        "bappir a-ga-de3",           # "beer bread from Akkad" — commodity phrase
+        "ka5-a-mu naga",             # "naga plant of the fox" — commodity phrase
+        "dusu2 nita2 mu",            # "male basket-carrier, year" — phrase variant
+        "ba-ba munu3",               # "malt porridge" — variant spelling
+        "ba-an ku-ku-szu",           # Akkadian phrase
+        "gam-ma man-du",             # Akkadian name pair without conjunction
+        "a gazi2",                   # "water/milk of gazi2 plant" — variant
+        "ka5-a sud2 hi-hi igi-mesz-szu2",  # Akkadian phrase
+        "lu2-inim-ma-bi-mesz ib2-ra",  # "their witnesses, he went" — legal phrase
+        "sa10-am3 gi",               # "purchased reed" — commodity phrase
+        "gi-szid sa10-a",            # "dry reed sold" — commodity phrase
+        "szi-ba-la nim",             # Elamite commodity phrase
+        "kusz gu4 mu babbar-bi",     # "ox hide, year, its white" — commodity phrase
+        "sa2-sag a-bu-la-um",        # "payment at Abulaum" — commercial phrase
+        "u2-tul2-esz18-tar2 a-bi erin2",  # OB Akkadian name + military title
+        "pa-bil-sag giri3",          # "via Pabilsag" — deity transport phrase
+        "kislah da e2 im-suen",      # "threshing floor beside Im-Suen temple" — location
+        "nu-kiri6 gir2-su",          # "gardener of Girsu" — role + place phrase
+        "gudu4 e11-e",               # "gudu4 priest who ascends" — priestly epithet
+        "nig2-dab5 en",              # "en-priest's rations" — allocation phrase
+        "ze2-ba-zu nu-usz-mu-e-a-ak-a",  # Sumerian religious phrase
+        "a-zi-ga masz kusz3 im-ma-zi",   # "rising goat measured" — agricultural phrase
+        "utu lugal-mu-ur2 di-ku5 mah an",  # "Utu, my king, great judge of the sky"
+        "zu-zu lugal gal sza a-la-ah-zi-na",  # Akkadian royal inscription phrase
+        "ma2-i3-dub ne-me-et-ti",    # OB Akkadian phrase
+        "kusz3 mu-s,u2-um a-na sila",  # Akkadian measurement phrase
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -805,6 +877,29 @@ class EntityScanner:
         # Block age/size adjective suffix " tur": "NAME tur" = "junior/young NAME".
         # Legitimate name compounds with tur are always hyphenated (szul-gi-tur, etc.)
         if cn.endswith(" tur") and " " in cn:
+            return
+        # Block "lugal-sze3 [VERB]" phrases: "lugal-sze3" = "to the king [was brought]".
+        # These are transfer-of-goods formulae, never personal names.
+        if cn.startswith("lugal-sze3 "):
+            return
+        # Block "NAME min-kam": "min-kam" = "second time" accounting ordinal.
+        if cn.endswith(" min-kam"):
+            return
+        # Block "NAME tusz-a": "tusz-a" = "is seated/residing" — status clause.
+        if cn.endswith(" tusz-a"):
+            return
+        # Block "NAME sipa ur": trailing "ur" after the herdsman title is a fragment.
+        if cn.endswith(" sipa ur"):
+            return
+        # Block "NAME sipa szah2": swine-herdsman compound; no personal name ends this way.
+        if cn.endswith(" sipa szah2"):
+            return
+        # Block strings containing the Akkadian preposition "ina" as a space-separated token.
+        # Personal names never contain a free-standing "ina" mid-string.
+        if " ina " in cn:
+            return
+        # Block "sikil-la [VERB]" ritual purification verb phrases.
+        if cn.startswith("sikil-la "):
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
