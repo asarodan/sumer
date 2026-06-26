@@ -822,7 +822,7 @@ class ExtractorBase:
         r"|gu-za-la2"           # "throne-bearer" — court/administrative title
         r"|zabar-dab5"          # "copper-caster" — craft title
         r"|sza13-dub-ba"        # "tablet-house official" — archival title
-        r"|ra2-gaba"            # "horse-attendant/rider" — equestrian administrative title
+        r"|ra2?-gaba"           # "horse-attendant/rider" — ra2-gaba or ra-gaba variant
         r"|sagi(?:-\w+)?"       # "cupbearer" (+ optional suffix like -ne plural)
         r"|sza3-tam"            # "treasurer/administrator" — storage official
         r"|gala"                # "lamentation singer" — temple musician title
