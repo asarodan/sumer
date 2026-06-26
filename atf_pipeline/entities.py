@@ -3,6 +3,7 @@
 import csv
 import logging
 import os
+import re
 from typing import Dict, Optional
 
 from atf_pipeline.models import TabletSummary
@@ -801,6 +802,28 @@ class EntityScanner:
         "sipa isin2",                # "shepherd of Isin" — institutional role, not a name
     })
 
+    # Words that, when present as standalone space-separated tokens anywhere in an
+    # entity name, prove it is NOT a personal name.  These commodity/function words
+    # never appear hyphenated into genuine Ur III personal names.
+    _NONNAME_TOKENS: frozenset = frozenset({
+        "udu",     # sheep — livestock commodity
+        "ansze",   # donkey/equid — livestock
+        "gu4",     # ox/bull — livestock
+        "masz2",   # goat — livestock
+        "sila4",   # lamb — livestock
+        "hi-a",    # "assorted/mixed" — administrative quality modifier
+        "kiszib3", # "seal" — document-type indicator in administrative formulae
+        "a-na",    # Akkadian preposition "to/for" — never a name component
+        "giri3",   # "via/through" — transport agent indicator
+        "gudu4",   # "gudu4-priest" — title that survives title-stripping when followed
+                   # by an extra word (e.g. "a-kal-la gudu4 e11-e")
+        "dam",     # "wife/consort" — spouse-descriptor ("NAME dam OTHER-NAME") always
+                   # a role marker, never embedded in a personal name as a space token
+        "tak4-a",  # "left behind/deposited" — administrative verb form in
+                   # "NAME im-e tak4-a" (NAME's tablet was left behind) phrases
+        "im-e",    # "clay tablet" — administrative noun in "NAME im-e tak4-a" phrases
+    })
+
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
         name = raw_name.strip()
         if not name or len(name) < 2:
@@ -830,6 +853,13 @@ class EntityScanner:
         # Block Akkadian fraction / line-break artifacts: "/" never appears in
         # genuine Sumerian or Akkadian personal names in the CDLI ATF corpus.
         if "/" in canonical:
+            return
+        # Block ATF column-separator artifacts: ";" is used in multi-column
+        # Akkadian tablets to separate parallel columns on the same line.
+        # The parser occasionally captures a cross-column phrase as a single
+        # name (e.g. "a-dir2-tu2 ; u2", "; a-ab-ba ; an-zah-ge6").
+        # Semicolons never appear in genuine personal names.
+        if ";" in canonical:
             return
         # Block ATF editorial/bilingual notation artifacts:
         # "%" = language-switch marker (%a = Akkadian, %s = Sumerian)
@@ -985,6 +1015,56 @@ class EntityScanner:
         # Block "NAME e2 INSTITUTION" strings: standalone e2 (Sumerian "house") between
         # spaces marks an institutional reference, not part of a personal name.
         if " e2 " in cn:
+            return
+        # Block livestock quality-grade word "niga" as a standalone space-separated
+        # token.  "niga" = "prime/fattened quality" — a product-quality descriptor that
+        # appears on livestock and commodity entries (e.g. "gukkal niga udu niga",
+        # "ur-szu-ga-lam-ma sipa gu4 niga").  Legitimate compound names that include
+        # "niga" are always hyphenated (e2-udu-niga, nin-gi-gu4-niga).
+        if " niga" in cn or cn.startswith("niga ") or cn == "niga":
+            return
+        # Block Akkadian genitive particle "sza/sza2" as a standalone space-separated
+        # token.  "sza" and "sza2" = "of/whose" — Akkadian genitival relator that
+        # links two Akkadian NPs.  It never appears as a component of a Sumerian or
+        # Akkadian personal name; it always introduces a relative clause or genitive
+        # phrase.  Only space-separated occurrences are blocked to protect compound
+        # names like "ur-sza-u18-sza" or "ip-qu2-sza".
+        if " sza " in cn or " sza2 " in cn or cn.startswith("sza ") or cn.startswith("sza2 "):
+            return
+        # Block date-phrase fragments of the form "NAME u4 N-kam" or "NAME u4 N N-kam"
+        # where u4 = "day" and N is a numeral.  These are person-name + date extractions
+        # from tablets where the scribe's notation was misread as a single entity string.
+        if re.search(r"\bu4\s+\d", cn):
+            return
+        # Block "gukkal" as a standalone space-separated token: gukkal is a type of
+        # fat-tailed sheep — always a livestock commodity, never a personal-name root.
+        # Verified: 0 attested Ur III personal names contain "gukkal" as a hyphenated
+        # or standalone component.
+        if cn == "gukkal" or cn.startswith("gukkal ") or " gukkal " in cn:
+            return
+        # Block "NAME lu2 DESCRIPTOR" multi-word strings: when "lu2" (Sumerian "man of")
+        # appears as a standalone space-separated token in the MIDDLE of an entity name
+        # (not at the end, which is caught by the endswith(" lu2") filter above), it is
+        # always a genitive/occupational connector — never an embedded name component.
+        # Compound names that include the lu2 root are always hyphenated (lu2-dingir-ra,
+        # lu2-kal-la).  Entities like "ur-ba-ba6 lu2 gir2-su" are person + geographic
+        # description and should be stored under the bare personal name "ur-ba-ba6".
+        if " lu2 " in cn:
+            return
+        # Block "NAME sipa ANIMAL-TYPE" strings: "sipa" (Sumerian "herdsman/shepherd")
+        # as a standalone space-separated mid-string token is always a professional
+        # title, never embedded in a personal name.  Compound names with sipa are
+        # always hyphenated (sipa-kal-la, ur-sipa-zi).
+        if " sipa " in cn:
+            return
+        # Block entity names that contain any standalone space-separated token from
+        # _NONNAME_TOKENS: livestock commodity words (udu, ansze, gu4, masz2, sila4),
+        # administrative function words (hi-a, kiszib3), the Akkadian preposition a-na,
+        # and the transport-agent indicator giri3.  These words never appear as
+        # hyphenated components of genuine personal names; when they appear in a
+        # multi-word string they mark commodity lists, administrative formulae, or
+        # transport-clause fragments mistakenly extracted as entity names.
+        if set(cn.split()) & self._NONNAME_TOKENS:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
