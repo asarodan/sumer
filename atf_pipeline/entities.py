@@ -443,6 +443,82 @@ class EntityScanner:
         "sanga nin-szubur",       # "temple administrator of Nin-szubur" — institutional role
         "li2-iq-tum al-la-ha-ru", # two Akkadian names merged without conjunction
         "ni2 dub2-bu-da-ni",      # "his own trembling" — psychological/literary phrase
+        # Batch 31: livestock/animal age phrases
+        "sipa ansze",             # "donkey shepherd" — standalone role phrase
+        "sipa ur-ra",             # "shepherd of the dog/team" — role phrase
+        "gukkal niga sila4",      # fat-tailed sheep + prime + lamb
+        "masz2-gal u2 sila4",     # large goat + plant + lamb
+        "udu-gal udu lugud2-da",  # large sheep + small sheep
+        "niga sila4",             # prime lamb — livestock grade phrase
+        "udu-nita2 masz2",        # ewe + goat — livestock combination
+        "udu-nita2 sila4 ga",     # suckling lamb phrase
+        "masz2-nita2 masz2 sza3-du10",  # male goat types
+        "nigin2-ba gu4 ab2 hi-a", # total cattle count
+        "udu-gal sila4 udu-gal",  # sheep size pair
+        "n udu niga",             # [n] prime sheep (damaged count placeholder)
+        "n ab2 mu",               # [n] mature cows (damaged count placeholder)
+        "dusu2-munus mu",         # female basket-carrier + year (age notation)
+        "lulim-munus mu",         # female deer + year (age notation)
+        "kunga2-munus mu",        # female mule + year (age notation)
+        # Batch 31: administrative formula phrases
+        "dab-ba a2 erin2-na-ka",  # "hired workers' wages" (genitive) — labor formula
+        "dab-ba a2 erin2-na",     # "hired workers' wages" — labor formula
+        "nag lugal",              # "drink of the king" — offering formula
+        "nig2-sa10 gi",           # "price of reeds" — commodity phrase
+        "e2-a si-ga",             # "placed in the house" — administrative formula
+        "i7 pa-e3",               # "canal clearance" — water management phrase
+        "sa10-am3 esir2 e2-a",    # "purchase of bitumen (for house)" — commercial phrase
+        "kusz ab2 mu",            # "hide of cow, year" — commodity + year phrase
+        "al-la erin2",            # "labor clearance/levying of workers"
+        "lugal erin2-na",         # "king's troops" — military phrase
+        "al-la erin2 esz3 didli", # "labor clearing from various depots"
+        "gun an-na",              # "tribute of the sky/Anu" — offering formula
+        "lu2-dab5-ba en-nu",      # "arrested man, night watch" — security phrase
+        "mun-gazi hi-a",          # "mixed mun-gazi spices" — condiment phrase
+        "bappir2 du",             # "ordinary beer bread" — commodity phrase
+        "bappir2 lugal",          # "royal beer bread" — commodity phrase
+        "sig5 du",                # "good + ordinary" — quality phrase
+        "ma2-lah5 lugal",         # "royal boatman" — role phrase (no personal name)
+        "lugal zabar",            # "bronze king" — royal epithet/formula
+        "an inanna",              # two deities listed together (not a person)
+        "an-na a-na",             # Anu + Akkadian preposition fragment
+        "su-ga ur-lamma",         # "returned [goods] to ur-lamma" — accounting verb + name
+        "usz2 lu2-bala-sa6-ga",   # "died, the-turncoat" — death record formula
+        "usz2 ur-ba-ba6",         # "died, ur-ba-ba6" — death record formula
+        "muszen-na-sze3 du-ni",   # "it went to the birds" — dispersal phrase
+        "ugu2 lu2-du10-ga",       # "above/for the good man" — allocation phrase
+        "mur gu4-re nu",          # "ox lung not [accepted]" — quality rejection phrase
+        "muszen-du3 sa2-du11",    # "bird catcher's regular delivery" — supply formula
+        "kusz3 sukud",            # "height/length measure" — measurement phrase
+        "in mu",                  # damaged/uncertain fragment
+        "gir2 an",                # "dagger of Anu" — votive phrase
+        "in u4",                  # "chaff/straw, day" — commodity fragment
+        "sa gu",                  # "sinew/bundle of neck" — commodity phrase
+        "za-gin3 1-a",            # "first-quality lapis lazuli" — gem grade phrase
+        "zi-ge duh-hu-um",        # grain + Akkadian term fragment
+        "me a-gar3",              # "divine powers of the field" — ritual phrase
+        "asz-a ki",               # location/field fragment
+        "u2-nu-ut ansze",         # "donkey equipment" — equipment phrase
+        "ab mah2",                # "large/old cow" — livestock description
+        "gesz-gar um-mi",         # "beam of the craftsman" — craft material phrase
+        "mi-ri2-za ma2",          # "boat of mi-ri2-za" — commodity + location
+        "u3-hu-in lugal",         # Elamite name + royal title (title not a name)
+        "ru-ba-ti er2-du8",       # Elamite compound designation
+        "a-bi2-si2-im-ti nin",    # Elamite queen Abisimti + title nin — not personal name
+        "sanga nin-gir2-su",      # "temple administrator of Ningirsu" — institutional role
+        # Batch 31: Elamite/ethnic designations
+        "elam za-ul-me",          # Elamite ethnic designation
+        "elam du8-du8-li2-me",    # Elamite ethnic designation
+        "ad-da elam",             # "father [from] Elam" — ethnic reference
+        # Batch 31: Akkadian formula fragments
+        "as,-bat ansze kur-ba-ni sza a-ba-ri",  # Akkadian property clause
+        "ta-ri-bu-um sza lugal",  # Akkadian name + royal possessive
+        "kar3-szum szu-szi an-dah-szum",  # Akkadian name sequence
+        # Batch 31: additional commodity/accounting fragments
+        "lu2-nin-szubur munu4-mu2",  # name + sprouted malt commodity — false extraction
+        "szesz-szesz iszib",         # "many brothers, libation priest" — role phrase
+        "gudu4 nun-gal",             # "great purification priest" — title compound
+        "gudu4 gu-la",               # "great purification priest" — title compound
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -508,6 +584,13 @@ class EntityScanner:
         # the hyphen means the number token was separated; always a formula, never
         # a personal name.
         if " -kam" in cn:
+            return
+        # Block broken-line continuation fragments: any token that begins with a
+        # hyphen (space + hyphen) indicates an ATF line-break suffix appended on
+        # the following line.  These are NEVER personal names — they are ordinal,
+        # case, or verbal suffixes detached from their stem by a clay tablet edge.
+        # Verified: 0 entities with " -" in this corpus have confirmed fathers.
+        if " -" in cn:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {

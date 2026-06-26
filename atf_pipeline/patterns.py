@@ -856,11 +856,11 @@ class ExtractorBase:
         r"|szusz3|šuš3|kas4|sukkal|engar|agrig|simug|nagar|tibira|azlag2"
         r"|nu-kiri6|szidim|aszgab|zadim|bahar2|bahar3|ma2-lah5|lu2-kikken2"
         r"|aga3-us2|aga-us2|lu2-kin-gi4-a"
-        r"|ka-guru7|guru7|i3-dub|sanga"
+        r"|ka-guru7|guru7|i3-dub|sanga(?:\s+\S+)?"  # sanga [DEITY] — with optional deity
         r"|lukur(?:\s+\S+)?"    # lukur [DEITY] — temple-woman title with optional deity
         r"|gu-za-la2"           # "throne-bearer" — court/administrative title
         r"|zabar-dab5"          # "copper-caster" — craft title
-        r"|sza13-dub-ba"        # "tablet-house official" — archival title
+        r"|sza13-dub-ba(?:-ka)?" # "tablet-house official" (+ genitive -ka) — archival title
         r"|ra2?-gaba"           # "horse-attendant/rider" — ra2-gaba or ra-gaba variant
         r"|sagi(?:-\w+)?"       # "cupbearer" (+ optional suffix like -ne plural)
         r"|sza3-tam"            # "treasurer/administrator" — storage official
@@ -887,6 +887,16 @@ class ExtractorBase:
         r"|sipa\s+ansze?"       # "donkey herdsman" — compound herd title (ansze/anse)
         r"|sipa\s+ur-gi7(?:-ra)?"   # "dog keeper" — compound herd title (+ genitive)
         r"|i3-du8"              # "gatekeeper/porter" — alternate form of igi-du8
+        r"|sipa"                # "shepherd/herdsman" — livestock management title
+        r"|szu-ku6"             # "fisherman" — aquatic resource management title
+        r"|enku"                # "canal inspector" — water management official
+        r"|nu-esz3"             # "temple administrator" — Ur III religious official
+        r"|na-gada"             # "herdsman/flock-guard" — livestock guard title
+        r"|iszib"               # "libation/anointing priest" — cultic title
+        r"|szu-i"               # "barber" — court/craft service title
+        r"|a-igi-du8"           # "lookout/inspector" — inspection official title
+        r"|tir"                 # "forest [warden]" — occupation label for grove keepers
+        r"|agar4-nigin2"        # "storage enclosure/round field" — location suffix after name
         r")\s*$",
         re.I,
     )
