@@ -220,13 +220,27 @@ never silently upgraded.
  L6  Analytics + provenance        ──►  scoped aggregates (T4, with coverage)
 ```
 
-### L1 — Lossless tokenisation
-**In:** raw ATF lines. **Out:** a token stream that preserves damage marks,
-uncertainty flags, sign-reading variants, determinatives, and line geometry.
-*(today: `loaders.py`, `text.py` stripping — but stripping currently discards
-some marks; target is preserve-then-annotate.)*
-> **I7.** L1 is information-preserving: the original line is reconstructable from
-> the token stream.
+### L1 — Faithful tokenisation
+**In:** raw ATF lines. **Out:** a stream of typed **grapheme tokens** conforming
+to a fixed schema pinned to a stated version of the CDLI ATF specification. Each
+token is `{sign, determinative?, damage_state, modifiers, position}` where
+`damage_state ∈ {intact, damaged(#), uncertain(?), missing([…]), collated(!)}`,
+`modifiers` capture sign-form (`@…`) and variant (`x(|…|)`) notation, and
+`position` is `(surface, column, line)`.
+*(today: `loaders.py` + `text.py` stripping discards several of these marks;
+target is preserve-then-annotate against the schema.)*
+
+"Lossless" is defined **narrowly so it is testable** — not byte-exact
+reconstruction, but **semantic round-trip over a closed, enumerated set of ATF
+markup classes**: graphemes, determinatives, damage/uncertainty marks, sign-form
+and variant modifiers, and surface/column/line position. Whitespace, editorial
+comments, and layout *may* be normalised away **if catalogued** in the token's
+provenance. A markup construct outside the enumerated set is a **schema gap** —
+logged and surfaced, never silently dropped.
+> **I7.** L1 guarantees *semantic* round-trip: re-serialising the token stream
+> reproduces every token in the enumerated ATF markup classes with identical
+> semantics. The enumerated class set and the pinned ATF-spec version are part of
+> the contract; adding a class is a versioned schema change, not an ad-hoc fix.
 
 ### L2 — Lexical resolution
 **In:** tokens. **Out:** typed values against §5 vocabularies, each tagged T1 or
@@ -264,8 +278,15 @@ evidence; clustering/scoring is not yet a distinct layer.)*
 **In:** T1/T2 facts and (optionally) T3 clusters. **Out:** aggregates that ship
 with their filter, coverage fraction, and confidence band. *(today:
 `network.py`, the EDA/paper HTML; coverage/provenance fields are the gap.)*
-> **I12.** No aggregate is emitted as a bare number. Each carries `{filter,
-> coverage_by_tier, confidence_band}`.
+> **I12.** No aggregate is emitted as a bare number. Each carries an explicit
+> **frame** and a **coverage vector** (§9.0), plus a confidence band.
+
+> **I15 (graceful degradation — no perfection traps).** The pipeline emits valid
+> T0–T2 output with an *empty* chronology vocabulary and an *empty* identity
+> store. Any subsystem whose value is monotonic in its own completeness —
+> chronology (§7.2) and identity (§7.3) — is an **enrichment overlay**, never a
+> blocking dependency. Partial completeness yields partial T3/T4 value; it never
+> gates T1/T2. This forbids "boil-the-ocean" dependencies *by construction*.
 
 ---
 
@@ -288,22 +309,66 @@ answer: the balance rate, and the delta in balance rate per change.
 > **Design flip:** stop discarding `szunigin`; parse it as the stated total and
 > reconcile. This converts the most-skipped line type into the backbone of trust.
 
-### 7.2 Year-name oracle
-Complete the `chronology.py` controlled vocabulary to full reigns. Then:
+### 7.2 Year-name oracle — *probabilistic and partial by design*
+Complete `chronology.py` toward full reigns, but the resolver is **scoring, not
+binary**, and is correct *while the vocabulary is still incomplete*. This is the
+explicit defence against the brittleness of all-or-nothing validation.
 
-- **validate** every `(king, year)` extraction against the closed set;
-- **repair** damaged date lines by closed-vocabulary nearest-match (only when the
-  match is unambiguous; otherwise leave `unresolved`);
-- **order** tablets chronologically with confidence, unlocking time-series (§8);
-- **detect** mis-segmented or non-Ur-III tablets as far-from-any-match outliers.
+For a date line, compute a match score against each candidate `(king, year)` from
+fragment overlap, weighted by fragment specificity (`us2-sa` "year-after"
+disambiguators weigh heavily). Emit a **posterior over years**, not a verdict:
 
-Quality metric: vocabulary match-rate over all date lines.
+- **resolved** — one candidate dominates (score gap above threshold) → assign with
+  confidence equal to the normalised margin;
+- **ambiguous** — several candidates competitive → keep the weighted set; do not
+  pick one;
+- **unresolved** — best score below floor → leave open.
 
-### 7.3 Prosopographic triangulation
-No single name is certain, but the *joint* distribution of `(patronymic, title,
-provenance, date-window)` bounds how many distinct people a name hides. Output
-**scored identity clusters with evidence**, never false-precision single IDs.
-Homonym count (currently 675 names with ≥2 fathers) is a tracked health metric.
+The distinction that makes partial vocabulary safe:
+
+- **absent** (nothing matches) ⇒ "year not yet in the vocabulary **or** damaged"
+  — *never* treated as invalid. Degrades gracefully (see I15).
+- **contradicted** (fragments match a *different* king's year, or two mutually
+  exclusive years) ⇒ a genuine anomaly, surfaced for inspection.
+
+So completeness raises the **resolution rate** but is never a precondition for
+**correctness**. Quality metrics: resolution rate, ambiguity rate, and
+contradiction rate over all date lines.
+
+### 7.3 Prosopographic triangulation — *weight-of-evidence, default-split*
+T3 is an explicit scoring + constrained-clustering model, not a hand-wave. Its
+default is **non-merge**: two attestations of the same raw string are *different
+people* until positive evidence beyond the name says otherwise. This inverts the
+usual normalisation bias and is the safe direction — under-merging only loses
+links, whereas over-merging *fabricates a person who never existed*.
+
+**Pairwise evidence score.** For two attestations of a (fuzzy-)matching name,
+accumulate weight-of-evidence (log-odds) contributions:
+
+| Evidence | Effect |
+|----------|--------|
+| same attested father (`dumu`) | strong + |
+| **conflicting** attested fathers | **cannot-link** (hard constraint) |
+| date-windows incompatible (> plausible career span, ~40 yr) | hard negative |
+| shared title / profession | weak + |
+| shared provenance / archive | weak + |
+| shared role / commodity milieu | very weak + |
+
+**Constrained clustering.** Build a graph whose edges are positive pairwise
+scores, subject to **cannot-link constraints** (conflicting fathers, incompatible
+dates) that may never be merged across. Cluster by constrained
+connected-components / correlation clustering above a score threshold. Outputs:
+
+- **clusters** — confidence = internal evidence density;
+- **ambiguous pools** — same-name attestations with *no* disambiguating evidence
+  stay an explicit unresolved pool, neither merged nor split by fiat;
+- **forced splits** — a name with conflicting fathers becomes ≥2 clusters by
+  construction. This is exactly how `lugal`'s title/name fusion is represented:
+  as several evidenced clusters *plus* a large ambiguous pool, never one node.
+
+Tracked health metrics: homonym count (currently 675 names with ≥2 fathers),
+merge rate, and **ambiguous-pool size** — the honest measure of the identity we
+*cannot* resolve, which the system reports rather than hides.
 
 ### 7.4 Round-trip / reversibility tests
 Assert I7 and I10: reconstruct raw from tokenised, and raw-name from canonical +
@@ -333,6 +398,27 @@ reachable — each stated at the scope the data supports, never broader:
 
 ## 9. Output contract
 
+### 9.0 Coverage, with an explicit denominator
+A coverage number is meaningless without naming what it is *over*, so coverage is
+reported as a **vector against a declared frame**, never a lone percentage.
+
+- **Frame** — the scope predicate defining a claim's universe
+  (e.g. `commodity=barley ∧ centre=Drehem ∧ period=Šulgi 44–48`). **The frame is
+  the denominator's definition.** No frame, no coverage.
+- **record_coverage** = `balanced_records / records_in_frame`.
+- **volume_coverage** = `Σqty(balanced) / Σqty(parseable records in frame)`, where
+  the denominator spans balanced + no-total + unbalanced-with-parseable-qty and
+  **excludes** damage-unparseable quantities (which cannot be summed — I6).
+- **dark_fraction** — the part that *cannot* enter a ratio: a count of
+  damage-unparseable records in frame, plus a Σ **lower bound** of their legible
+  quantities. Reported as a separate pair, never folded into the percentages.
+
+A claim therefore reads: *"X over frame F; record_coverage 0.71, volume_coverage
+0.83, dark 240 records (≥1.1 M sila3 legible)."* The reader sees precisely what
+the number rests on and what it omits — the dark fraction is shown, not buried.
+
+### 9.1 Per-artifact requirements
+
 | Artifact | Tier | Must carry |
 |----------|------|-----------|
 | `entries.csv` (line items) | T1/T2 | raw span, quantity+`damaged` flag, commodity or `unresolved`, record reconciliation tag |
@@ -341,7 +427,7 @@ reachable — each stated at the scope the data supports, never broader:
 | `entities.csv` | T2→T3 | attestation count, roles, evidence; clusters scored, not fused |
 | `patronymics.csv` | T2 | name→father edges with `_PATRONYM_STOP` applied; homonym flag |
 | network / GEXF | T4 | node = raw ref or scored cluster (declared), edge weight + coverage |
-| any aggregate | T4 | `{filter, coverage_by_tier, confidence_band}` (I12) |
+| any aggregate | T4 | `{frame, coverage vector (§9.0), confidence_band}` (I12) |
 
 > **I14.** A consumer can filter any artifact to "balanced + dated + resolved"
 > and obtain the rock-solid subset with a single predicate.
@@ -372,24 +458,30 @@ reachable — each stated at the scope the data supports, never broader:
 2. **Arithmetic reconciliation harness** — parse `szunigin`, reconcile, tag
    records, and **measure the balance rate**. This single number sizes the
    rock-solid core and is the prerequisite for a regression baseline. *§7.1, I9.*
-3. **Complete the year-name oracle** — full reigns in `chronology.py`, plus
-   validation and match-rate metric. *§7.2.*
+3. **Year-name oracle, scoring resolver** — ship the probabilistic resolver
+   (§7.2) *first*, against the partial vocabulary; expand `chronology.py`
+   incrementally thereafter. **Non-blocking overlay (I15).**
 4. **Reversible normalisation log** — make L4 auditable (I10).
 5. **Prosopography layer (L5)** — scored clusters in a separate store (I4/I11).
-6. **Provenance-carrying analytics (L6)** — coverage + confidence bands on every
-   aggregate (I12, I13).
+   Begin with the evidence already in `patronymics.csv`; the ambiguous pool is a
+   valid first output. **Non-blocking overlay (I15).**
+6. **Provenance-carrying analytics (L6)** — frame + coverage vector + confidence
+   bands on every aggregate (I12, I13, §9.0).
 7. **Trailing-recipient attribution** — model the "goods, then recipient name"
    ration-list pattern explicitly, with a confidence penalty, rather than
    dropping it.
 
-> The ordering is logical, not merely practical: step 2 produces the metric that
-> every later step is measured against. Build the scoreboard before the game.
+> The ordering is logical, not merely practical: step 2 produces the metric every
+> later step is measured against — build the scoreboard before the game. And by
+> I15, steps 3 and 5 ship *useful at partial completeness* and never block the
+> rest: the oracle resolves what it can today, the identity layer emits clusters
+> plus an honest ambiguous pool. Completeness is a dial, not a gate.
 
 ---
 
 ## 12. Invariants & non-goals (the contract, restated)
 
-**Invariants:** I1–I14 above are binding. A change that violates one is a
+**Invariants:** I1–I15 above are binding. A change that violates one is a
 regression even if all unit tests pass.
 
 **Non-goals (explicitly out of scope):**
