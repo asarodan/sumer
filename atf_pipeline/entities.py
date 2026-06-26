@@ -351,6 +351,18 @@ class EntityScanner:
         "lu2-bi",          # pronoun reference
         "nig2-sa10-am3-bi", "a-sza3-bi",  # accounting back-references
         "szul-gi-kalam-ma-me-te-bi",  # royal epithet phrase
+        # Batch 26: all TITLE_MAP English values — block every normalized title form
+        "courier (kas4)", "governor (ensi2)", "secretary (sukkal)",
+        "steward (agrig)", "lord/high-priest", "livestock-official (šuš3)",
+        "cattle-inspector", "overseer (ugula)", "household-overseer",
+        "scribe (dub-sar)", "messenger", "barber",
+        "farmer/field-manager (engar)", "leather-worker", "musician",
+        "fuller", "smith", "carpenter", "metalworker", "gem-cutter",
+        "potter", "cloth-fuller", "miller", "soldier/guard",
+        "female-worker", "male-worker", "woman", "man", "male-laborer",
+        # INSTITUTION_MAP English values that are not legitimate institutional actors
+        "sealed-storehouse", "é (household)",
+        "menkara (field)", "lahtur (field)",
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

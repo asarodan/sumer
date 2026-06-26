@@ -640,6 +640,17 @@ class ExtractorBase:
         "nig2-sa10-am3-bi", # "its purchase price" — accounting
         "a-sza3-bi",        # "its field area" — agricultural accounting
         "szul-gi-kalam-ma-me-te-bi",  # royal epithet phrase
+        # Batch 26: all TITLE_MAP English values
+        "courier (kas4)", "governor (ensi2)", "secretary (sukkal)",
+        "steward (agrig)", "lord/high-priest", "livestock-official (šuš3)",
+        "cattle-inspector", "overseer (ugula)", "household-overseer",
+        "scribe (dub-sar)", "messenger", "barber",
+        "farmer/field-manager (engar)", "leather-worker", "musician",
+        "fuller", "smith", "carpenter", "metalworker", "gem-cutter",
+        "potter", "cloth-fuller", "miller", "soldier/guard",
+        "female-worker", "male-worker", "woman", "man", "male-laborer",
+        "sealed-storehouse", "é (household)",
+        "menkara (field)", "lahtur (field)",
     })
 
     # Commodities (ASCII ATF corpus)
