@@ -89,6 +89,14 @@ class TextMixin:
         # are administrative formulae, not personal name lines.
         if self._RE_ACTION_FORMULA.search(clean):
             return False
+        # Travel-clause lines from messenger texts: "[place/person]-sze3 gen-na"
+        # (went to X), "[place]-ta gen-na" (came from X), "X du-ni" (his coming).
+        # These describe a journey, not a person; when a standalone "szu ba-ti"
+        # follows, the clause would otherwise be captured as the recipient.
+        # The entity roster already blocks endswith(" gen-na"); this keeps the
+        # transaction-level recipient extraction consistent with it.
+        if re.search(r"\s(?:gen-na|gen-a|du-ni)\s*$", clean, re.I):
+            return False
         # Damaged-bracket fragments like "[...]-mu" → after cleaning leave "-mu";
         # a real name always starts with a letter or determinative brace.
         if clean.startswith("-"):

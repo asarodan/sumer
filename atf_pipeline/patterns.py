@@ -809,6 +809,11 @@ class ExtractorBase:
         # Administrative titles — scribes sometimes wrote "dumu TITLE" when
         # the father's personal name was unknown; the title is not a father name.
         "szagina", "ensi2", "ensi",
+        # Status descriptor, not a father name: "dumu dab5-ba" = "conscripted/
+        # dedicated dependent" (cf. "lu2 al-dab5-ba" = the seized man; these edges
+        # often co-occur with a-ru-a votive-dedication context).  dab5-ba is the
+        # verb "seized/taken", never a personal name.
+        "dab5-ba",
     })
 
     # --------------- Date ---------------
