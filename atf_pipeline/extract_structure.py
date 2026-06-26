@@ -518,8 +518,11 @@ class StructureMixin:
 
             # Agent (giri3 / ugula)
             ag = self._extract_agent(clean)
-            if ag and agent is None:
-                agent = ag
+            if ag:
+                if agent is None:
+                    agent = ag
+                elif ag not in agent.split("; "):
+                    agent = agent + "; " + ag
 
             # Pattern F: inline NAME szu ba-ti
             rec = self._extract_recipient_inline(clean)
@@ -1311,8 +1314,11 @@ class StructureMixin:
 
             # Agent
             ag = self._extract_agent(clean)
-            if ag and agent is None:
-                agent = ag
+            if ag:
+                if agent is None:
+                    agent = ag
+                elif ag not in agent.split("; "):
+                    agent = agent + "; " + ag
 
             # Kiszib fallback issuer
             m_k = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)

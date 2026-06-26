@@ -444,6 +444,7 @@ class QuantityMixin:
         # (1/180 shekel), not the barley commodity, so barley must not win.
         if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
         if self._RE_SILVER.search(line):  return "silver"
+        if self._RE_MALT.search(line):    return "malt"
         if self._RE_BARLEY.search(line):
             # "sze" alongside a gin2/ma-na weight but no capacity unit is the
             # barleycorn weight sub-unit (1/180 shekel), not barley grain.

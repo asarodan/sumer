@@ -243,5 +243,9 @@ class Normalizer:
     def normalize_transaction(self, tx: Transaction) -> Transaction:
         tx.issuer    = self.normalize_name(tx.issuer)
         tx.recipient = self.normalize_name(tx.recipient)
-        tx.agent     = self.normalize_name(tx.agent)
+        if tx.agent and "; " in tx.agent:
+            parts = [self.normalize_name(p) for p in tx.agent.split("; ")]
+            tx.agent = "; ".join(p for p in parts if p) or None
+        else:
+            tx.agent = self.normalize_name(tx.agent)
         return tx

@@ -794,6 +794,9 @@ class EntityScanner:
         "za3-bar-bi",                # "its za3-bar metal" — commodity back-reference
         "nimgir-di-ne",              # "heralds of the legal case" — collective noun
         "a-bi",                      # Akkadian "father" possessive — not a personal name
+        # Batch 39: year-name copula suffix and grain commodity back-references
+        "lugal-am3",                 # "as king" — copula in year-name formula "mu X lugal-am3"
+        "i3-bi2-za-bi",              # grain commodity back-reference, not a personal name
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -900,6 +903,14 @@ class EntityScanner:
         # a commodity word.  No personal name starts with a single "n" and a space.
         if cn.startswith("n "):
             return
+        # Block ATF "x" (unreadable sign) as first token: "x [word]" lines are
+        # undecipherable fragments, never extractable personal names.
+        if cn.startswith("x "):
+            return
+        # Block ellipsis marker "..." (three dots): CDLI placeholder for a gap
+        # in the tablet — never a personal name.
+        if cn.startswith("."):
+            return
         # Block fugitive-status phrases "zah3 [PERSON/PLACE]": zah3 = "fugitive/escaped".
         if cn.startswith("zah3 "):
             return
@@ -961,6 +972,10 @@ class EntityScanner:
         # "NAME ki" = "NAME [place]" — geographic determinative, not a personal name.
         if cn.endswith(" ki") and " " in cn:
             return
+        # Block existential predicate suffix "gal2-la-am3" ("it is present/existing"):
+        # these are status predicates ("NAME gal2-la-am3" = "NAME is present"), not names.
+        if cn.endswith(" gal2-la-am3"):
+            return
         if canonical not in self._roster:
             self._roster[canonical] = {
                 "tablets": set(),
@@ -976,7 +991,9 @@ class EntityScanner:
             if rec.issuer:
                 self._add(rec.issuer, "issuer", summary.tablet_id)
             if rec.agent:
-                self._add(rec.agent, "agent", summary.tablet_id)
+                for ag in rec.agent.split("; "):
+                    if ag.strip():
+                        self._add(ag.strip(), "agent", summary.tablet_id)
             for entry in rec.entries:
                 if entry.recipient:
                     self._add(entry.recipient, "recipient", summary.tablet_id)

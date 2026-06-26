@@ -59,7 +59,13 @@ def main() -> None:
     # Fit the normaliser on the full set of attested names so a grammatical
     # case suffix is only merged when the bare form is independently attested.
     normalizer.fit(
-        [who for tx in raw_transactions for who in (tx.issuer, tx.recipient, tx.agent)]
+        [who
+         for tx in raw_transactions
+         for who in (
+             tx.issuer,
+             tx.recipient,
+             *(tx.agent.split("; ") if tx.agent else [None]),
+         )]
         + [e.recipient for s in all_summaries for r in s.records for e in r.entries]
     )
 
@@ -95,7 +101,7 @@ def main() -> None:
         print(f"  {comm:15s}: {cnt}")
 
     # Volume by commodity — grain (sila3), silver (gin2), animals (head), labor (worker-day)
-    GRAIN_COMMS = {"barley", "emmer", "wheat", "flour", "beer", "oil", "dates"}
+    GRAIN_COMMS = {"barley", "emmer", "wheat", "flour", "beer", "oil", "dates", "malt"}
     by_comm: Dict[str, float] = {}
     for tx in all_transactions:
         if tx.quantity and tx.commodity:

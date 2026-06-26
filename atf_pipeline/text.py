@@ -33,6 +33,7 @@ class TextMixin:
         """Strip damage markers and trailing grammatical suffixes from a name."""
         name = re.sub(r"\(\$[^)]*\$\)", "", name)   # CDLI editorial markers ($...$)
         name = re.sub(r"\([A-Za-z][A-Za-z0-9\-]*\)", "", name)  # sign variant: ensi2(PA-TE), kas4(DU)
+        name = re.sub(r"\(\s*\)", "", name)          # empty parentheses () from parsing artifacts
         # ATF editorial additions <word> — keep the content, strip the markers.
         # "<sza3>" in "nam-<sza3>-tam" means the scribe omitted the sign but the
         # reading is certain; we want "nam-sza3-tam", not "nam--tam".
@@ -49,6 +50,10 @@ class TextMixin:
         # Strip sign-form modifier suffixes (@g, @c, @t, @v, @n …) on sign names.
         # They encode alternative sign forms and are never part of personal names.
         name = re.sub(r"@[A-Za-z0-9]+", "", name)
+        # Strip composite sign specifications: "uszurx(|.|)" → "uszur".
+        # In CDLI ATF, "x(|...|)" denotes an unusual sign reading via composite
+        # sign; the x and parenthetical are editorial notation, not part of the name.
+        name = re.sub(r"x\(\|[^)]*\)", "", name)
         name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
         # CDLI sign catalog references (REC344, KWU147, LAK123, etc.) are
         # sign-list numbers, not readable syllables — strip them from names.

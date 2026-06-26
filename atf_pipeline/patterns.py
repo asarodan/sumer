@@ -663,6 +663,17 @@ class ExtractorBase:
     })
 
     # Commodities (ASCII ATF corpus)
+    # malt: "sze munu4" (malted barley), "munu4-mu2" (sprouted malt),
+    # "munu4-ku3-ga" (clean malt), "munu4-gaz" (crushed malt).
+    # Must be checked BEFORE barley: "sze munu4" contains "sze" which would
+    # otherwise trigger _RE_BARLEY and mislabel malt deliveries as barley.
+    _RE_MALT   = re.compile(
+        r"\bsze\s+munu4\b"
+        r"|\bmunu4-mu2\b"
+        r"|\bmunu4-ku3-ga\b"
+        r"|\bmunu4-gaz\b",
+        re.I,
+    )
     _RE_BARLEY = re.compile(r"\bsze(?!-gesz)\b|\bše\b|\bbarley\b|\bsze-ba\b", re.I)
     _RE_EMMER  = re.compile(r"\bziz2\b|\bemmer\b", re.I)
     _RE_WHEAT  = re.compile(r"\bgig\b|\bwheat\b", re.I)
