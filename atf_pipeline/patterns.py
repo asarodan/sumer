@@ -901,6 +901,11 @@ class ExtractorBase:
         r"|agar4-nigin2"        # "storage enclosure/round field" — location suffix after name
         r"|lu2\s+tukul(?:-\S+)?"    # "weapons man/soldier" — occupational suffix
         r"|lu2\s+kin-gi4-a(?:\s+lugal)?"  # "[royal] messenger" — occupational suffix
+        r"|ad-kup4"                 # "reed-mat weaver" — craft title
+        r"|a-zu"                    # "physician/doctor" — medical title
+        r"|giri17-dab5"             # "touching-nose official" — cultic/administrative title
+        r"|tur"                     # "junior/young" — age qualifier after name
+        r"|min(?:3)?"               # "ditto/same" — accounting notation, not a name component
         r")\s*$",
         re.I,
     )

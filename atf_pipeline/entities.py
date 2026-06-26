@@ -616,6 +616,75 @@ class EntityScanner:
         "lugal sza3-gal",            # "king's choice grain" already added above
         "ur5-sze3 masz2",            # already added in batch 32 — duplicate safe
         "du-du gu-la",               # uncertain compound — 0 confirmed fathers
+        # Batch 34: livestock combinations and commodity phrases
+        "masz2-gal niga asz2-gar3 niga sila4",  # complex livestock grade phrase
+        "udu-ni udu niga",           # "his sheep + prime sheep" — livestock phrase
+        "asz2-gar3 niga masz2 niga", # livestock grade combination
+        "niga udu niga gu4-e-us2-sa",  # prime sheep + ox combination
+        "gukkal niga udu a-lum niga",  # fat-tailed sheep + prime combo
+        "masz2-gal niga udu u2",     # large prime goat + sheep + plant
+        "masz2-gal niga szimaszgi sila4",  # prime goat + lamb from Shimashki
+        "niga masz2",                # "prime goat" — livestock grade
+        "sagi lugal",                # "royal cupbearer" — institutional role phrase
+        # Batch 34: administrative formula and accounting phrases
+        "a bala-e",                  # "water of the bala-rotation" — accounting
+        "ba-an esir2 su-ba",         # "it was given as bitumen" — allocation phrase
+        "szesz-a-ni lu2 lugal-ku3-zu",  # "his brother, the man of Lugal-kuzu"
+        "asz-a lu2-he2-gal2",        # "field of lu2-he2-gal2" — location phrase
+        "lugal sza3-gal kunga2",     # "king's choice grain + equid" — commodity phrase
+        "nig2-dab5 en",              # "en-priest's rations" — allocation phrase
+        "dab-ba didli",              # "various detained/held items" — accounting
+        "dabx-ba a2 erin2-na-ka",    # labor wage phrase variant
+        "gi-a sa10",                 # "exchanged/sold" — transaction phrase
+        "nig2-sa10-am3 gi",          # "purchased reed" — commodity phrase
+        "nig2-sa10-ma-ni ku3",       # "his silver price" — accounting back-reference
+        "lugal sza3-gal",            # "king's choice grain" — commodity phrase
+        "nu-ur2 dub",                # "tablet/account of nu-ur2" — document phrase
+        "ka i7 ta",                  # "from the mouth of the river" — location phrase
+        "nanna dub",                 # "tablet of Nanna" — temple document
+        "ma-an-szum2 ga",            # milk allocation phrase
+        "dusu gesztin",              # "basket of wine" — commodity
+        "lugal a-ra2",               # "king's installment" — accounting phrase
+        "par4 had2",                 # "dried par4 [vessel/container]" — commodity
+        "ur5-ta e3-a",               # "came out of debt" — accounting phrase
+        "asz-a a-lu5-lu5",           # "irrigation field" — agricultural phrase
+        "dub tur-tur",               # "small tablets" — document phrase
+        "si-i3-tum-e ba-ab",         # accounting clause fragment
+        "ugu2 ba-a-gar",             # "was placed above/in charge" — administrative
+        "nig2-dab5 li9-si4",         # "rations of li9-si4 grass" — commodity phrase
+        "kin u2 sahar-ba",           # "work, plant, in its soil" — agricultural phrase
+        "su7 szukur sza3 sahar-ra",  # "granary spear in the soil" — inventory phrase
+        "sag3-ga gu4",               # "beaten ox" — livestock phrase
+        "igi-sag nig2-sur-bi",       # "first quality, its pressed product" — quality
+        "lu2-szara2 lu2 szum2",      # "man of Szara + the giving man" — phrase
+        "hal-la sag-gal2",           # "excellent choice ration" — accounting
+        "kusz3 sukud bad3",          # "wall height measure" — measurement phrase
+        "dub-szen-e sag du8-hu-ba",  # accounting phrase
+        "nir2 babbar",               # "white necklace" — luxury commodity
+        "eme3 mu",                   # "language/tongue + year" — phrase
+        "bara2 gir13-gesz",          # "dais + gir13-gesz [wood]" — ritual phrase
+        "gada sza3-gu gu-za e3",     # "linen + inner + throne + came out" — complex
+        "ma-na uruda",               # "mana of copper" — weight + metal commodity
+        "kusz nu-ur2-ma",            # "pomegranate leather" — hide commodity
+        "lugal-nig2-lagar-e esz3 didli",  # accounting phrase
+        "nin-dingir en-ki",          # "en-priestess of Enki" — religious title
+        "lu2-mah sag-ub3",           # "lu2-mah priest, side-shrine" — institutional
+        "a-du-du mu6-sub3",          # name + garment type — false extraction
+        "e gil",                     # "sealed/closed house" — status phrase
+        "gudu4 da-lagasz",           # "gudu4 priest from Lagash" — role + place
+        "nu-kiri6 gir2-su",          # "gardener of Girsu" — role + place phrase
+        "en-nu-ga2 uri5-ma",         # "night watch of Ur" — role + place phrase
+        "ma-na ku3",                 # already in batch 33? check — add anyway (safe)
+        "ur5-ta e3-a",               # already added above — frozenset deduplicates
+        "gir-sze6 lugal",            # "king's feet" — royal title/attribute phrase
+        "gu-za szul-gi",             # "throne of Shulgi" — royal attribute
+        "szara2-mu-tum2 kikken2 e2-mah",  # already in batch 33 — safe duplicate
+        "nin-ur4-ra a-pi4-sal4",     # "nin-ur4-ra of Apisal" — person + city (will be caught by a-pi4-sal4 filter)
+        "nin-zabala3 a-pi4-sal4",    # "Nin-zabala3 of Apisal" — deity + city
+        "lugal uri5-e",              # "king of Ur" — royal designation phrase
+        "ugu2 lu2-dingir-ra",        # "above lu2-dingir-ra" — allocation phrase
+        "lugal-nir-gal2 ma2",        # "boat of lugal-nir-gal2" — boat reference
+        "ur5-ta e3-a",               # debt clearance phrase (duplicate - fine)
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -715,6 +784,27 @@ class EntityScanner:
             return
         # Block fugitive-status phrases "zah3 [PERSON/PLACE]": zah3 = "fugitive/escaped".
         if cn.startswith("zah3 "):
+            return
+        # Block illness-record formulas "tu-ra [PERSON]": tu-ra = "sick/ill".
+        # The parser extracts "tu-ra NAME" (illness record) as a two-word entity.
+        if cn.startswith("tu-ra "):
+            return
+        # Block movement-verb phrases ending in " gen-na": gen-na = "went/has gone".
+        # These appear as "[DESTINATION/PURPOSE]-sze3 gen-na" — verbal clauses.
+        if cn.endswith(" gen-na"):
+            return
+        # Block Elamite ethnic suffix " elam": "NAME elam" = "NAME [from] Elam".
+        if cn.endswith(" elam"):
+            return
+        # Block city-of-Apisal geographic suffix " a-pi4-sal4".
+        if cn.endswith(" a-pi4-sal4"):
+            return
+        # Block "of Ur" geographic suffix " uri5-ma": "ROLE uri5-ma" = "ROLE in Ur".
+        if cn.endswith(" uri5-ma"):
+            return
+        # Block age/size adjective suffix " tur": "NAME tur" = "junior/young NAME".
+        # Legitimate name compounds with tur are always hyphenated (szul-gi-tur, etc.)
+        if cn.endswith(" tur") and " " in cn:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
