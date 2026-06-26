@@ -279,6 +279,15 @@ class EntityScanner:
         "e2-mah",        # "great house" — building
         "e2-gu4",        # "ox-house" — livestock facility
         "e2-da-na",      # "his father's house" — estate
+        # Confirmed false positives
+        "pi2-hu",        # jar/vessel type
+        "szukur",        # wooden spear commodity
+        "bappir saga",   # first-quality beer bread
+        "en nanna",      # priestly title in year-name formulas
+        "en inanna",     # priestly title in year-name formulas
+        "tul2-ta",       # cistern/well place name
+        "bala",          # rotation/turn-of-duty term
+        "gesztin",       # wine/grape commodity and place name
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

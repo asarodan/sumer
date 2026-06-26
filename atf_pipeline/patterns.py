@@ -559,6 +559,15 @@ class ExtractorBase:
         "e2-mah",           # "great house" — appears as building in "from e2-mah" patterns
         "e2-gu4",           # "ox-house/ox-pen" — livestock facility for oxen
         "e2-da-na",         # "his father's house" — building/estate reference
+        # False-positive entities confirmed in corpus
+        "pi2-hu",           # jar/vessel type ("1(disz) pi2-hu sag10")
+        "szukur",           # wooden spear ("{gesz}ma-nu" = manu-wood spear)
+        "bappir saga",      # first-quality beer bread commodity
+        "en nanna",         # priestly title in year-name formulas
+        "en inanna",        # priestly title in year-name formulas
+        "tul2-ta",          # cistern/well place name (from ki tul2-ta-ta)
+        "bala",             # rotation/turn-of-duty administrative term
+        "gesztin",          # wine/grape commodity and place name
     })
 
     # Commodities (ASCII ATF corpus)
