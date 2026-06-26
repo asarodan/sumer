@@ -320,6 +320,9 @@ class EntityScanner:
         "sa-bi",          # date formula fragment
         "sa-a",           # accounting comparison term
         "a-ra2",          # name-element extracted as standalone fragment
+        # Batch 22
+        "rib-ba",         # herb ({u2}rib-ba plant determinative)
+        "di-ku5-a-ni",    # "his judge" title phrase in royal inscriptions
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:

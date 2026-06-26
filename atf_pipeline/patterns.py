@@ -606,6 +606,9 @@ class ExtractorBase:
         "sa-bi",            # suffix of date formula "mu us2-sa-bi" (year after)
         "sa-a",             # accounting comparison term (al-sa-a = matching)
         "a-ra2",            # name-element fragment (standalone; safe in compounds)
+        # Batch 22
+        "rib-ba",           # herb/plant ({u2}rib-ba plant determinative); ki rib-ba = location
+        "di-ku5-a-ni",      # "his judge" — title phrase in royal inscriptions
     })
 
     # Commodities (ASCII ATF corpus)
