@@ -551,6 +551,71 @@ class EntityScanner:
         "ta-ab-li-it-ti gu4 gesz",   # OB Akkadian compound phrase
         "marduk-mu-sza-lim a-bi erin2",  # OB Akkadian name + military title
         "kar3-szum bu-ra-szum",      # two Akkadian names merged (no conjunction)
+        # Batch 33: sanga/kuruszda deity-affiliation phrases as standalone entities
+        "sanga nansze",              # "temple administrator of Nanshe" — institutional role
+        "sanga szul-gi",             # "temple administrator of Shulgi" — institutional role
+        # Batch 33: livestock and commodity phrases
+        "kunga2-nita2-gesz mu",      # male equid + year (age notation)
+        "lulim udu",                 # "deer + sheep" — livestock combination
+        "sipa udu kur-ra",           # "shepherd of mountain sheep" — role phrase
+        "gukkal gesz-du3 udu a-lum", # "fat-tailed + ordinary + a-lum sheep" — livestock
+        "masz2-gal niga udu",        # "large prime goat + sheep" — livestock combo
+        "udu-gal u8 udu lugud2-da",  # "large sheep + ewe + small sheep"
+        "udu-nita2 sza3-ba udu ugu2-bi",  # sheep accounting back-reference
+        "nigin2-ba la2 udu",         # "total deficit sheep" — accounting phrase
+        "ar3-ra udu",                # sheep phrase
+        "bir3 kunga2 lugal",         # "royal equid" — livestock phrase
+        "gu4-numun hun-ga2",         # "hired plow-oxen" — labor phrase
+        "asz2-gar3 udu hur-sag",     # "mountain sheep of asz2-gar3 type" — livestock
+        "gukkal gesz-du3 sila4",     # "fat-tailed sheep + lamb" — livestock combo
+        "sipa udu gukkal",           # "shepherd of fat-tailed sheep" — role phrase
+        # Batch 33: administrative/accounting formula false extractions
+        "gi-zi ha",                  # fresh reed + ha — commodity phrase
+        "lugal sza3-gal",            # "king's choice grain" — commodity phrase
+        "ur-sila-luh ga",            # milk phrase
+        "sila-a gal2-la",            # "available in the sila" — inventory phrase
+        "mur diri gu4-e gu7-a",      # "excess lung eaten by the ox" — waste phrase
+        "gi-a sa10-a",               # "sold for it" — transaction phrase
+        "nig2-gu7 lu2 mar-za",       # "food of the mar-za festival man" — ritual phrase
+        "nig2-szum2-a szu-a",        # "taken for distribution" — accounting phrase
+        "nig2-szum2 e2-u4",          # "distribution of the day-house" — administrative
+        "diri de6-a",                # "brought [as] surplus" — accounting phrase
+        "a ur4",                     # "labor of shearing" — task phrase
+        "lugal esir2 e2-a",          # "king's bitumen for house" — commodity phrase
+        "igi-szara2-sze3 giri17-dab5",  # "before Szara, giri17-dab5" — ritual phrase
+        "ugu2 ku5-da-mu ba-a-gar",   # "above, ku5-da-mu was placed" — administrative
+        "amar-du3 gub-ba",           # "amar-du3 stationed" — personnel status phrase
+        "lugal ur-lamma",            # "the king, ur-lamma" — disambiguation phrase
+        "nu-kiri6 gesz gal",         # "gardener of the great tree" — role phrase
+        "ensi2-sze3 gen-na",         # "gone to the governor" — movement phrase
+        "gesz-i3-sze3 gen-na",       # "gone for sesame oil" — movement phrase
+        "murgu2 ki-mun",             # "back of ki-mun" — body part + location
+        "a-da-lal3 aga3-us2-gal",    # place/institution + soldier
+        "uru4-a a-sza3 egir-a-suhur",  # "sown field behind the ditch" — agricultural phrase
+        "nig2-diri ezem-ma",         # "festival surplus" — accounting phrase
+        "sa10-bi ku3",               # "its silver price" — accounting back-reference
+        "an-na gal-gal",             # "very great [sky god]" — divine epithet
+        "ma-na ku3",                 # "mana of silver" — weight + metal commodity
+        "u2-da ni",                  # plant fragment
+        "bappir2 saga lugal",        # "royal first-quality beer bread" — commodity phrase
+        "ad-da sa12-du5 nansze",     # "father, judge of Nanshe" — compound title phrase
+        "ab-su13 sar-da",            # uncertain compound — 0 confirmed fathers
+        "kusz u2-hab2",              # "u2-hab2 leather" — leather commodity type
+        "hu-wa-wa tum3-da",          # "Huwawa, bring [it]" — mythological reference
+        "szah2-gesz-gi-nita2 gal",   # "large male reed-thicket boar" — livestock phrase
+        "gu4-numun lu2-nin-szubur",  # "plow-oxen of lu2-nin-szubur" — animal + name
+        "dabx-ba sze ur5-ra-ka",     # grain accounting phrase
+        "lugal ur5-ra masz2 ga2-ga2",  # "king's goats deposited" — accounting phrase
+        "elam an-sza-an-na-me",      # "they are Elamite from Anshan" — ethnic phrase
+        "elam ki-masz-me",           # "they are Elamite from Ki-mash" — ethnic phrase
+        "a-kal-la min",              # "a-kal-la, ditto" — accounting ditto notation
+        "szara2-mu-tum2 kikken2 e2-mah",  # "Szara2-mu-tum2's mill of the e2-mah"
+        "a-ha-ma-ti lu2 lu2-mah",    # compound role phrase
+        "lugal-inim-gi-na-ka gesz",  # name + wood/timber commodity
+        "ur-zu u3-um-de6",           # "ur-zu, bring-it" — accounting directive
+        "lugal sza3-gal",            # "king's choice grain" already added above
+        "ur5-sze3 masz2",            # already added in batch 32 — duplicate safe
+        "du-du gu-la",               # uncertain compound — 0 confirmed fathers
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -634,6 +699,22 @@ class EntityScanner:
         # Block "NAME a-na" where Akkadian "a-na" (to/for) is the trailing token.
         # The extractor picks up the line "NAME a-na [next-line]" as one entity.
         if cn.endswith(" a-na"):
+            return
+        # Block accounting verb "su-ga [PERSON]": "su-ga" = "was returned [to]".
+        # These extract the recipient of a returned-goods formula as an entity.
+        if cn.startswith("su-ga "):
+            return
+        # Block death-record formulas "usz2 [PERSON]": usz2 = "died".
+        # These extract the deceased person as a two-word entity with the verb prefix.
+        if cn.startswith("usz2 "):
+            return
+        # Block CDLI damage-notation commodities "n [ITEM]": lowercase "n " as the
+        # first token is the CDLI placeholder for an uncertain numeral, followed by
+        # a commodity word.  No personal name starts with a single "n" and a space.
+        if cn.startswith("n "):
+            return
+        # Block fugitive-status phrases "zah3 [PERSON/PLACE]": zah3 = "fugitive/escaped".
+        if cn.startswith("zah3 "):
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
