@@ -1428,6 +1428,10 @@ class StructureMixin:
 
         if issuer is None and kiszib_name:
             issuer = kiszib_name
+        elif issuer is not None and recipient is None and kiszib_name is not None:
+            # ki NAME-ta identified the issuer; the kiszib3 person sealed the
+            # receipt to acknowledge they took the goods — they are the recipient.
+            recipient = kiszib_name
 
         # Nothing at all — skip
         if not entries and issuer is None and recipient is None:
@@ -1439,6 +1443,16 @@ class StructureMixin:
             rtype = "receipt"
         else:
             rtype = "record"
+
+        # Propagate section-level recipient to entries that have no inline
+        # recipient of their own. Entries produced by _extract_inline_qty_recipient
+        # (e.g. "1(asz) gur ur-e2-mah") already carry the name on the quantity
+        # line; the section recipient only fills entries that would otherwise be
+        # completely anonymous.
+        if recipient is not None:
+            for e in entries:
+                if e.recipient is None:
+                    e.recipient = recipient
 
         rec = TabletRecord(
             record_idx=0,
