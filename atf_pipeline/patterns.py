@@ -651,6 +651,10 @@ class ExtractorBase:
         "female-worker", "male-worker", "woman", "man", "male-laborer",
         "sealed-storehouse", "é (household)",
         "menkara (field)", "lahtur (field)",
+        # Additional phrase fragments
+        "igi-lugal",        # "before the king" — destinatory phrase
+        "lugal-kam",        # "it belongs to the king" — royal attribution
+        "gesz-i3 lugal",    # "royal sesame oil" — commodity + royal qualifier
     })
 
     # Commodities (ASCII ATF corpus)

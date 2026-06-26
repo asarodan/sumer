@@ -363,6 +363,9 @@ class EntityScanner:
         # INSTITUTION_MAP English values that are not legitimate institutional actors
         "sealed-storehouse", "é (household)",
         "menkara (field)", "lahtur (field)",
+        "igi-lugal",        # "before the king" phrase
+        "lugal-kam",        # "it belongs to the king" phrase
+        "gesz-i3 lugal",    # "royal sesame oil" commodity phrase
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
