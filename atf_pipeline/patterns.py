@@ -806,6 +806,9 @@ class ExtractorBase:
     _PATRONYM_STOP = frozenset({
         "lugal", "sza3", "e2", "gu4", "munus", "nita", "ki", "eridu",
         "dingir", "uri5", "gir2-su", "umma", "nibru",
+        # Administrative titles — scribes sometimes wrote "dumu TITLE" when
+        # the father's personal name was unknown; the title is not a father name.
+        "szagina", "ensi2", "ensi",
     })
 
     # --------------- Date ---------------
@@ -878,7 +881,7 @@ class ExtractorBase:
         r"|sagi(?:-\w+)?"       # "cupbearer" (+ optional suffix like -ne plural)
         r"|sza3-tam"            # "treasurer/administrator" — storage official
         r"|gala"                # "lamentation singer" — temple musician title
-        r"|ab-ba-iri"           # "city elder" — civic title
+        r"|ab-ba(?:-|\s+)iri"   # "city elder" — civic title (hyphen or space variant)
         r"|igi-du8"             # "doorkeeper/inspector" — gatekeeper title
         r"|gudu4"               # "purification priest" — cultic title
         r"|dam-gar3"            # "merchant" — trade/commercial title
@@ -902,7 +905,9 @@ class ExtractorBase:
         r"|sipa\s+szah2"            # "swine herdsman" — compound herd title
         r"|sipa\s+udu(?:\s+\S+)?"  # "sheep herdsman" (+ optional qualifier)
         r"|i3-du8"              # "gatekeeper/porter" — alternate form of igi-du8
+        r"|muszen-du3"          # "bird catcher" — fowling occupation title
         r"|sipa"                # "shepherd/herdsman" — livestock management title
+        r"|sipa\s+\S+"          # "shepherd of X" — sipa + estate/section name
         r"|szu-ku6"             # "fisherman" — aquatic resource management title
         r"|enku"                # "canal inspector" — water management official
         r"|nu-esz3"             # "temple administrator" — Ur III religious official

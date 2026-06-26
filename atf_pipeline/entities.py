@@ -797,6 +797,8 @@ class EntityScanner:
         # Batch 39: year-name copula suffix and grain commodity back-references
         "lugal-am3",                 # "as king" — copula in year-name formula "mu X lugal-am3"
         "i3-bi2-za-bi",              # grain commodity back-reference, not a personal name
+        # Batch 40: pure role/title strings, not personal names
+        "sipa isin2",                # "shepherd of Isin" — institutional role, not a name
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -975,6 +977,10 @@ class EntityScanner:
         # Block existential predicate suffix "gal2-la-am3" ("it is present/existing"):
         # these are status predicates ("NAME gal2-la-am3" = "NAME is present"), not names.
         if cn.endswith(" gal2-la-am3"):
+            return
+        # Block "NAME e2 INSTITUTION" strings: standalone e2 (Sumerian "house") between
+        # spaces marks an institutional reference, not part of a personal name.
+        if " e2 " in cn:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
