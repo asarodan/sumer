@@ -307,7 +307,28 @@ is scored. For the first time, "how accurate is the parser?" has a numeric
 answer: the balance rate, and the delta in balance rate per change.
 
 > **Design flip:** stop discarding `szunigin`; parse it as the stated total and
-> reconcile. This converts the most-skipped line type into the backbone of trust.
+> reconcile. This converts the most-skipped line type into a verifiable signal.
+
+**Measured (first pass — `tools/reconcile_szunigin.py`, grain totals only; full
+findings in `RECONCILIATION_FINDINGS.md`).** The check works, but the gold set is
+**narrower than this section originally implied** — it is a *precision
+instrument, not a universal backbone*:
+
+- Of 585 single, direct grain-total Ur III tablets, **351 (60%) are excluded by
+  damage** before arithmetic is possible (I6); 214 are checkable.
+- Of the checkable, **43% balance** (≈92 self-verified "gold" tablets). The
+  remaining 57% are dominated by *small* differences — the signature of one
+  missed line-item, i.e. a prioritised parser-bug queue, not structural noise.
+- **Genre is the hidden variable.** "Sum of grain lines = total" holds only for
+  *genre 1* (simple list + grand total). Barley-equivalent ledgers (`sze-bi`
+  totals), field-area accounts (`sza3-bi-ta` × rate), header-totals, and
+  multi-section accounts each need their own reconciliation equation.
+
+> **Revised claim:** the arithmetic check yields a high-purity gold *subset* and
+> a regression seed *per genre*, and doubles as a parser-error detector. It does
+> not — and was wrong to claim it would — underwrite trust across the whole
+> corpus. **Genre classification is therefore a prerequisite** for reconciliation,
+> not an afterthought (roadmap step 2a).
 
 ### 7.2 Year-name oracle — *probabilistic and partial by design*
 Complete `chronology.py` toward full reigns, but the resolver is **scoring, not
@@ -456,8 +477,14 @@ the number rests on and what it omits — the dark fraction is shown, not buried
 1. **Confidence schema** — define how (raw-span, rule-id, tier) travels with
    every datum. *Unblocks everything; I1.*
 2. **Arithmetic reconciliation harness** — parse `szunigin`, reconcile, tag
-   records, and **measure the balance rate**. This single number sizes the
-   rock-solid core and is the prerequisite for a regression baseline. *§7.1, I9.*
+   records, and **measure the balance rate**. *Done (first pass):
+   `tools/reconcile_szunigin.py`; grain genre-1 measured at 43% of checkable,
+   §7.1.* This single number sized the rock-solid core and exposed the genre
+   dependency below.
+   - **2a. Genre classifier** — dispatch reconciliation on accounting genre
+     (direct-sum · equivalent-ledger · area-rate · header-total · multi-section)
+     before applying an equation. Surfaced as a prerequisite by step 2. Extends
+     the gold set beyond genre 1 and the parser-bug queue with it.
 3. **Year-name oracle, scoring resolver** — ship the probabilistic resolver
    (§7.2) *first*, against the partial vocabulary; expand `chronology.py`
    incrementally thereafter. **Non-blocking overlay (I15).**
