@@ -655,6 +655,11 @@ class ExtractorBase:
         "igi-lugal",        # "before the king" — destinatory phrase
         "lugal-kam",        # "it belongs to the king" — royal attribution
         "gesz-i3 lugal",    # "royal sesame oil" — commodity + royal qualifier
+        # Batch 27
+        "hi-sar",           # plant seed commodity (N sila3 HI-sar)
+        "babbar2 hi-sar",   # white hi-sar seed commodity
+        "ma-na igi-gal2",   # "1 mina visible" — accounting notation
+        "nig2-sar",         # "measured item" — administrative term
     })
 
     # Commodities (ASCII ATF corpus)

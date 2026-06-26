@@ -366,6 +366,11 @@ class EntityScanner:
         "igi-lugal",        # "before the king" phrase
         "lugal-kam",        # "it belongs to the king" phrase
         "gesz-i3 lugal",    # "royal sesame oil" commodity phrase
+        # Batch 27
+        "hi-sar",          # plant seed commodity
+        "babbar2 hi-sar",  # white hi-sar seed
+        "ma-na igi-gal2",  # accounting notation
+        "nig2-sar",        # measured item term
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
