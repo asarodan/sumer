@@ -882,7 +882,7 @@ class ExtractorBase:
         r"|lu2\s+lunga"         # "man of the brewery" — compound occupation label
         r"|lu2\s+ur3-ra"        # "street sweeper" — compound menial role label
         r"|gala-mah(?:\s+\S+)?" # "chief lamentation singer" + optional temple affiliation
-        r"|masz-szu-gid2-gid2"  # "dream interpreter/diviner" — divination title
+        r"|masz2?-szu-gid2-gid2"  # "dream interpreter/diviner" — masz/masz2 variants
         r"|nimgir"              # "herald/town crier" — administrative messenger title
         r"|szitim"              # "builder/construction worker" — craft title
         r"|sipa\s+gu4"          # "cowherd" — compound herd title

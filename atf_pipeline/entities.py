@@ -757,6 +757,34 @@ class EntityScanner:
         "zu-zu lugal gal sza a-la-ah-zi-na",  # Akkadian royal inscription phrase
         "ma2-i3-dub ne-me-et-ti",    # OB Akkadian phrase
         "kusz3 mu-s,u2-um a-na sila",  # Akkadian measurement phrase
+        # Batch 36: remaining false entities
+        "bappir du",                 # "ordinary beer bread" — variant spelling (no subscript)
+        "bappir2 sig5",              # "fine beer bread" — quality commodity
+        "dug dida",                  # "vessel of dida beer" — beverage commodity
+        "nu-kiri6 gesz gal-gal",     # "gardener of many great trees" — role phrase
+        "ur-ba-ba6 munu4-mu2",       # name + sprouted malt — false extraction
+        "sa10-am3 zi",               # "purchased flour/grain" — commodity phrase
+        "me udu hi-a la2-u-su2",     # "various sheep deductions" — accounting phrase
+        "suen-i-din-nam a-bi-szu",   # "Suen-iddinam, his father" — possessive phrase
+        "gar3-szum bu-ra-szum szi-pi2-ir-tum",  # three Akkadian names merged
+        "u2-tul2-isz8-tar2 a-bi erin2",  # OB Akkadian name variant + military title
+        "u2-tul2-isz8-tar2 a-bi",    # OB Akkadian name + father reference
+        "mar-tu-mesz lu2 ki-sur-ra", # "Amorites, man of the boundary" — ethnic phrase
+        "marduk-ni-szu szu-i lugal", # Babylonian name + barber + king
+        "ka3-ri-im ka3-ni-isz",      # two Akkadian place names / proper nouns
+        "ba-zi na-szi",              # "was drawn out, she carries" — verbal phrase
+        "illu buluh",                # "flood, fright" — administrative phrase
+        "i3-mesz gun sig2-mesz",     # "oils, tribute, wools" — commodity list
+        "du10-ga ih-ti ban ni",      # Akkadian phrase fragment
+        "an-e u",                    # "sky + reed" — cosmic + commodity fragment
+        "be silim masz2 masz2",      # unclear Akkadian/Sumerian phrase
+        "ma-ha-ar marduk lugal an",  # "before Marduk, king of the sky" — OB royal phrase
+        "lugal si-sa2",              # "righteous king" — royal epithet
+        "la szi-ka-tum",             # Akkadian phrase
+        "esir e3",                   # "bitumen came out" — commodity phrase
+        "szen uruda sza",            # "copper tablet of" — artifact phrase
+        "su i3-ba lu2 lu2 su-am3",   # accounting phrase
+        "esir2 e3",                  # "bitumen came out" — variant spelling
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
@@ -796,11 +824,12 @@ class EntityScanner:
         # mis-parsed lines (e.g. "1 nu gu4 su-su im-ma").
         if cn[0].isdigit():
             return
-        # Block very long strings (> 45 chars): all confirmed personal names and
-        # institutional names in the Ur III corpus are under 35 characters; strings
-        # above 45 are invariably Akkadian sentence fragments or Old Babylonian
-        # legal clause extractions.
-        if len(cn) > 45:
+        # Block very long strings (> 30 chars): the longest confirmed-father entity
+        # in the full corpus is 22 characters.  Strings above 30 are invariably
+        # Akkadian sentence fragments, OB legal clauses, or multi-token phrases —
+        # never Ur III personal names.  (Threshold was previously 45; tightened
+        # after verifying that 0 entities with confirmed fathers exceed 22 chars.)
+        if len(cn) > 30:
             return
         # Block sibling-reference compounds: "NAME szesz NAME2" or "szesz NAME"
         # where szesz (space-separated) means "brother of". Legitimate names that
@@ -900,6 +929,20 @@ class EntityScanner:
             return
         # Block "sikil-la [VERB]" ritual purification verb phrases.
         if cn.startswith("sikil-la "):
+            return
+        # Block CDLI mathematical/addendum operator "+" as first character.
+        if cn.startswith("+"):
+            return
+        # Block Akkadian conditional particle "szum-ma" (if/whether) as first token.
+        if cn.startswith("szum-ma "):
+            return
+        # Block "erin2 nig2-szu [PERSON] [PLACE]": "workers' property of [X in Y]" —
+        # an Ur III administrative formula that the extractor misreads as a name.
+        if cn.startswith("erin2 nig2-szu "):
+            return
+        # Block place-determinative suffix " ki" at end of a multi-word string:
+        # "NAME ki" = "NAME [place]" — geographic determinative, not a personal name.
+        if cn.endswith(" ki") and " " in cn:
             return
         if canonical not in self._roster:
             self._roster[canonical] = {
