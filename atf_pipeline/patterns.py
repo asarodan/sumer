@@ -621,6 +621,10 @@ class ExtractorBase:
         "nigin2-ba masz2",  # accounting total phrase
         "lugal -numun",     # damaged fragment
         "lugal-numun",      # alternate form
+        # Batch 24: standalone title plural forms
+        "sza3-tam-e-ne",   # "the treasurers" — Sumerian plural of sza3-tam
+        "sagi-ne",          # "the cupbearers" — Sumerian plural of sagi
+        "ab-ba-iri",        # "city elder" — standalone civic title
     })
 
     # Commodities (ASCII ATF corpus)

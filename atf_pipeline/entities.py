@@ -337,6 +337,10 @@ class EntityScanner:
         "nigin2-ba masz2",     # "their total goats" accounting phrase
         "lugal -numun",        # damaged fragment
         "lugal-numun",         # alternate form
+        # Batch 24
+        "sza3-tam-e-ne",   # "the treasurers" plural
+        "sagi-ne",         # "the cupbearers" plural
+        "ab-ba-iri",       # city elder civic title
     })
 
     def _add(self, raw_name: str, role: str, tablet_id: str) -> None:
