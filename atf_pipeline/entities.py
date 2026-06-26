@@ -805,6 +805,10 @@ class EntityScanner:
         name = raw_name.strip()
         if not name or len(name) < 2:
             return
+        # Damaged-bracket fragment: "[NAME]-mu" → after cleaning → "-mu".
+        # A genuine personal name always starts with a letter.
+        if name.startswith("-"):
+            return
         canonical = (
             self._norm.normalize_name(name) if self._norm else None
         ) or name
