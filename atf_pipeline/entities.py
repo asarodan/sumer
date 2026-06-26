@@ -471,6 +471,7 @@ class EntityScanner:
         # genuine Sumerian or Akkadian personal names in the CDLI ATF corpus.
         if "/" in canonical:
             return
+        cn = canonical.lower()
         # Block CDLI compound-sign readings used as standalone entities: names
         # that BEGIN with "|" are sign-reading notations (|diszx2u|, |ninda2x|),
         # not personal names.  Personal names that contain "|" embedded in them
@@ -479,18 +480,17 @@ class EntityScanner:
             return
         # Block digit-starting entities: numeric fragments from damaged or
         # mis-parsed lines (e.g. "1 nu gu4 su-su im-ma").
-        if canonical[0].isdigit():
+        if cn[0].isdigit():
             return
         # Block very long strings (> 45 chars): all confirmed personal names and
         # institutional names in the Ur III corpus are under 35 characters; strings
         # above 45 are invariably Akkadian sentence fragments or Old Babylonian
         # legal clause extractions.
-        if len(canonical) > 45:
+        if len(cn) > 45:
             return
         # Block sibling-reference compounds: "NAME szesz NAME2" or "szesz NAME"
         # where szesz (space-separated) means "brother of". Legitimate names that
         # include szesz are always hyphenated (szesz-kal-la, szesz-a-ni, etc.).
-        cn = canonical.lower()
         if " szesz" in cn or cn.startswith("szesz "):
             return
         # Block two-name extractions ending in " szar2-ra-ab-du": a common Akkadian
