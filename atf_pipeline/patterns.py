@@ -764,11 +764,14 @@ class ExtractorBase:
 
     # --------------- Recipient patterns ---------------
     # F: NAME szu/šu ba-ti on same line (allow bracket-damage on "an": ba-[an-ti])
+    # Also handles scribal correction marks: ti! ti# ti!-esz2 (plural "they received").
     _RE_SHU_BATI  = re.compile(
-        r"^(.*?)\s+s[zž]u#?\s+ba-(?:\[?an-\]?|ab-)?ti(?:\s+\S+)?\s*(?:#.*)?$"
+        r"^(.*?)\s+s[zž]u#?\s+ba-(?:\[?an-\]?|ab-)?ti[!?*#]*(?:-esz2\b)?\s*(?:#.*)?$"
     )
     # G: standalone szu/šu ba-ti (allow leading bracket damage like "[szu] ba-ti")
-    _RE_SHU_ALONE = re.compile(r"^\[?s[zž]u#?\]?\s+ba-(?:ab-|\[?an-\]?)?ti\s*(?:#.*)?$")
+    _RE_SHU_ALONE = re.compile(
+        r"^\[?s[zž]u#?\]?\s+ba-(?:ab-|\[?an-\]?)?ti[!?*#]*(?:-esz2\b)?\s*(?:#.*)?$"
+    )
     # H: NAME i3-dab5 / in-dab5 (received); allow bracket damage: i3-[dab5]
     _RE_IDAB5     = re.compile(r"^(.*?)\s+i(?:3-|n-)(?:dab5|\[dab5\])\b")
     # H2: N(asz) NAME – ration list without engar marker (multi-recipient tablet)
