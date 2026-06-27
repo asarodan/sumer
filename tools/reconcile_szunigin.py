@@ -26,7 +26,8 @@ from atf_pipeline import ATFExtractor
 from atf_pipeline.loaders import load_cdli_export_file
 
 # Damage / uncertainty marks that make a numeric line unsummable (I6).
-_DAMAGE = re.compile(r"[\[\]#]|(?<![a-z])x(?![a-z])", re.I)
+# '?' covers both bare uncertainty (?) and error+uncertainty (!?) markers.
+_DAMAGE = re.compile(r"[\[\]#]|(?<![a-z])x(?![a-z])|\?", re.I)
 # Strip the leading "szunigin" keyword (line number already removed).
 _SZU_WORD = re.compile(r"^\[?(?:szunigin2?|šunigin2?|szu-nigin2?|šu-nigin2?)\b[#!?]*\s*", re.I)
 # A grain total mentions sze and resolves in a capacity unit.

@@ -721,8 +721,12 @@ class ExtractorBase:
     #   "1(barig)-ta", "sila3-ta", "1(gesz2) 1(u) 5(disz) sila3-ta"
     # The rate encodes how much each worker received; strip it before summing
     # the main quantity to avoid adding 60+ extra sila3 per tablet.
+    # NOTE: the word-before-ta alternative is restricted to grain/capacity unit
+    # words so that recipient names ending in -ta (e.g. "bahar2-ta", "edin-ta")
+    # are NOT stripped and their preceding quantities are not lost.
     _RE_RATE_SPEC = re.compile(
-        r"(?:\d+(?:/\d+)?\([^)]+\)\s+)*(?:\d+(?:/\d+)?\([^)]+\)|\w+)-ta\b",
+        r"(?:\d+(?:/\d+)?\([^)]+\)\s+)*"
+        r"(?:\d+(?:/\d+)?\([^)]+\)|(?:sila3?|gur|barig|ban2|asz2?|gin2|gesz2u?))-ta\b",
         re.I,
     )
     # Ordinal "Nth time/installment": "a-ra2 2(disz)-kam" — the N is never a
