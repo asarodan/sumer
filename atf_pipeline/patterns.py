@@ -102,7 +102,9 @@ class ExtractorBase:
         r"|\besze3\b|\biku\b|\bGAN2\b"
         r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
-        r"|\bku6\b"        # ku6 = fish — never a grain context
+        r"|(?<!-)\bku6\b"  # ku6 = fish — never a grain context; (?<!-) exempts
+                           # hyphenated profession compounds like szu-ku6 (fisherman)
+                           # where ku6 is a person-type suffix, not a fish commodity.
         r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b"  # livestock compounds
         r"|\bgu2(?!\s+i7)\b"   # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
                                # reed/timber/wool — the asz token is NOT a gur here.
