@@ -66,22 +66,27 @@ _SZA3_BI_TA = re.compile(r"\bsza3-bi-ta\b", re.I)
 
 # Rate-multiplication tablets: szunigin = count × rate × duration, NOT sum(items).
 # "-ta" after a capacity quantity marks a PER-UNIT RATE, not a payment:
+#   "3(ban2)-ta"               = 3 ban2 per worker per period (hyphen directly on token)
 #   "1(disz) sila3 sze-ta"     = 1 sila3 barley per animal per day
 #   "6(asz) sze-numun gur-ta"  = 6 gur seed grain per bur of field
-# "u4 N-sze3" marks an explicit DURATION (for N days) on a rate tablet.
+# "u4 N-sze3" / "iti N-sze3" marks an explicit DURATION on a rate tablet.
 # "GAN2" (field-area logogram) together with rates → field-area seed calc.
 _RATE_TA = re.compile(
     r"\d+(?:/\d+)?\((?:asz|barig|ban2|sila3|gur|disz)[^)]*\)"
-    r"(?:\s+(?:asz|barig|ban2|sila3|gur))?"   # optional interposed capacity unit: "1(disz) sila3 sze-ta"
-    r"\s+\S*-ta\b",
+    r"(?:-ta\b"                                     # directly hyphenated: 3(ban2)-ta
+    r"|(?:\s+(?:asz|barig|ban2|sila3|gur))?"        # optional interposed capacity unit: "1(disz) sila3 sze-ta"
+    r"\s+\S*-ta\b)",
     re.I,
 )
 _DURATION = re.compile(
+    r"(?:"
     r"\bu4\s+"
     r"\d+(?:/\d+)?\([^)]+\)"                              # u4 N(unit)   e.g. "1(u)"
     r"(?:\s+la2\s+\d+(?:/\d+)?\([^)]+\))?"               # optional la2 M(unit) = minus M days
     r"(?:\s+\d+(?:/\d+)?\([^)]+\))?"                     # optional sub-unit e.g. "4(disz)" in "14 days"
-    r"(?:-sze3|-a)\b",                                    # duration suffix
+    r"(?:-sze3|-a)\b"                                     # duration suffix (days)
+    r"|\biti\s+\d+(?:/\d+)?\([^)]+\)-sze3\b"             # iti N(disz)-sze3 = N-month duration
+    r")",
     re.I,
 )
 _GAN2_RATE = re.compile(r"\bGAN2\b.*\bgur-ta\b", re.I)
@@ -99,8 +104,9 @@ _NAM_GROUP = re.compile(r"\bnam-\d+\(", re.I)
 
 # "iti N-a-kam" (month-N-it-is) ordinal month label marks multi-period tablets
 # where the szunigin covers only ONE period; entries from other periods follow
-# the szunigin line and must not be summed.
-_ITI_AKAM = re.compile(r"\biti\s+.*?-a-kam\b", re.I)
+# the szunigin line and must not be summed.  Also match numeric ordinals:
+# "iti 2(disz)-kam" = "it is month 2" (same signal, different orthography).
+_ITI_AKAM = re.compile(r"\biti\s+(?:.*?-a-kam|\d+(?:/\d+)?\([^)]+\)-kam)\b", re.I)
 
 # Tablets with a @left (edge) face that contains a quantity: the left face in
 # Ur III tablets repeats the largest single entry for quick reference; the
@@ -110,6 +116,13 @@ _LEFT_FACE_MARKER = re.compile(r"^@left\b", re.I)
 # Non-grain pipeline commodities that should never be counted toward a "sze"
 # (barley) szunigin total.  The pipeline correctly labels these via commodity=.
 _NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold"})
+
+# si-sa2 (standard measure) tablets use 1 gur = 240 sila3 with 4 barig/gur.
+# The pipeline always converts at 300 sila3/gur (lugal/royal measure); the
+# different barig-per-gur ratio (4 vs 5) creates sub-unit rounding mismatches
+# even when the overall conversion factor is consistently wrong on both sides.
+# Mark as uncheckable until the pipeline implements per-tablet measure selection.
+_SISA2 = re.compile(r"\bsi-sa2\b", re.I)
 
 # Reconciliation tolerance. Sexagesimal capacity arithmetic is exact, so we
 # expect exact integer agreement; allow 1 sila3 for half-sila3 rounding.
@@ -247,6 +260,13 @@ def main() -> None:
             continue
 
         tally["grain_sections"] += 1
+
+        # si-sa2 szunigin totals use 240 sila3/gur (4 barig/gur); the pipeline
+        # uses 300 sila3/gur throughout.  Even a consistent wrong factor produces
+        # sub-unit rounding errors because the barig-per-gur ratio differs.
+        if _SISA2.search(szu_body):
+            tally["uncheckable_damaged"] += 1
+            continue
 
         # Genre-1 content check: exclude tablets whose structure means
         # szunigin ≠ sum(items) by design (broken face, balance accounts,

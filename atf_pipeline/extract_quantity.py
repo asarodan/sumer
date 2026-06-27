@@ -216,6 +216,11 @@ class QuantityMixin:
             for num_s, unit in cdli:
                 ul = unit.lower()
                 factor = self._GRAIN_CONV.get(ul)
+                # "N(disz) gur" (bare_gur, no sila3 context, no grain sub-units):
+                # disz counts gur units here, not sila3.  E.g. "2(disz) gur" = 2 gur.
+                if (factor is not None and ul == "disz"
+                        and bare_gur and not grain_ind and not bare_sila3):
+                    factor = 300.0
                 if factor is None:
                     if (bare_gur or grain_ind) and ul == "u":
                         factor = 10.0 * 300.0      # 10 gur per u-unit (sexagesimal)
