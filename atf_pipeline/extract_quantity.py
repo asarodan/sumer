@@ -62,6 +62,14 @@ class QuantityMixin:
             neg_line = neg_tail
             q_pos, u_pos = self._parse_grain(pos_line, context_gur=context_gur)
             q_neg, u_neg = self._parse_grain(neg_line, context_gur=context_gur)
+            # If pos_part has only bare large-sexagesimal tokens (e.g. "5(u)")
+            # and no explicit unit context, the context-gur activation requires
+            # a non-empty remainder (a name or text after the token).  For ugula
+            # group-subtotal lines like "5(u) la2 1(asz)" the remainder is empty
+            # and _parse_grain returns None.  Since the neg_part resolved as
+            # gur-scale, the unit is implied — retry with "gur" appended.
+            if q_pos is None and q_neg is not None and u_neg == "sila3":
+                q_pos, u_pos = self._parse_grain(pos_line + " gur", context_gur=context_gur)
             if q_pos is not None and q_neg is not None and u_pos == u_neg:
                 result = q_pos - q_neg
                 return (result, u_pos) if result > 0 else (None, None)

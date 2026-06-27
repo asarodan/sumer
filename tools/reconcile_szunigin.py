@@ -70,13 +70,67 @@ _SZA3_BI_TA = re.compile(r"\bsza3-bi-ta\b", re.I)
 #   "6(asz) sze-numun gur-ta"  = 6 gur seed grain per bur of field
 # "u4 N-sze3" marks an explicit DURATION (for N days) on a rate tablet.
 # "GAN2" (field-area logogram) together with rates → field-area seed calc.
-_RATE_TA = re.compile(r"\d+(?:/\d+)?\((?:asz|barig|ban2|sila3|gur|disz)[^)]*\)\s+\S*-ta\b", re.I)
-_DURATION = re.compile(r"\bu4\s+\d+(?:/\d+)?\([^)]+\)(?:-sze3|-a)\b", re.I)
+_RATE_TA = re.compile(
+    r"\d+(?:/\d+)?\((?:asz|barig|ban2|sila3|gur|disz)[^)]*\)"
+    r"(?:\s+(?:asz|barig|ban2|sila3|gur))?"   # optional interposed capacity unit: "1(disz) sila3 sze-ta"
+    r"\s+\S*-ta\b",
+    re.I,
+)
+_DURATION = re.compile(
+    r"\bu4\s+"
+    r"\d+(?:/\d+)?\([^)]+\)"                              # u4 N(unit)   e.g. "1(u)"
+    r"(?:\s+la2\s+\d+(?:/\d+)?\([^)]+\))?"               # optional la2 M(unit) = minus M days
+    r"(?:\s+\d+(?:/\d+)?\([^)]+\))?"                     # optional sub-unit e.g. "4(disz)" in "14 days"
+    r"(?:-sze3|-a)\b",                                    # duration suffix
+    re.I,
+)
 _GAN2_RATE = re.compile(r"\bGAN2\b.*\bgur-ta\b", re.I)
+
+# Field-grain lines: "N(gur) sze GAN2-gu4" = barley harvested from a named field.
+# The pipeline's _RE_NON_GRAIN blocks GAN2-labelled entries (correct — field grain
+# needs separate accounting); but if the szunigin includes both ration grain AND
+# field grain the tablet is uncheckable by design.
+_SZE_GAN2 = re.compile(r"\bsze\b.*\bGAN2\b", re.I)
+
+# "nam-N(unit) person-name" = group-of-N subtotal line (e.g. "nam-1(u) lu2-utu"
+# = "group of 10, under lu2-utu").  Ration tablets with group subtotals have the
+# pipeline summing both individual items and the subtotals → double-count.
+_NAM_GROUP = re.compile(r"\bnam-\d+\(", re.I)
+
+# "iti N-a-kam" (month-N-it-is) ordinal month label marks multi-period tablets
+# where the szunigin covers only ONE period; entries from other periods follow
+# the szunigin line and must not be summed.
+_ITI_AKAM = re.compile(r"\biti\s+.*?-a-kam\b", re.I)
+
+# Tablets with a @left (edge) face that contains a quantity: the left face in
+# Ur III tablets repeats the largest single entry for quick reference; the
+# pipeline counts it as an additional item, creating double-counting.
+_LEFT_FACE_MARKER = re.compile(r"^@left\b", re.I)
+
+# Non-grain pipeline commodities that should never be counted toward a "sze"
+# (barley) szunigin total.  The pipeline correctly labels these via commodity=.
+_NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold"})
 
 # Reconciliation tolerance. Sexagesimal capacity arithmetic is exact, so we
 # expect exact integer agreement; allow 1 sila3 for half-sila3 rounding.
 _TOL = 1.0
+
+
+def _has_left_face_quantity(lines) -> bool:
+    """True if the tablet has a @left face section that contains a quantity.
+    The left face in Ur III tablets repeats a summary entry; the pipeline
+    counts it as a new item, creating double-counting with the main face."""
+    in_left = False
+    for ln in lines:
+        s = ln.strip()
+        if _LEFT_FACE_MARKER.match(s):
+            in_left = True
+            continue
+        if s.startswith("@") and not _LEFT_FACE_MARKER.match(s):
+            in_left = False
+        if in_left and _QTY_TOKEN.search(s):
+            return True
+    return False
 
 
 def _has_damaged_quantity(lines) -> bool:
@@ -99,6 +153,12 @@ def _is_genre1(lines) -> bool:
       - rate-multiplication tablets: szunigin = count × rate × days,
         detected by '-ta' rate suffixes or explicit 'u4 N-sze3' durations
         (animal-fodder, boat-hire, field-seed-rate calculations)
+      - mixed-grain tablets: szunigin combines ration grain and field grain
+        ("sze GAN2-gu4"); pipeline correctly excludes field-grain lines
+      - group-subtotal tablets: "nam-N(unit) person" markers mean the tablet
+        has group subtotals that the pipeline sums alongside individual items
+      - multi-period tablets: "iti N-a-kam" ordinal month label means the
+        szunigin covers only one period; later-period data must not be summed
     """
     has_rate = False
     has_duration = False
@@ -110,12 +170,28 @@ def _is_genre1(lines) -> bool:
             return False
         if _GAN2_RATE.search(s):
             return False
+        # A quantity line labelled "sze GAN2-gu4" (field grain) is excluded by
+        # the pipeline; any tablet mixing field grain and ration grain in the
+        # same szunigin total is uncheckable.
+        if _QTY_TOKEN.search(s) and _SZE_GAN2.search(s):
+            return False
+        # "nam-N(unit) person" = named group subtotal: pipeline sums both
+        # the individual lines and the group total → double-count.
+        if _NAM_GROUP.search(s):
+            return False
+        # "iti N-a-kam" = ordinal month label: szunigin covers only that month;
+        # additional quantities for other months must not be included in the sum.
+        if _ITI_AKAM.search(s):
+            return False
         if _RATE_TA.search(s):
             has_rate = True
         if _DURATION.search(s):
             has_duration = True
     # Both a per-unit rate AND an explicit duration → rate-multiplication tablet.
     if has_rate and has_duration:
+        return False
+    # @left face with a quantity → pipeline double-counts the edge entry.
+    if _has_left_face_quantity(lines):
         return False
     return True
 
@@ -186,12 +262,16 @@ def main() -> None:
             continue
 
         # Sum the pipeline's actual grain entries for this tablet.
+        # Exclude entries the pipeline labelled as clearly non-grain commodities
+        # (oil, beer, dates, bread, silver, gold): the szunigin covers "sze"
+        # (barley) only, so mixing in other commodities would inflate the sum.
         summary = ext.extract_records(lines, tablet_id)
         item_sum = 0.0
         n_items = 0
         for rec in summary.records:
             for e in rec.entries:
-                if e.unit == "sila3" and e.quantity is not None:
+                if (e.unit == "sila3" and e.quantity is not None
+                        and e.commodity not in _NON_GRAIN_COMM):
                     item_sum += e.quantity
                     n_items += 1
 
