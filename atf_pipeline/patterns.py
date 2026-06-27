@@ -98,7 +98,7 @@ class ExtractorBase:
     #   kin sahar  = earthwork / canal-digging (area in sar/gin2, not grain)
     #   esze3/iku/GAN2 = agricultural area units
     _RE_NON_GRAIN = re.compile(
-        r"\bsiki\b|(?<!-)\{gesz\}(?!\w+-)|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
+        r"(?<!-)\bsiki\b|(?<!-)\{gesz\}(?!\w+-)|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
         r"|\besze3\b|\biku\b|\bGAN2\b"
         r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain
@@ -131,8 +131,10 @@ class ExtractorBase:
                                # lagab N counts blocks, never grain-capacity measures.
                                # (?<!-) exempts hyphenated building/personal-name compounds
                                # such as e2-LAGAB-a (storehouse) and nin-LAGAB (person).
-        r"|\bmuszen\b"         # muszen = bird determinative/classifier; "N(szar2) pa muszen"
+        r"|(?<!\{)\bmuszen\b"  # muszen = bird determinative/classifier; "N(szar2) pa muszen"
                                # = N bird-feathers — a large sexagesimal item count, never grain.
+                               # (?<!\{) exempts {muszen} when used as a determinative inside
+                               # month names (e.g. "u5-bi2{muszen}-gu7") or bird species names.
         r"|\bin-nu\b"          # in-nu = straw/thatch — measured in gur in the Ur III system
                                # but is a fodder commodity, NOT grain for human consumption.
         r"|\bbur3\b|\bbur'u\b" # bur3 (= 3 iku) and bur'u (= 10 bur3) are agricultural area
