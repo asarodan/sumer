@@ -858,7 +858,7 @@ class ExtractorBase:
         r"^\d|^[@$#&]"
         r"|^(?:iti|mu|giri3|ki|ugula|kiszib3|szunigin|šunigin"
         r"|sze-ba|sza3-bi-ta|zi-ga|la2-ia3|nig2-ka9|sag-nig2"
-        r"|engar|szabra|šabra|szu-a|sza3-gal"
+        r"|engar(?!-)|szabra|šabra|szu-a|sza3-gal"
         r"|nu-banda3|kuruszda|muhaldim|szusz3|dub-sar"
         r"|szuku|kasz)\b"                   # "ration-of" genitive; beer commodity
         r"|^dingir-re-ne\b"                 # "the gods" — deity collective, not a name

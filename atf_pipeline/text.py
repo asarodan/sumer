@@ -57,7 +57,12 @@ class TextMixin:
         name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
         # CDLI sign catalog references (REC344, KWU147, LAK123, etc.) are
         # sign-list numbers, not readable syllables — strip them from names.
-        name = re.sub(r"\b[A-Z]{2,}[0-9]+\b", "", name)
+        # Exception: uppercase sign readings preceded by a hyphen are components
+        # of compound Sumerian words (e.g. "ug3-IL2", "nin-IL2") and should be
+        # kept so the compound name is not truncated.
+        # Also protect tokens followed by a hyphen (e.g. "ARAD2-mu") — these
+        # are logograms that form the first element of a compound personal name.
+        name = re.sub(r"(?<!-)\b[A-Z]{2,}[0-9]+(?!-)\b", "", name)
         # Collapse multiple hyphens left when damaged brackets are stripped
         # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
         name = re.sub(r"-{2,}", "-", name)

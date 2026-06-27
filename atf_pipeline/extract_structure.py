@@ -769,20 +769,35 @@ class StructureMixin:
 
         return results
 
+    # Strips leading CDLI capacity tokens to isolate the name portion of a line.
+    _RE_QTY_PREFIX = re.compile(r"^(?:\d+(?:/\d+)?\([^)]+\)\s*)+")
+    # Grain unit words that appear between the numeric tokens and the name in
+    # lines like "3(asz) 2(barig) gur a-kal-la" — strip them so "a-kal-la" is
+    # visible for name detection.
+    _RE_GRAIN_UNIT_PREFIX = re.compile(
+        r"^(?:(?:sze\s+)?gur(?:\s+lugal)?|sze)\s+", re.I
+    )
+    # Trailing grain/quality words after the name (e.g. "sze gur lugal").
+    _RE_GRAIN_TAIL = re.compile(
+        r"\s*(?:sze|gur|lugal|ziz2|gig|dabin|szuku|sze-numun)\s*$", re.I
+    )
+
     def _extract_ration_list(
         self, lines: List[str], tablet_id: str
     ) -> List[Transaction]:
         """
         Extract multi-recipient ration lists of the form:
-            N(asz) NAME
-            N(asz) NAME2
-            ...
+            N(asz) NAME            (single-token asz line)
+            N(asz) N(barig) NAME   (sub-gur combination line)
+            N(asz) N(barig) ...    (quantity only — name follows on next line)
+            NAME                   (name-only continuation of previous qty line)
         where no 'engar' keyword appears (unlike allocation tablets).
         Each quantity-name pair becomes one transaction.
         """
         date, raw_mu = self._parse_date(lines)
         results: List[Transaction] = []
         pending_qty: Optional[float] = None
+        pending_unit: Optional[str] = None
         pending_comm: Optional[str] = None
 
         for line in lines:
@@ -794,8 +809,15 @@ class StructureMixin:
             m = self._RE_ASZ_NAME.match(clean)
             if m:
                 coeff_s, raw_name = m.group(1), m.group(2).strip()
+                raw_name = self._RE_GRAIN_UNIT_PREFIX.sub("", raw_name).strip()
                 name = self._clean_atf_name(raw_name)
                 if not self._looks_like_name(name):
+                    # No valid name on this line: defer qty for the next line.
+                    coeff = float(coeff_s) if "/" not in coeff_s else (
+                        lambda p: float(p[0]) / float(p[1])
+                    )(coeff_s.split("/", 1))
+                    pending_qty = coeff * 300.0
+                    pending_unit = "sila3"
                     continue
                 coeff = float(coeff_s) if "/" not in coeff_s else (
                     lambda p: float(p[0]) / float(p[1])
@@ -812,7 +834,62 @@ class StructureMixin:
                     raw_date=raw_mu,
                     tx_type="transfer",
                 ))
+                pending_qty = pending_unit = None
                 continue
+
+            # Fallback: lines with sub-gur combinations (N(asz) N(barig) NAME)
+            # or two-token counts that _RE_ASZ_NAME cannot match.
+            # "sze-bi N gur" lines are accounting conversion notes (its barley),
+            # never ration entries — skip before extract_quantity fires on them.
+            if self._RE_SZE_BI.match(clean):
+                continue
+            # Skip szunigin / total lines — they must never be counted as entries.
+            if self._RE_SZUNIGIN.match(s):
+                continue
+            q, u = self.extract_quantity(clean, context_gur=True)
+            if q is not None and u == "sila3":
+                # Strip quantity tokens then any leading grain unit word so that
+                # "3(asz) 2(barig) gur a-kal-la" → name_part = "a-kal-la".
+                name_part = self._RE_QTY_PREFIX.sub("", clean).strip()
+                name_part = self._RE_GRAIN_UNIT_PREFIX.sub("", name_part).strip()
+                name_part = self._RE_GRAIN_TAIL.sub("", name_part).strip()
+                name = self._clean_atf_name(name_part)
+                if self._looks_like_name(name):
+                    comm = pending_comm or "barley"
+                    results.append(Transaction(
+                        tablet_id=tablet_id,
+                        recipient=name,
+                        quantity=q,
+                        unit=u,
+                        commodity=comm,
+                        date=date,
+                        raw_date=raw_mu,
+                        tx_type="transfer",
+                    ))
+                    pending_qty = pending_unit = None
+                else:
+                    # Quantity but no valid inline name: defer for the next line.
+                    pending_qty = q
+                    pending_unit = u
+                continue
+
+            # Name-only line: emit deferred entry if a pending quantity is waiting.
+            if pending_qty is not None:
+                name = self._clean_atf_name(clean)
+                if self._looks_like_name(name):
+                    comm = pending_comm or "barley"
+                    results.append(Transaction(
+                        tablet_id=tablet_id,
+                        recipient=name,
+                        quantity=pending_qty,
+                        unit=pending_unit or "sila3",
+                        commodity=comm,
+                        date=date,
+                        raw_date=raw_mu,
+                        tx_type="transfer",
+                    ))
+                    pending_qty = pending_unit = None
+                    continue
 
             # Commodity line that precedes the ration entries
             comm = self._detect_commodity(clean)
