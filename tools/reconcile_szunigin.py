@@ -114,6 +114,27 @@ _ITI_AKAM = re.compile(r"\biti\s+(?:.*?-a-kam|\d+(?:/\d+)?\([^)]+\)-kam)\b", re.
 # pipeline counts it as an additional item, creating double-counting.
 _LEFT_FACE_MARKER = re.compile(r"^@left\b", re.I)
 
+# Group-ration tablets have supervisor ("ugula") group headers; each group's
+# individual rations are followed by a bare numeric sub-total that the
+# pipeline counts alongside the individual items, causing double-counting.
+# "ugula" = overseer/supervisor of a labour group.
+_UGULA = re.compile(r"\bugula\b", re.I)
+# A "bare subtotal" line contains only capacity tokens (possibly with la2
+# subtraction) and no other text — it is the scribe's group sum, not an
+# individual ration entry.
+_BARE_SUBTOTAL_LINE = re.compile(
+    r"^\d+[a-z']?\.\s*"
+    r"\d+(?:/\d+)?\([^)]+\)(?:\s+(?:la2\s+)?\d+(?:/\d+)?\([^)]+\))*"
+    r"\s*$",
+    re.I,
+)
+
+# Dual-account tablets open the @reverse section with a "ki NAME" source
+# marker for a separate account block.  The szunigin covers only the obverse
+# entries; the reverse block's quantities must not be included in the sum.
+_REVERSE_MARKER = re.compile(r"^@reverse\b", re.I)
+_STRIP_LINENUM = re.compile(r"^\d+[a-z']?\.\s*")
+
 # Non-grain pipeline commodities that should never be counted toward a "sze"
 # (barley) szunigin total.  The pipeline correctly labels these via commodity=.
 _NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold"})
@@ -159,6 +180,51 @@ def _has_damaged_quantity(lines) -> bool:
     return False
 
 
+def _has_supervisor_subtotals(lines) -> bool:
+    """True if the tablet has both 'ugula' (supervisor group header) lines and
+    bare subtotal lines (lines whose only content is capacity tokens).  This
+    signature identifies multi-group ration tablets where the scribe writes a
+    group sub-total after each worker batch; the pipeline sums both individual
+    rations and the sub-totals, producing double-counting."""
+    has_ugula = any(_UGULA.search(ln) for ln in lines)
+    if not has_ugula:
+        return False
+    return any(_BARE_SUBTOTAL_LINE.match(ln.strip()) for ln in lines)
+
+
+def _has_reverse_source_block(lines) -> bool:
+    """True if the first substantive content line on the @reverse section is a
+    'ki NAME' source-marker line.  Such tablets record two separate account
+    blocks on the same clay: the obverse entries and a reverse block drawn from
+    a different source account.  The szunigin covers only the obverse; adding
+    the reverse quantities would overcount."""
+    in_reverse = False
+    for ln in lines:
+        s = ln.strip()
+        if _REVERSE_MARKER.match(s):
+            in_reverse = True
+            continue
+        if s.startswith("@") and not _REVERSE_MARKER.match(s):
+            in_reverse = False
+            continue
+        if not in_reverse:
+            continue
+        if not s or s.startswith("$") or s.startswith("#"):
+            continue
+        content = _STRIP_LINENUM.sub("", s).strip()
+        if not content:
+            continue
+        # First non-blank content line on the reverse: if it starts with "ki "
+        # AND has no "-ta" postposition (the Sumerian ablative "from"), it is a
+        # source-block header for a second account, not a standard "ki NAME-ta"
+        # attribution.  "ki ka-guru7-ta" (standard) has -ta; "ki NAME szesz NAME2"
+        # (dual-account) does not.
+        if re.match(r"ki\s", content, re.I) and not re.search(r"-ta\b", content, re.I):
+            return True
+        break  # first substantive line is not an untagged ki-source — normal structure
+    return False
+
+
 def _is_genre1(lines) -> bool:
     """False for tablet genres where szunigin ≠ sum(items):
       - broken face / rest broken: items missing on damaged portion
@@ -169,10 +235,12 @@ def _is_genre1(lines) -> bool:
         (animal-fodder, boat-hire, field-seed-rate calculations)
       - mixed-grain tablets: szunigin combines ration grain and field grain
         ("sze GAN2-gu4"); pipeline correctly excludes field-grain lines
-      - group-subtotal tablets: "nam-N(unit) person" markers mean the tablet
-        has group subtotals that the pipeline sums alongside individual items
+      - group-subtotal tablets: "nam-N(unit) person" markers OR ugula+bare-
+        subtotal structure → pipeline sums individual rations + group sub-totals
       - multi-period tablets: "iti N-a-kam" ordinal month label means the
         szunigin covers only one period; later-period data must not be summed
+      - dual-account tablets: @reverse opens with a "ki NAME" source block for
+        a separate account; szunigin covers only the obverse
     """
     has_rate = False
     has_duration = False
@@ -206,6 +274,14 @@ def _is_genre1(lines) -> bool:
         return False
     # @left face with a quantity → pipeline double-counts the edge entry.
     if _has_left_face_quantity(lines):
+        return False
+    # ugula supervisor groups + bare sub-total lines → group-ration tablet;
+    # pipeline sums both individual rations and the group sub-totals.
+    if _has_supervisor_subtotals(lines):
+        return False
+    # @reverse opens with a ki-source block → dual-account tablet; the
+    # szunigin covers only the obverse entries.
+    if _has_reverse_source_block(lines):
         return False
     return True
 

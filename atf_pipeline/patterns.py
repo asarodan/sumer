@@ -106,11 +106,13 @@ class ExtractorBase:
                            # hyphenated profession compounds like szu-ku6 (fisherman)
                            # where ku6 is a person-type suffix, not a fish commodity.
         r"|\bgu4-gesz\b|\bab2-mah2\b|\bdur3\b|\beme6\b"  # livestock compounds
-        r"|(?<!-)\bgu2(?!\s+i7)\b"  # gu2 = talent (60 minas weight); N(asz) gu2 = N talents of
-                               # reed/timber/wool — the asz token is NOT a gur here.
+        r"|(?<!-)\bgu2(?!\s+i7)(?!-)\b"  # gu2 = talent (60 minas weight); N(asz) gu2 = N talents
+                               # of reed/timber/wool — the asz token is NOT a gur here.
                                # Exception: "gu2 i7" = canal bank (a location), not a weight.
-                               # (?<!-) exempts "gu2" embedded in hyphenated personal names
-                               # (e.g. "sza3-gu2-bi") from false non-grain detection.
+                               # (?<!-) exempts "gu2" in mid-compound names (sza3-gu2-bi).
+                               # (?!-) exempts "gu2-tar" (grain quality/deduction word) and
+                               # other "gu2-X" compounds that start with gu2 but are not the
+                               # weight unit.
         r"|\bsa\s+gi\b"        # sa gi = bundle(s) of reeds — large sexagesimal counts in
                                # sa gi tablets (szar2/gesz'u scale) are NOT grain gur.
         r"|\bsa\s+szum2\b"     # sa szum2-sikil = bundle(s) of leeks — same counting system
