@@ -135,11 +135,12 @@ _BARE_SUBTOTAL_LINE = re.compile(
 _REVERSE_MARKER = re.compile(r"^@reverse\b", re.I)
 _STRIP_LINENUM = re.compile(r"^\d+[a-z']?\.\s*")
 
-# Commodities that should never be counted toward a "sze" (barley) szunigin
-# total.  Includes non-grain items and non-barley grains (emmer/wheat) whose
-# allocations the scribe tallies separately from the barley szunigin.
-_NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold",
-                              "emmer", "wheat"})
+# Non-grain commodities: never count toward any szunigin total.
+_NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold"})
+# Non-barley grains: emmer/wheat may or may not be included in a "sze gur"
+# szunigin depending on the tablet.  The harness tries barley-only first,
+# then all-grain; whichever sum matches the szunigin wins.
+_NON_BARLEY_GRAIN = frozenset({"emmer", "wheat"})
 
 # si-sa2 (standard measure) tablets use 1 gur = 240 sila3 with 4 barig/gur.
 # The pipeline always converts at 300 sila3/gur (lugal/royal measure); the
@@ -360,23 +361,37 @@ def main() -> None:
             tally["uncheckable_damaged"] += 1
             continue
 
-        # Sum the pipeline's actual grain entries for this tablet.
-        # Exclude entries the pipeline labelled as clearly non-grain commodities
-        # (oil, beer, dates, bread, silver, gold): the szunigin covers "sze"
-        # (barley) only, so mixing in other commodities would inflate the sum.
+        # Sum the pipeline's grain entries.  We try two scopes because "sze
+        # gur" in some tablets means barley only (emmer tallied separately)
+        # while in others it covers all grain.  Barley-only is tried first;
+        # if that doesn't match, all-grain is tried.  This avoids excluding
+        # emmer where the scribe's total legitimately includes it.
         summary = ext.extract_records(lines, tablet_id)
-        item_sum = 0.0
+        barley_sum = 0.0
+        grain_sum  = 0.0
         n_items = 0
         for rec in summary.records:
             for e in rec.entries:
-                if (e.unit == "sila3" and e.quantity is not None
-                        and e.commodity not in _NON_GRAIN_COMM):
-                    item_sum += e.quantity
-                    n_items += 1
+                if e.unit != "sila3" or e.quantity is None:
+                    continue
+                if e.commodity in _NON_GRAIN_COMM:
+                    continue
+                grain_sum += e.quantity
+                n_items += 1
+                if e.commodity not in _NON_BARLEY_GRAIN:
+                    barley_sum += e.quantity
 
         if n_items == 0:
             tally["uncheckable_no_items"] += 1
             continue
+
+        # Pick the scope that matches the szunigin; barley-only takes priority.
+        if abs(barley_sum - total_q) <= _TOL:
+            item_sum = barley_sum
+        elif abs(grain_sum - total_q) <= _TOL:
+            item_sum = grain_sum
+        else:
+            item_sum = barley_sum   # report against barley-only for unbalanced diff
 
         tally["checkable"] += 1
         diff = item_sum - total_q
