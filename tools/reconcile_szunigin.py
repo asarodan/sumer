@@ -135,9 +135,11 @@ _BARE_SUBTOTAL_LINE = re.compile(
 _REVERSE_MARKER = re.compile(r"^@reverse\b", re.I)
 _STRIP_LINENUM = re.compile(r"^\d+[a-z']?\.\s*")
 
-# Non-grain pipeline commodities that should never be counted toward a "sze"
-# (barley) szunigin total.  The pipeline correctly labels these via commodity=.
-_NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold"})
+# Commodities that should never be counted toward a "sze" (barley) szunigin
+# total.  Includes non-grain items and non-barley grains (emmer/wheat) whose
+# allocations the scribe tallies separately from the barley szunigin.
+_NON_GRAIN_COMM = frozenset({"beer", "oil", "dates", "bread", "silver", "gold",
+                              "emmer", "wheat"})
 
 # si-sa2 (standard measure) tablets use 1 gur = 240 sila3 with 4 barig/gur.
 # The pipeline always converts at 300 sila3/gur (lugal/royal measure); the

@@ -1485,6 +1485,12 @@ class StructureMixin:
                 ))
                 made_entry = True
             if made_entry:
+                # Inline entry (commodity + quantity on the same line): reset
+                # pending_comm so the commodity doesn't carry forward to the
+                # next bare-quantity line.  Only standalone commodity-label lines
+                # (commodity detected, no quantity → no entry) should carry forward.
+                if c is not None:
+                    pending_comm = None
                 continue
 
             # Track previous name-like line (for standalone szu ba-ti)
