@@ -374,6 +374,18 @@ class QuantityMixin:
         ).strip()
         if not line:
             return None, None
+        # Strip installment ordinal counters: "a-ra2 N(-la2 N)-kam" marks which
+        # delivery installment a quantity belongs to.  The ordinal itself carries
+        # no grain value; without stripping, _segment_allotments splits the line
+        # at the quantity token in the counter and extract_quantity sums it into
+        # the grain total (e.g. "a-ra2 1(u) la2 1(disz)-kam" → +3,001 sila3).
+        line = re.sub(
+            r"\ba-ra2\s+\d+(?:/\d+)?\([^)]+\)(?:\s+la2\s+\d+(?:/\d+)?\([^)]+\))?-kam\b",
+            "",
+            line,
+        ).strip()
+        if not line:
+            return None, None
         if self._RE_LABOR_LINE.search(line):
             # Attempt grain extraction from the part after the labor token.
             parts = self._RE_LABOR_LINE.split(line, 1)
