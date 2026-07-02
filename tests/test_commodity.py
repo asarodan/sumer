@@ -51,3 +51,34 @@ class TestOperationDescriptionsExcluded:
     ])
     def test_op_desc_not_commodity(self, ext, line):
         assert ext._detect_commodity(line) is None
+
+
+class TestNextLineCommodityBackfill:
+    def test_split_entry_backfilled(self, ext):
+        # P144069: quantity line + continuation line carrying the commodity
+        # and the closing unit word ("gur") — one entry split across two lines.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 7(asz) 3(barig) 4(ban2) 8(disz) sila3",
+            "2. zi3 ISZ ba-ba gur",
+            "3. ki ur-tur-ta",
+        ], "TEST-BACKFILL")
+        assert txs
+        assert txs[0].quantity == 2328.0
+        assert txs[0].commodity == "flour"
+
+    def test_commodity_line_with_own_quantity_does_not_backfill(self, ext):
+        # A following line that has its own quantity is a new entry, not a
+        # continuation — the untyped entry above must stay untyped.  Two
+        # different commodities are attested so tablet-level propagation
+        # (which only fires for single-commodity tablets) stays off and the
+        # back-fill guard is what is actually under test.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 3(disz) sila3",
+            "2. 2(disz) sila3 kasz",
+            "3. 1(disz) sila3 i3-gesz",
+            "4. ki ur-tur-ta",
+        ], "TEST-NOBACKFILL")
+        pairs = [(t.quantity, t.commodity) for t in txs if t.quantity]
+        assert (3.0, None) in pairs, pairs

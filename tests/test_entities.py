@@ -41,3 +41,61 @@ class TestRecipientAndAgent:
 
     def test_ugula_agent(self, ext):
         assert ext._extract_agent("ugula da-da") == "da-da"
+
+    def test_mukux_idab5_recipient(self, ext):
+        # Drehem delivery formula: "mu-kux(DU) NAME i3-dab5" — NAME is the
+        # receiving official (P212153 and thousands of Drehem tablets).
+        assert ext._extract_recipient_idab5(
+            "mu-kux(DU) ab-ba-sa6-ga i3-dab5") == "ab-ba-sa6-ga"
+
+    def test_bare_mukux_is_not_a_recipient(self, ext):
+        # Without i3-dab5, "mu-kux(DU) NAME" names the deliverer, not the
+        # receiver; the recipient extractor must not fire.
+        assert ext._extract_recipient_idab5(
+            "mu-kux(DU) szesz-da-da sanga") is None
+
+
+class TestSealedReceipt:
+    """kiszib3 PN on a ki X-ta receipt = PN received (envelope-proven)."""
+
+    def test_kiszib_is_recipient_on_receipt(self, ext):
+        # P133455 body: ki lu2-gi-na-ta / kiszib3 ur-szusz3-ba-ba6; its own
+        # envelope restates the same transaction as "ur-szusz3-ba-ba6 szu ba-ti".
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 3(u) 1(asz) 4(barig) 1(ban2) sze gur lugal",
+            "2. ki lu2-gi-na-ta",
+            "@reverse",
+            "1. kiszib3 ur-{d}szusz3-{d}ba-ba6",
+            "2. iti sze-sag11-ku5",
+        ], "TEST-KISZIB")
+        assert txs
+        assert txs[0].issuer == "lu2-gi-na"
+        assert txs[0].recipient == "ur-szusz3-ba-ba6"
+
+    def test_kiszib_only_tablet_passes_admin_gate(self, ext):
+        # A sealed receipt whose only admin markers are "ki NAME" (no -ta)
+        # and kiszib3 must not be rejected as non-administrative (P129198).
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 3(disz) ad3 udu",
+            "2. ki lugal-ku3-zu",
+            "@reverse",
+            "1. kiszib3 nam-zi-tar-ra",
+            "2. iti nesag",
+        ], "TEST-GATE")
+        assert txs, "kiszib3-only receipt must pass the admin-keyword gate"
+        assert txs[0].issuer == "lugal-ku3-zu"
+
+    def test_kiszib_stays_issuer_without_other_frames(self, ext):
+        # With no ki X-ta issuer at all, kiszib3 remains the fallback issuer
+        # (accountability), not a recipient.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 5(asz) sze gur",
+            "2. kiszib3 ur-lugal",
+            "3. iti nesag",
+        ], "TEST-KISZIB-ISS")
+        assert txs
+        assert txs[0].issuer == "ur-lugal"
+        assert txs[0].recipient is None

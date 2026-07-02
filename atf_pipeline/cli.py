@@ -35,7 +35,11 @@ def main() -> None:
         logger.error("No tablets loaded.")
         return
 
-    extractor  = ATFExtractor(default_king="Šulgi")
+    # No default king: date_king is only set when the year-name (or an explicit
+    # royal name in it) resolves.  King-less year-names are searched against
+    # every reign's formulary, so a default would only mislabel the residue of
+    # genuinely ambiguous or damaged datelines.
+    extractor  = ATFExtractor()
     normalizer = Normalizer()
 
     all_transactions:    List[Transaction]  = []

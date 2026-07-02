@@ -10,7 +10,14 @@ from atf_pipeline import ATFExtractor, Normalizer
 
 @pytest.fixture(scope="session")
 def ext() -> ATFExtractor:
-    """A Šulgi-defaulted extractor (matches the pipeline's CLI default)."""
+    """An extractor with no default king (matches the pipeline's CLI default):
+    kings come only from explicit names or unique year-name matches."""
+    return ATFExtractor()
+
+
+@pytest.fixture(scope="session")
+def ext_sulgi() -> ATFExtractor:
+    """A Šulgi-defaulted extractor, for testing the default-king fallback."""
     return ATFExtractor(default_king="Šulgi")
 
 

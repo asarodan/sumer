@@ -247,6 +247,9 @@ class StructureMixin:
         # so we can delete those entries if la2-ia3 su-ga follows.
         after_mukux = False
         mukux_start_idx = 0
+        # (line_idx, [entry indices]) of untyped capacity entries from the most
+        # recent quantity line — candidates for next-line commodity back-fill.
+        untyped_prev = None
 
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
@@ -401,6 +404,13 @@ class StructureMixin:
             # catches the rare compound pattern where multiple quantities
             # appear between mu-kux and la2-ia3 su-ga.
             if re.search(r"\bmu-kux\(", clean, re.I):
+                # "mu-kux(DU) NAME i3-dab5" (Drehem delivery formula): the
+                # receiving official rides on the delivery line itself —
+                # capture the recipient before skipping the line.
+                if recipient is None and self._RE_IDAB5.match(clean):
+                    rec_kux = self._extract_recipient_idab5(clean)
+                    if rec_kux:
+                        recipient = rec_kux
                 after_mukux = True
                 mukux_start_idx = len(qty_entries)
                 continue
@@ -421,8 +431,22 @@ class StructureMixin:
                 # forward agricultural commodities.
                 if c not in ("gold", "silver"):
                     pending_commodity = c
+                    # Back-fill: a quantity line immediately followed by a pure
+                    # commodity phrase is one entry split across two physical
+                    # lines ("7(asz) 3(barig) 4(ban2) 8(disz) sila3" / "zi3 ISZ
+                    # ba-ba gur", P144069).  Only fire when the commodity line
+                    # carries no quantity of its own — a quantity would mean a
+                    # new entry, not a continuation of the previous one.
+                    if (untyped_prev is not None
+                            and idx - untyped_prev[0] <= 2
+                            and self.extract_quantity(clean)[0] is None):
+                        for _ei in untyped_prev[1]:
+                            _q0, _u0, _ = qty_entries[_ei]
+                            qty_entries[_ei] = (_q0, _u0, c)
+                untyped_prev = None
             elif self._RE_SECTION_LABEL.search(clean):
                 pending_commodity = None
+                untyped_prev = None
                 prev_name = None  # section dividers are structural labels, not names
 
             # Quantity: a single ATF line can pack several allotments
@@ -459,6 +483,7 @@ class StructureMixin:
                     if _cf_q is None or _cf_u != "sila3":
                         skip_carryforward = True
                 continue
+            _line_start = len(qty_entries)
             segs = self._segment_allotments(clean)
             for seg in segs:
                 q, u = self.extract_quantity(seg)
@@ -493,6 +518,13 @@ class StructureMixin:
                 if u == "head" and this_comm is None:
                     this_comm = "animal"
                 qty_entries.append((q, u, this_comm))
+
+            # Remember untyped capacity entries born on this line so a pure
+            # commodity phrase on the following line can back-fill them.
+            if len(qty_entries) > _line_start:
+                _unt = [i for i in range(_line_start, len(qty_entries))
+                        if qty_entries[i][2] is None and qty_entries[i][1] == "sila3"]
+                untyped_prev = (idx, _unt) if _unt else None
 
             # Pattern E candidate: kiszib3 NAME (save for fallback)
             m_kiszib = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
@@ -601,6 +633,12 @@ class StructureMixin:
         issuer = personal_issuer or any_issuer
         if issuer is None and kiszib_name:
             issuer = kiszib_name
+        elif recipient is None and kiszib_name is not None and kiszib_name != issuer:
+            # "ki NAME-ta … kiszib3 PN" is the standard sealed-receipt formula:
+            # PN's seal acknowledges receipt of the goods.  Envelopes of such
+            # tablets restate the same transaction as "PN szu ba-ti" (e.g.
+            # P133455), so the sealing official is the recipient.
+            recipient = kiszib_name
 
         if not qty_entries and issuer is None and recipient is None:
             return []
@@ -1014,7 +1052,10 @@ class StructureMixin:
         _ADMIN_KW = re.compile(
             r"\bszu\s+ba-ti\b|\bba-zi\b|\bi3-dab5\b|\bki\s+\S+-ta\b"
             r"|\bszunigin\b|\bengar\b|\bszabra\b|\bmu\s+\S+-ma\b"
-            r"|\bgiri3\b|\bba-an-szum2?\b|\bmu-kux\b",
+            r"|\bgiri3\b|\bba-an-szum2?\b|\bmu-kux\b"
+            # Sealed receipts, booking-out notes, and statutory offerings are
+            # administrative even when no other transfer formula survives.
+            r"|\bkiszib3?\b|\bzi-ga\b|\bsa2-du11\b",
             re.I,
         )
         if not any(_ADMIN_KW.search(l) for l in lines):

@@ -67,7 +67,13 @@ class EntityMixin:
         """Pattern H: NAME i3-dab5."""
         m = self._RE_IDAB5.match(clean)
         if m:
-            cand = self._clean_atf_name(m.group(1).strip())
+            raw = m.group(1).strip()
+            # "mu-kux(DU) NAME i3-dab5" — Drehem delivery formula: NAME is the
+            # receiving official.  Strip the delivery tag before the name test.
+            # (A bare "mu-kux(DU) NAME" without i3-dab5 names the deliverer and
+            # is handled on the issuer side, not here.)
+            raw = re.sub(r"^mu-kux(?:\(du\))?\s+", "", raw, flags=re.I)
+            cand = self._clean_atf_name(raw)
             # Strip trailing giri3 / sukkal clauses
             cand = re.sub(r"\s+giri3.*$", "", cand).strip()
             if self._looks_like_name(cand):

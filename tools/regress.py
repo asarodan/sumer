@@ -17,7 +17,7 @@ all_ids = sorted(corpus)
 stride = max(1, len(all_ids) // N)
 ids = all_ids[::stride]
 
-extractor  = ATFExtractor(default_king="Šulgi")
+extractor  = ATFExtractor()
 normalizer = Normalizer()
 scanner    = EntityScanner(normalizer)
 
