@@ -82,3 +82,48 @@ class TestNextLineCommodityBackfill:
         ], "TEST-NOBACKFILL")
         pairs = [(t.quantity, t.commodity) for t in txs if t.quantity]
         assert (3.0, None) in pairs, pairs
+
+
+class TestAuditCaughtFalsePositives:
+    """Bugs found by the 30-transaction manual audit (2026-07)."""
+
+    def test_royal_measure_lugal_is_not_a_recipient(self, ext):
+        # P110751: "N sze gur lugal" — lugal qualifies the measure (royal gur);
+        # the real receiver is on the szu ba-ti line.
+        s = ext.extract_records([
+            "@tablet", "@obverse",
+            "1. 2(u) 9(asz) 4(barig) 2(ban2) sze gur lugal",
+            "2. sza3-gal erin2-na",
+            "3. ki gu3-de2-a-ta",
+            "4. ur-e2-ninnu szu ba-ti",
+        ], "TEST-LUGAL")
+        entry_recips = [e.recipient for r in s.records for e in r.entries]
+        assert "lugal" not in entry_recips
+        # the genuine receiver must be recoverable somewhere on the record
+        all_recips = entry_recips + [
+            getattr(r, "recipient", None) for r in s.records
+        ]
+        assert "ur-e2-ninnu" in all_recips
+
+    def test_lugal_compound_names_survive(self, ext):
+        # Personal names beginning with lugal- must still be extracted.
+        assert ext._extract_inline_qty_recipient(
+            "1(asz) 1(barig) gur lugal-e2-mah-e") == "lugal-e2-mah-e"
+
+    def test_interest_rate_lugal_masz2_rejected(self, ext):
+        # P209771: "7(asz) sze gur lugal masz2 1(barig)-ta" — royal measure +
+        # interest rate, not a recipient called "lugal masz2".
+        got = ext._extract_inline_qty_recipient("7(asz) sze gur lugal masz2")
+        assert got is None
+
+    def test_coriander_is_not_barley(self, ext):
+        # P454001: sze-lu2 = coriander.
+        assert ext._detect_commodity("6(asz) sze-lu2 gur") != "barley"
+
+    def test_dairy_ga_sze_a_is_not_barley(self, ext):
+        # P208651: ga-sze-a = dairy product measured in gur.
+        assert ext._detect_commodity("1(asz) 3(ban2) ga-sze-a gur") != "barley"
+
+    def test_plain_barley_still_detected(self, ext):
+        assert ext._detect_commodity("5(asz) sze gur") == "barley"
+        assert ext._detect_commodity("2(barig) sze-ba") == "barley"

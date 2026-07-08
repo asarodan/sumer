@@ -684,7 +684,12 @@ class ExtractorBase:
         r"|\bmunu4-gaz\b",
         re.I,
     )
-    _RE_BARLEY = re.compile(r"\bsze(?!-gesz)\b|\bše\b|\bbarley\b|\bsze-ba\b", re.I)
+    # Negative guards on the bare "sze" sign: sze-gesz(-i3) = sesame,
+    # sze-lu2 = coriander, ga-sze-a = a dairy product — all measured in
+    # capacity units and audit-confirmed sources of phantom barley.
+    _RE_BARLEY = re.compile(
+        r"(?<!ga-)\bsze(?!-gesz|-lu2)\b|\bše\b|\bbarley\b|\bsze-ba\b", re.I
+    )
     _RE_EMMER  = re.compile(r"\bziz2\b|\bemmer\b", re.I)
     _RE_WHEAT  = re.compile(r"\bgig\b|\bwheat\b", re.I)
     _RE_DATES  = re.compile(r"\bzu2-lum\b|\bdates?\b", re.I)

@@ -455,6 +455,15 @@ class QuantityMixin:
         stripped = stripped.strip()
         if not stripped or "(" in stripped or ")" in stripped:
             return None
+        # Bare "lugal" after the quantity tokens is the royal-measure qualifier
+        # ("sze gur lugal" = barley in the royal gur), NOT the king as
+        # recipient: on tablets like P110751 the real receiver follows in a
+        # separate "PN szu ba-ti" line.  Compound personal names (lugal-ku3-zu,
+        # lugal-e2-mah-e) are hyphenated and must survive, so only reject when
+        # the first whitespace token is exactly "lugal".
+        first_tok = stripped.split()[0]
+        if first_tok == "lugal":
+            return None
         # If what remains after stripping qty/unit tokens is itself a commodity
         # word (e.g. "i3-gesz", "dabin", "i3-szah2"), it is not a personal name.
         if self._detect_commodity(stripped):
