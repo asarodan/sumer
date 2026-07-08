@@ -213,6 +213,9 @@ class StructureMixin:
         """
         issuer:           Optional[str]   = None
         recipient:        Optional[str]   = None
+        # A "weak" recipient is a destination label (sa2-du11 deity/institution)
+        # that an explicit receipt verb (szu ba-ti / i3-dab5) may override.
+        recipient_weak:   bool            = False
         agent:             Optional[str]   = None
         pending_dative:    Optional[str]   = None
         prev_name:         Optional[str]   = None
@@ -423,7 +426,13 @@ class StructureMixin:
             # commodity from the previous sub-account must not bleed into the
             # next one (e.g. a "gig" entry before "GAN2-gu4 / N gur" would
             # otherwise mislabel the following barley amount as wheat).
-            c = self._detect_commodity(clean)
+            # Date lines must not feed commodity context: the harvest month
+            # "iti sze-sag11-ku5" and year-names contain the barley sign and
+            # would poison pending_commodity for the whole section (P201081).
+            if self._RE_ITI.match(clean) or self._RE_MU.match(clean):
+                c = None
+            else:
+                c = self._detect_commodity(clean)
             if c:
                 # Precious metals are never measured in sila3; carrying gold/
                 # silver forward as pending_commodity would mislabel subsequent
@@ -515,7 +524,9 @@ class StructureMixin:
                 # year-name or nearby metal-accounting line — clear the label.
                 if this_comm in ("gold", "silver") and u == "sila3":
                     this_comm = None
-                if u == "head" and this_comm is None:
+                if u == "head":
+                    # Head-counts are animals by construction; a carried-forward
+                    # grain label on a head-count is always context bleed.
                     this_comm = "animal"
                 qty_entries.append((q, u, this_comm))
 
@@ -558,23 +569,28 @@ class StructureMixin:
 
             # Pattern F: inline NAME szu ba-ti
             rec = self._extract_recipient_inline(clean)
-            if rec and recipient is None:
+            if rec and (recipient is None or recipient_weak):
                 recipient = rec
+                recipient_weak = False
                 prev_name = None
                 pending_dative = None
                 continue
 
             # Pattern G: standalone szu ba-ti
-            if self._RE_SHU_ALONE.match(clean) and recipient is None:
-                recipient = prev_name or pending_dative
+            if self._RE_SHU_ALONE.match(clean) and (recipient is None or recipient_weak):
+                cand_g = prev_name or pending_dative
+                if cand_g:
+                    recipient = cand_g
+                    recipient_weak = False
                 prev_name = None
                 pending_dative = None
                 continue
 
             # Pattern H: NAME i3-dab5
             rec_h = self._extract_recipient_idab5(clean)
-            if rec_h and recipient is None:
+            if rec_h and (recipient is None or recipient_weak):
                 recipient = rec_h
+                recipient_weak = False
                 prev_name = None
                 continue
 
@@ -594,14 +610,24 @@ class StructureMixin:
                     pending_dative = None
                 continue
 
-            # Pattern K2: sa2-du11 NAME — statutory payment
+            # Pattern K2: sa2-du11 NAME — statutory payment.  The name after
+            # sa2-du11 is the offering's *destination* (usually a deity or
+            # institution), which stands in as recipient only until an explicit
+            # receipt verb names the official who actually took the goods:
+            # P202259 reads "sa2-du11 {d}nin-gir2-su-ka-sze3 … ki-tusz-lu2 szu
+            # ba-ti", and its envelope confirms ki-tusz-lu2 as the receiver.
             m_sa2 = self._RE_SA2_DU11.match(clean)
             if m_sa2 and recipient is None:
                 cand = self._clean_atf_name(m_sa2.group(1).strip())
                 if (self._looks_like_name(cand)
                         and not cand.endswith("-ta")
-                        and not cand.endswith("-ka-ta")):
+                        and not cand.endswith("-ka-ta")
+                        # "sa2-du11 kas4" = "offerings of the messengers" —
+                        # a bare occupational title is a category, not a
+                        # person (audit case P248692).
+                        and not self._ADMIN_TITLES.fullmatch(cand)):
                     recipient = cand
+                    recipient_weak = True
 
             # Track dative -ra for pattern J
             m_dat = self._RE_DATIVE_RA.match(clean)
@@ -1399,6 +1425,13 @@ class StructureMixin:
         pending_comm:   Optional[str] = None   # last commodity seen on any line
         entries: List[RecordEntry] = []
         skip_carryforward = False
+        # Disbursement-roll support ("N gur / kiszib3 PN" repeated): indices of
+        # entries not yet closed by a seal line, and how many distinct seal
+        # lines this section carries (a multi-sealer roll has no single
+        # accountable issuer, so the kiszib-as-issuer fallback must not fire).
+        entries_since_kiszib: List[int] = []
+        n_kiszib_seen = 0
+        kiszib_line_name: Optional[str] = None
 
         date, raw_mu = self._parse_date(section)
 
@@ -1417,7 +1450,13 @@ class StructureMixin:
             # Commodity detection runs on every line so it can carry forward
             # to the next quantity line (commodity and quantity sometimes
             # appear on adjacent lines rather than the same line).
-            c = self._detect_commodity(clean)
+            # Date lines are excluded: the harvest month "iti sze-sag11-ku5"
+            # and year-names contain the barley sign and would poison the
+            # carried commodity for the whole section.
+            if self._RE_ITI.match(clean) or self._RE_MU.match(clean):
+                c = None
+            else:
+                c = self._detect_commodity(clean)
             if c:
                 pending_comm = c
             elif self._RE_SECTION_LABEL.search(clean):
@@ -1438,12 +1477,27 @@ class StructureMixin:
                 elif ag not in agent.split("; "):
                     agent = agent + "; " + ag
 
-            # Kiszib fallback issuer
+            # Kiszib: seal lines close the entries above them (disbursement
+            # rolls, P116985/P118780) or ride inline on the quantity line.
+            kiszib_line_name = None
             m_k = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
-            if m_k and kiszib_name is None:
+            if m_k:
                 cand = self._clean_atf_name(m_k.group(1))
                 if len(cand) >= 2 and self._looks_like_name(cand):
-                    kiszib_name = cand
+                    n_kiszib_seen += 1
+                    if kiszib_name is None:
+                        kiszib_name = cand
+                    if self.extract_quantity(clean)[0] is None:
+                        # Standalone "kiszib3 PN": PN received everything
+                        # entered since the previous seal line.
+                        for _ei in entries_since_kiszib:
+                            if entries[_ei].recipient is None:
+                                entries[_ei].recipient = cand
+                        entries_since_kiszib = []
+                    else:
+                        # "N gur kiszib3 PN" — assign after this line's
+                        # entries are created below.
+                        kiszib_line_name = cand
 
             # Recipient — inline szu ba-ti
             rec_f = self._extract_recipient_inline(clean)
@@ -1512,11 +1566,14 @@ class StructureMixin:
                     continue  # suppress carry-forward grain quantity
                 seg_c = self._detect_commodity(seg) if len(segs) > 1 else c
                 comm = seg_c or pending_comm   # same-line commodity preferred
-                if u == "head" and comm is None:
+                if u == "head":
+                    # Head-counts are animals by construction; a carried-forward
+                    # grain label on a head-count is always context bleed.
                     comm = "animal"
                 # sze gub-ba distribution lines carry the recipient inline:
-                # "1(asz) 1(barig) gur ur-e2-mah" → recipient = "ur-e2-mah"
-                inline_recip = self._extract_inline_qty_recipient(seg)
+                # "1(asz) 1(barig) gur ur-e2-mah" → recipient = "ur-e2-mah";
+                # "N gur kiszib3 PN" carries the sealing receiver instead.
+                inline_recip = kiszib_line_name or self._extract_inline_qty_recipient(seg)
                 entries.append(RecordEntry(
                     entry_idx=0,
                     recipient=inline_recip,
@@ -1524,6 +1581,8 @@ class StructureMixin:
                     unit=u,
                     commodity=comm,
                 ))
+                if inline_recip is None:
+                    entries_since_kiszib.append(len(entries) - 1)
                 made_entry = True
             if made_entry:
                 # Inline entry (commodity + quantity on the same line): reset
@@ -1550,7 +1609,11 @@ class StructureMixin:
                       or self._RE_NOT_NAME.match(clean)):
                 prev_name = None
 
-        if issuer is None and kiszib_name:
+        if issuer is None and kiszib_name and n_kiszib_seen <= 1:
+            # Single-sealer receipt with no ki NAME-ta: the sealer is the
+            # accountable party.  Multi-sealer rolls have per-entry receivers
+            # and no single issuer — inventing one from the first seal would
+            # be wrong (audit case P116985).
             issuer = kiszib_name
         elif issuer is not None and recipient is None and kiszib_name is not None:
             # ki NAME-ta identified the issuer; the kiszib3 person sealed the

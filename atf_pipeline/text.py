@@ -80,6 +80,11 @@ class TextMixin:
         name = re.sub(r"\s+u3\s*$", "", name, flags=re.I)
         # Strip genealogy suffix: "NAME dumu FATHER" → "NAME"
         name = re.sub(r"\s+dumu(?:-munus)?\b.+$", "", name, flags=re.I)
+        # Strip trailing administrative verb clauses that ride after a name or
+        # its title: "su-su-dam" (to be repaid), "i3-gal2" (is on deposit).
+        # They must go before title stripping so "NAME nu-banda3 su-su-dam"
+        # reduces to "NAME" (audit case P116018).
+        name = re.sub(r"\s+(?:su-su-dam|i3-gal2)\b.*$", "", name, flags=re.I)
         # Strip leading title when followed by space: "nu-banda3 NAME" → "NAME"
         name = ExtractorBase._RE_TITLE_PREFIX.sub("", name)
         # Strip trailing administrative title: "NAME nu-banda3" → "NAME"

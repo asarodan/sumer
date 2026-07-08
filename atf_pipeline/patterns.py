@@ -127,6 +127,9 @@ class ExtractorBase:
                                # count lines; the large sexagesimal N is an item count, not gur.
         r"|\bnig2-bi\b"        # nig2-bi N-am3 = scribal sub-total check note ("the total for it:
                                # N"); appears in artisan inventory accounts (e.g. Ontario 2, 323).
+        r"|\bkiszib3?-bi\b"    # kiszib3-bi N-am3 = "its sealed tablets: N" — a count of receipt
+                               # documents in balanced accounts (P201081, P208651), never a
+                               # commodity quantity; grain-context retry must not promote it.
         r"|\bnig2\s+a-ra2\b"   # nig2 a-ra2 N-kam = "items, Nth delivery installment" — round
                                # counts in multi-delivery artisan accounts, not grain.
         r"|(?<!-)\blagab\b"    # lagab = compressed block/cake shape (garlic cake, bitumen cake);
@@ -181,9 +184,14 @@ class ExtractorBase:
     #   sze-numun-bi      — "its seed grain equivalent" (conversion note, not a delivery)
     _RE_SZE_BI = re.compile(
         r"^\[?"               # optional leading restoration bracket
-        r"sze"
+        r"(?:sze"
         r"(?:[#!?]*\]?)"      # optional damage markers + optional closing bracket
-        r"(?:-bi\b|-numun[#!?]*-bi\b|\s+bala[#!?]*-bi\b)",
+        r"(?:-bi\b|-numun[#!?]*-bi\b|\s+bala[#!?]*-bi\b)"
+        # Sibling equivalence/derivation notes: "i3-nun-bi N" (its butter),
+        # "ga-UD-bi N" (its dried milk), "siki-bi N" (its wool), "sag-bi N"
+        # (its principal, on loan tablets) — all restate a value derived from
+        # the entry above, never a new commodity movement (P208651, P107209).
+        r"|i3-nun[#!?]*-bi\b|ga-ud(?:@g)?[#!?]*-bi\b|siki[#!?]*-bi\b|sag[#!?]*-bi\b)",
         re.I,
     )
 
@@ -861,7 +869,10 @@ class ExtractorBase:
     # Lines that are not personal names
     _RE_NOT_NAME = re.compile(
         r"^\d|^[@$#&]"
-        r"|^(?:iti|mu|giri3|ki|ugula|kiszib3|szunigin|šunigin"
+        # "ki" blocks the issuer frame ("ki NAME") and location compounds
+        # (ki-su7, ki-ba), but ki-tusz-lu2 is a genuine personal name (the
+        # receiving official of P202259, confirmed by its envelope seal).
+        r"|^(?:iti|mu|giri3|ki(?!-tusz-lu2)|ugula|kiszib3|szunigin|šunigin"
         r"|sze-ba|sza3-bi-ta|zi-ga|la2-ia3|nig2-ka9|sag-nig2"
         r"|engar(?!-)|szabra|šabra|szu-a|sza3-gal"
         r"|nu-banda3|kuruszda|muhaldim|szusz3|dub-sar"

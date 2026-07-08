@@ -99,3 +99,48 @@ class TestSealedReceipt:
         assert txs
         assert txs[0].issuer == "ur-lugal"
         assert txs[0].recipient is None
+
+
+class TestAuditRecipientPriority:
+    """Audit finding (P202259): explicit receipt verbs outrank sa2-du11
+    destination labels, and document-count notes yield no quantities."""
+
+    def test_szu_bati_overrides_sa2_du11_destination(self, ext):
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 4(gesz2) 1(u) 1(asz) 2(barig) sze gur lugal",
+            "2. sa2-du11 {d}nin-gir2-su-ka-sze3",
+            "3. ki ur-{d}ba-ba6 szabra-ta",
+            "@reverse",
+            "1. ki-tusz-lu2",
+            "2. szu ba-ti",
+        ], "TEST-SA2DU11")
+        assert txs
+        assert txs[0].recipient == "ki-tusz-lu2"
+
+    def test_sa2_du11_kept_when_no_receipt_verb(self, ext):
+        # Without a szu ba-ti, the offering destination is still the best
+        # available recipient (P129198 behaviour preserved).
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 3(asz) sze gur",
+            "2. sa2-du11 {d}szara2",
+            "3. ki lugal-ku3-zu-ta",
+        ], "TEST-SA2DU11-ONLY")
+        assert txs
+        assert txs[0].recipient == "szara2"
+
+    def test_kiszib_bi_count_is_not_a_quantity(self, ext):
+        # "kiszib3-bi N-am3" = "its sealed tablets: N" (P201081, P208651).
+        assert ext.extract_quantity("kiszib3-bi 2(disz)-am3", context_gur=True) == (None, None)
+        assert ext.extract_quantity("kiszib3-bi 1(u) 3(disz)-am3", context_gur=True) == (None, None)
+
+
+class TestNameVerbClauseStripping:
+    def test_su_su_dam_stripped(self, ext):
+        # P116018: "kiszib3 ur-sa6-ga nu-banda3 su-su-dam" — name + title +
+        # "to be repaid" must reduce to the bare name.
+        assert ext._clean_atf_name("ur-sa6-ga nu-banda3 su-su-dam") == "ur-sa6-ga"
+
+    def test_i3_gal2_stripped(self, ext):
+        assert ext._clean_atf_name("ur-nigar i3-gal2") == "ur-nigar"

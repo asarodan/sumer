@@ -127,3 +127,30 @@ class TestAuditCaughtFalsePositives:
     def test_plain_barley_still_detected(self, ext):
         assert ext._detect_commodity("5(asz) sze gur") == "barley"
         assert ext._detect_commodity("2(barig) sze-ba") == "barley"
+
+
+class TestDateLineCommodityBleed:
+    def test_harvest_month_does_not_set_barley_context(self, ext):
+        # "iti sze-sag11-ku5" contains the barley sign; it must not type the
+        # following animal head-count as barley (P201081).
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. iti sze-sag11-ku5",
+            "2. 3(disz) udu",
+            "3. ki lu2-utu-ta",
+            "4. ur-ku3-nun-na i3-dab5",
+        ], "TEST-ITI-BLEED")
+        heads = [t for t in txs if t.unit == "head"]
+        assert heads and all(t.commodity == "animal" for t in heads)
+
+    def test_head_count_never_labeled_grain(self, ext):
+        # Even with genuine barley context above, a head-count is an animal.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 5(asz) sze gur",
+            "2. 3(disz) udu",
+            "3. ki lu2-utu-ta",
+            "4. ur-ku3-nun-na i3-dab5",
+        ], "TEST-HEAD")
+        heads = [t for t in txs if t.unit == "head"]
+        assert heads and all(t.commodity == "animal" for t in heads)

@@ -496,6 +496,10 @@ class QuantityMixin:
                 if re.search(r"\buruda\b", line, re.I):      return "copper"
                 return None
             return "barley"
+        # Dairy products measured in capacity units: ga-sze-a and ga-UD would
+        # otherwise stay untyped and inherit a carried-forward grain label
+        # (audit case P208651).
+        if re.search(r"\bga-sze-a\b|\bga-ud\b", line, re.I): return "dairy"
         if self._RE_EMMER.search(line):   return "emmer"
         if self._RE_WHEAT.search(line):   return "wheat"
         if self._RE_DATES.search(line):   return "dates"
