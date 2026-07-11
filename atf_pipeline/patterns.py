@@ -98,7 +98,11 @@ class ExtractorBase:
     #   kin sahar  = earthwork / canal-digging (area in sar/gin2, not grain)
     #   esze3/iku/GAN2 = agricultural area units
     _RE_NON_GRAIN = re.compile(
-        r"(?<!-)\bsiki\b|(?<!-)\{gesz\}(?!\w+-)|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
+        # {gesz} heads wooden-object counts (logs, tools) — but {gesz}kiri6 is
+        # the orchard: "N(asz) N(ban2) {gesz}kiri6 NAME" lines on garden-yield
+        # assessments are grain quantities per orchard plot (P100892, whose
+        # nested szunigin subtotals confirm the readings arithmetically).
+        r"(?<!-)\bsiki\b|(?<!-)\{gesz\}(?!kiri6)(?!\w+-)|\bsig4\b|\bma-na\b|\bkin\s+sahar\b"
         r"|\besze3\b|\biku\b|\bGAN2\b"
         r"|\bdug\b"        # dug = vessel/jug — pottery accountability, not liquid measure
         r"|\btu7\b"        # tu7 = soup/broth — liquid inventory, not grain

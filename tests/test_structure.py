@@ -450,3 +450,33 @@ class TestBalanceLinesInContext:
         qtys = [t.quantity for t in txs]
         assert 9_000.0 not in qtys    # deficit assessment suppressed
         assert 18_000.0 in qtys       # valid delivery survives
+
+
+class TestCrossSectionIssuerInheritance:
+    def test_tablet_final_issuer_governs_earlier_sections(self, ext):
+        # Two totaled groups; the source clause appears once at the foot.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 5(asz) sze gur",
+            "2. ur-gar szu ba-ti",
+            "3. szunigin 5(asz) sze gur",
+            "4. 3(asz) sze gur",
+            "5. lu2-du10-ga szu ba-ti",
+            "@reverse",
+            "1. ki ab-ba-saga-ta",
+        ], "TEST-INHERIT")
+        grain = [t for t in txs if t.quantity]
+        assert grain and all(t.issuer == "ab-ba-saga" for t in grain)
+
+    def test_no_inheritance_when_earlier_section_has_issuer(self, ext):
+        # Each group already names its own source: nothing may bleed.
+        txs = ext.extract_transactions([
+            "@tablet", "@obverse",
+            "1. 5(asz) sze gur",
+            "2. ki ur-mes-ta",
+            "3. szunigin 5(asz) sze gur",
+            "4. 3(asz) sze gur",
+            "5. ki ab-ba-saga-ta",
+        ], "TEST-NOINHERIT")
+        by_issuer = {t.issuer for t in txs if t.quantity}
+        assert "ur-mes" in by_issuer and "ab-ba-saga" in by_issuer

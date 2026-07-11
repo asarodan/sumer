@@ -1093,11 +1093,30 @@ class StructureMixin:
         # szunigin total lines and double-counts individual engar entries.
         if tablet_type != "allocation":
             try:
+                section_marks = []   # (index into results where section began, had issuer)
                 for section in self._split_sections(lines):
+                    start = len(results)
                     for tx in self._extract_from_section(section, tablet_id):
                         if tx.tx_type == "transfer":
                             tx.tx_type = tablet_type
                         results.append(tx)
+                    section_marks.append(
+                        (start, any(t.issuer for t in results[start:])))
+                # Cross-section issuer inheritance: scribes often wrote the
+                # source clause once, at the foot of the document, letting it
+                # govern every totaled group above it.  When ONLY the final
+                # section names an issuer — and names exactly one — stamp it
+                # onto the earlier sections' issuer-less transactions.
+                if len(section_marks) >= 2 and section_marks[-1][1] \
+                        and not any(h for _, h in section_marks[:-1]):
+                    final_start = section_marks[-1][0]
+                    final_issuers = {
+                        t.issuer for t in results[final_start:] if t.issuer}
+                    if len(final_issuers) == 1:
+                        inherited = next(iter(final_issuers))
+                        for t in results[:final_start]:
+                            if t.issuer is None:
+                                t.issuer = inherited
             except Exception as exc:
                 logger.warning("Error in transfer pass for %s: %s", tablet_id, exc)
 

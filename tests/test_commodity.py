@@ -154,3 +154,25 @@ class TestDateLineCommodityBleed:
         ], "TEST-HEAD")
         heads = [t for t in txs if t.unit == "head"]
         assert heads and all(t.commodity == "animal" for t in heads)
+
+
+class TestOrchardYieldLines:
+    def test_gesz_kiri6_lines_are_grain(self, ext):
+        # P100892: garden-yield assessment — "N {gesz}kiri6 NAME" is barley
+        # per orchard plot, not a wooden-object count.  The scribe's nested
+        # subtotals confirm the readings arithmetically.
+        s = ext.extract_records([
+            "@tablet", "@obverse",
+            "1. 6(asz) 4(barig) 5(ban2) sze gur lugal",
+            "2. {gesz}kiri6 {d}szul-gi-a2-kalam-ma",
+            "3. 1(asz) 2(ban2) {gesz}kiri6 gesztin gar3-szum{ki}",
+            "4. 2(barig) 2(ban2) {gesz}kiri6 ur-{d}nin-gir2-su",
+        ], "TEST-KIRI6")
+        qs = [e.quantity for r in s.records for e in r.entries if e.unit == "sila3"]
+        assert 2090.0 in qs      # 6;4;5
+        assert 320.0 in qs       # 1;0;2
+        assert 140.0 in qs       # 0;2;2
+
+    def test_wooden_object_counts_still_blocked(self, ext):
+        # "4(u) gesz {gesz}asal2" = 40 poplar logs — must stay non-grain.
+        assert ext.extract_quantity("4(u) {gesz}asal2", context_gur=True) == (None, None)
