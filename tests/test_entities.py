@@ -174,3 +174,30 @@ class TestLogogramNamesNotUncertainReadings:
     def test_ordinary_logogram_survives_cleaning(self, ext):
         assert ext._clean_atf_name("ARAD2") == "ARAD2"
         assert ext._clean_atf_name("GAN2") == "GAN2"
+
+
+class TestKiszibRollDamagedSealBoundary:
+    """A multi-sealer disbursement roll where one seal-line's name is too
+    damaged to read must still register as a seal BOUNDARY -- the entry
+    it seals stays unattributed, and it must not let a later, unrelated
+    sealer's name bleed backward onto it (P102286, ASJ 09 237 10: "8 gur,
+    under seal of ..." followed by "34 gur ..., under seal of Ur-Enunna"
+    -- only the second entry belongs to Ur-Enunna)."""
+
+    def test_illegible_inline_seal_leaves_entry_unattributed(self, ext):
+        summ = ext.extract_records([
+            "@tablet", "@obverse",
+            "1. 8(asz) gur kiszib3 x-x-[...]",
+            "2. 3(u) 4(asz) 4(barig) 8(disz) sila3 gur",
+            "3. kiszib3 ur-e2-nun-na",
+        ], "TEST-DAMAGED-SEAL")
+        ents = [e for r in summ.records for e in r.entries]
+        assert len(ents) == 2
+        assert ents[0].recipient is None
+        assert ents[1].recipient == "ur-e2-nun-na"
+
+    def test_inline_kiszib_regex_detects_ellipsis_damage(self, ext):
+        # Character class must admit "." so damage-ellipsis fragments are
+        # recognised as a seal clause at all, not just rejected as an
+        # unreadable name.
+        assert ext._RE_KISZIB_INLINE.search("8(asz) gur kiszib3 x-x-[...]")

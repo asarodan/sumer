@@ -789,7 +789,13 @@ class ExtractorBase:
     )
     # E: kiszib3 NAME (seal authority – fallback issuer); also inline mid-line
     _RE_KISZIB        = re.compile(r"^kiszib3#?\s+(.+?)(?:\s+#.*)?$")
-    _RE_KISZIB_INLINE = re.compile(r"\bkiszib3#?\s+([a-z{}\-0-9\[\]]+(?:\s+[a-z{}\-0-9\[\]]+)*?)(?:\s+(?:kiszib3|giri3|mu|iti|u3)\b|$)", re.I)
+    # Character class must include "." for damage-ellipsis fragments (x-x-[...]):
+    # without it, an inline kiszib3 clause whose name is illegible is invisible
+    # to the extractor entirely rather than merely failing the name-quality
+    # check downstream — the seal boundary itself gets lost (P102286: a later,
+    # unrelated sealer wrongly absorbed this entry because the parser never
+    # even registered that a seal line was here).
+    _RE_KISZIB_INLINE = re.compile(r"\bkiszib3#?\s+([a-z{}\-0-9\[\].]+(?:\s+[a-z{}\-0-9\[\].]+)*?)(?:\s+(?:kiszib3|giri3|mu|iti|u3)\b|$)", re.I)
 
     # --------------- Recipient patterns ---------------
     # F: NAME szu/šu ba-ti on same line (allow bracket-damage on "an": ba-[an-ti])

@@ -1531,22 +1531,30 @@ class StructureMixin:
             m_k = self._RE_KISZIB.match(clean) or self._RE_KISZIB_INLINE.search(clean)
             if m_k:
                 cand = self._clean_atf_name(m_k.group(1))
-                if len(cand) >= 2 and self._looks_like_name(cand):
+                name_ok = len(cand) >= 2 and self._looks_like_name(cand)
+                if name_ok:
                     n_kiszib_seen += 1
                     if kiszib_name is None:
                         kiszib_name = cand
-                    if self.extract_quantity(clean)[0] is None:
+                # A standalone kiszib3 line is a seal BOUNDARY even when the
+                # sealer's name is too damaged to read (P102286: "kiszib3#
+                # x-x-[...]" left entries_since_kiszib open, so the NEXT
+                # legible seal name wrongly absorbed an earlier, separately-
+                # sealed entry it had nothing to do with).  Close the window
+                # regardless of whether a usable name came out of it.
+                if self.extract_quantity(clean)[0] is None:
+                    if name_ok:
                         # Standalone "kiszib3 PN": PN received everything
                         # entered since the previous seal line.
                         for _ei in entries_since_kiszib:
                             if entries[_ei].recipient is None:
                                 entries[_ei].recipient = cand
                                 kiszib_used_as_recipient = True
-                        entries_since_kiszib = []
-                    else:
-                        # "N gur kiszib3 PN" — assign after this line's
-                        # entries are created below.
-                        kiszib_line_name = cand
+                    entries_since_kiszib = []
+                elif name_ok:
+                    # "N gur kiszib3 PN" — assign after this line's
+                    # entries are created below.
+                    kiszib_line_name = cand
 
             # Recipient — inline szu ba-ti
             rec_f = self._extract_recipient_inline(clean)
@@ -1632,7 +1640,11 @@ class StructureMixin:
                     unit=u,
                     commodity=comm,
                 ))
-                if inline_recip is None:
+                # An entry whose own line carried a kiszib3 clause already has
+                # its seal — even an illegible one (P102286: "8 gur kiszib3
+                # x-x-[...]") — and must never join the open window to be
+                # swept up by a LATER, unrelated sealer's name.
+                if inline_recip is None and m_k is None:
                     entries_since_kiszib.append(len(entries) - 1)
                 made_entry = True
             if made_entry:
