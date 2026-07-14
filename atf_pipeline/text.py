@@ -55,14 +55,24 @@ class TextMixin:
         # sign; the x and parenthetical are editorial notation, not part of the name.
         name = re.sub(r"x\(\|[^)]*\)", "", name)
         name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
-        # CDLI sign catalog references (REC344, KWU147, LAK123, etc.) are
-        # sign-list numbers, not readable syllables — strip them from names.
+        # CDLI sign catalog references (REC344, KWU147, LAK384, ZATU753, etc.)
+        # are sign-list index numbers, not readable syllables, and must be
+        # stripped from names.  Ordinary capitalized logogram readings with a
+        # phonetic-complement digit (ARAD2, GAN2, SIG7, IB2 …) look identical
+        # in form but are common, legitimate personal-name elements — corpus
+        # frequency analysis shows genuine catalog references always carry a
+        # 3+ digit index (KWU147, LAK384 …), while ordinary sign-reading
+        # digits never exceed 2 (ARAD2, SIG15, BARA10 …), so digit count is
+        # the reliable discriminator.  Requiring 3+ digits previously nuked
+        # ARAD2 as a standalone name in ~1,300 tablets (e.g. "ki ARAD2-ta"
+        # extracted no issuer at all, though the tablet's own translation
+        # reads "from ARAD").
         # Exception: uppercase sign readings preceded by a hyphen are components
         # of compound Sumerian words (e.g. "ug3-IL2", "nin-IL2") and should be
         # kept so the compound name is not truncated.
         # Also protect tokens followed by a hyphen (e.g. "ARAD2-mu") — these
         # are logograms that form the first element of a compound personal name.
-        name = re.sub(r"(?<!-)\b[A-Z]{2,}[0-9]+(?!-)\b", "", name)
+        name = re.sub(r"(?<!-)\b[A-Z]{2,}[0-9]{3,}(?!-)\b", "", name)
         # Collapse multiple hyphens left when damaged brackets are stripped
         # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
         name = re.sub(r"-{2,}", "-", name)
@@ -133,7 +143,13 @@ class TextMixin:
         if first_word.lower() in self._GRAIN_UNIT_WORDS:
             return False
         # All-uppercase tokens are CDLI's notation for signs with uncertain reading
-        # (e.g. KA, SZIM, LAM) — never personal names.
-        if first_word.isupper() and len(first_word) >= 2:
+        # (e.g. KA, SZIM, LAM) — never personal names.  A trailing digit changes
+        # this: it marks a determinate phonetic-complement/homophone index
+        # (ARAD2, GAN2, SIG7 …), the opposite of an uncertain reading, and such
+        # tokens are common legitimate personal names — str.isupper() is blind
+        # to this because digits aren't cased characters ("ARAD2".isupper() is
+        # True), so the digit must be checked for explicitly.
+        if (first_word.isupper() and len(first_word) >= 2
+                and not first_word[-1].isdigit()):
             return False
         return True

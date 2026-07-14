@@ -55,7 +55,16 @@ GOLDEN = {
                              (9000, "lugal-e2-mah-e"), (4500, "ur-szul-pa-e3")]),
     # ---- Stratum C: hierarchical entries ----------------------------------
     "P130781": dict(entries=[(340, "szesz-kal-la")]),
-    "P116018": dict(no_recipient=["lugal"], issuer_clean="ur-sa6-ga"),
+    # Corrected against the tablet's own embedded #tr.en: translation
+    # (MVN 11, 004): "kiszib3 ur-sa6-ga nu-banda3 su-su-dam" = "under seal
+    # of Ur-saga, manager, TO BE REPAID" — this is a debt/loan note. Ur-saga
+    # is the debtor (received the goods, owes them back), not an issuer; no
+    # lender is named in the surviving text. The original benchmark entry
+    # here (issuer_clean="ur-sa6-ga") was my own misreading, self-graded
+    # without checking the translation already present in the corpus — it
+    # is exactly the kind of error this translation cross-check exists to
+    # catch, and it did.
+    "P116018": dict(no_recipient=["lugal"], recipient="ur-sa6-ga"),
     "P374170": dict(no_recipient=["lugal"]),
     "P134402": dict(entries=[(900, "er3-ra-nu-id-e")]),  # ergative -e retained
     "P454001": dict(no_barley_qty=1800),             # 1,800 sila3 is coriander

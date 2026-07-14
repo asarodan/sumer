@@ -1451,6 +1451,14 @@ class StructureMixin:
         entries_since_kiszib: List[int] = []
         n_kiszib_seen = 0
         kiszib_line_name: Optional[str] = None
+        # True once a kiszib name has been assigned as an entry's recipient
+        # (roll-closing or inline).  A name already spent as recipient must
+        # never also become the record's issuer — "PN received the goods"
+        # and "PN issued the goods" cannot both be true of the same PN on
+        # the same entry (audit case P116018: a debt tablet where kiszib3
+        # PN ... su-su-dam names PN as the party who must repay, i.e. the
+        # receiver, not a giver).
+        kiszib_used_as_recipient = False
 
         date, raw_mu = self._parse_date(section)
 
@@ -1512,6 +1520,7 @@ class StructureMixin:
                         for _ei in entries_since_kiszib:
                             if entries[_ei].recipient is None:
                                 entries[_ei].recipient = cand
+                                kiszib_used_as_recipient = True
                         entries_since_kiszib = []
                     else:
                         # "N gur kiszib3 PN" — assign after this line's
@@ -1593,6 +1602,8 @@ class StructureMixin:
                 # "1(asz) 1(barig) gur ur-e2-mah" → recipient = "ur-e2-mah";
                 # "N gur kiszib3 PN" carries the sealing receiver instead.
                 inline_recip = kiszib_line_name or self._extract_inline_qty_recipient(seg)
+                if kiszib_line_name and inline_recip == kiszib_line_name:
+                    kiszib_used_as_recipient = True
                 entries.append(RecordEntry(
                     entry_idx=0,
                     recipient=inline_recip,
@@ -1628,11 +1639,16 @@ class StructureMixin:
                       or self._RE_NOT_NAME.match(clean)):
                 prev_name = None
 
-        if issuer is None and kiszib_name and n_kiszib_seen <= 1:
+        if (issuer is None and kiszib_name and n_kiszib_seen <= 1
+                and not kiszib_used_as_recipient):
             # Single-sealer receipt with no ki NAME-ta: the sealer is the
             # accountable party.  Multi-sealer rolls have per-entry receivers
             # and no single issuer — inventing one from the first seal would
-            # be wrong (audit case P116985).
+            # be wrong (audit case P116985).  If this same name was already
+            # assigned as an entry recipient, it cannot also be the issuer of
+            # the same goods (audit case P116018: a debt tablet where PN is
+            # sealed as the party obligated to repay — a receiver, not a
+            # giver); leave the issuer unknown rather than self-contradictory.
             issuer = kiszib_name
         elif issuer is not None and recipient is None and kiszib_name is not None:
             # ki NAME-ta identified the issuer; the kiszib3 person sealed the

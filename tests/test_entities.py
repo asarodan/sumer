@@ -144,3 +144,33 @@ class TestNameVerbClauseStripping:
 
     def test_i3_gal2_stripped(self, ext):
         assert ext._clean_atf_name("ur-nigar i3-gal2") == "ur-nigar"
+
+
+class TestLogogramNamesNotUncertainReadings:
+    """Trailing-digit ALL-CAPS logograms (ARAD2, GAN2, SIG7 ...) are determinate
+    sign readings and common personal names — not CDLI's uncertain-reading
+    notation (KA, SZIM, LAM ...), which never carries a digit. Found via
+    corpus-scale cross-validation against tablets with embedded translations
+    (P109320: "ki ARAD2-ta" translated as "from ARAD," extracted no issuer
+    at all before this fix)."""
+
+    def test_arad2_is_a_name(self, ext):
+        assert ext._looks_like_name("ARAD2") is True
+        assert ext._extract_issuer("ki ARAD2-ta") == "ARAD2"
+
+    def test_uncertain_reading_without_digit_still_rejected(self, ext):
+        assert ext._looks_like_name("KA") is False
+        assert ext._looks_like_name("SZIM") is False
+        assert ext._looks_like_name("LAM") is False
+
+    def test_catalog_code_still_stripped_from_names(self, ext):
+        # Genuine sign-catalog references (3+ digit index) must still be
+        # stripped when standalone; only the digit-count threshold changed.
+        # Hyphen-prefixed occurrences (nin-LAK384) are deliberately preserved
+        # as compound-name components — a separate, pre-existing rule.
+        assert "KWU147" not in ext._clean_atf_name("ur-{KWU147}")
+        assert ext._clean_atf_name("LAK384") == ""
+
+    def test_ordinary_logogram_survives_cleaning(self, ext):
+        assert ext._clean_atf_name("ARAD2") == "ARAD2"
+        assert ext._clean_atf_name("GAN2") == "GAN2"
