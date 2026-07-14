@@ -18,6 +18,16 @@ class EntityMixin:
             cand = self._clean_atf_name(m.group(1))
             if len(cand) >= 2 and self._looks_like_name(cand):
                 return cand
+            # ka-guru7 ("granary-gate") is deliberately excluded from
+            # _looks_like_name as a place, not a person — correct when
+            # scanning bare lines for names, but inside the unambiguous
+            # "ki X-ta" source frame it functions as an institutional
+            # issuer (251 tablets: "ki ka-guru7-ta", e.g. P102435's own
+            # translation "from the grain depot manager").  The frame
+            # itself is the evidence; accept it here without loosening
+            # _looks_like_name generally.
+            if cand.lower() == "ka-guru7":
+                return cand
 
         # B: ki NAME (abbreviated ablative, no -ta) — strip any trailing debit
         # verb ("ki {d}iszkur-illat ba-zi") so it isn't glued onto the name.

@@ -770,7 +770,10 @@ class ExtractorBase:
     # discard — a trailing verb phrase rather than failing to match it.  The
     # non-greedy (.+?) still stops at the first -ta that is followed by a space
     # or end, so a name carrying an internal -ta- ("in-ta-e3-a-ta") is kept whole.
-    _RE_KI_TA    = re.compile(r"^ki#?\s+(.+?)-ta(?:\s+.*)?$")
+    # [#!?]* right after "-ta" tolerates a damage marker that directly abuts
+    # the ablative with no separating space ("ki ka-guru7-ta#") — without it
+    # the whole line fails to match at all (912 tablets corpus-wide).
+    _RE_KI_TA    = re.compile(r"^ki#?\s+(.+?)-ta[#!?]*(?:\s+.*)?$")
     # Trailing administrative verb/formula that follows an abbreviated ablative
     # issuer name (pattern B has no -ta to bound the name):
     #   "ki {d}iszkur-illat ba-zi" → issuer is {d}iszkur-illat, ba-zi is the verb.

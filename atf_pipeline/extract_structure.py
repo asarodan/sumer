@@ -1439,7 +1439,7 @@ class StructureMixin:
 
     def _scan_section_quantity_first(
         self, section: List[str], tablet_id: str
-    ) -> Optional[TabletRecord]:
+    ) -> List[TabletRecord]:
         """
         Quantity-first section scan.
 
@@ -1454,7 +1454,7 @@ class StructureMixin:
         """
         content = [l.strip() for l in section if self._is_content(l.strip())]
         if not content:
-            return None
+            return []
 
         issuer:         Optional[str] = None
         recipient:      Optional[str] = None
@@ -1464,6 +1464,22 @@ class StructureMixin:
         prev_name:      Optional[str] = None
         pending_comm:   Optional[str] = None   # last commodity seen on any line
         entries: List[RecordEntry] = []
+        # Parallel to `entries`: which issuer governs each entry, filled in
+        # by closing `entries_pending_issuer` below.  A section can carry
+        # more than one distinct "ki X-ta" clause, and the common ATF
+        # convention is that such a clause CLOSES the quantities that
+        # precede it, retroactively attributing the group just finished
+        # (the same backward-closing shape as the kiszib-roll fix above) —
+        # P109320: barley/emmer/wheat are issued by ARAD2, whose "ki
+        # ARAD2-ta" clause comes AFTER those three quantities, then a
+        # separate deficit-restoration entry is closed by a second, later
+        # "ki bi2-da-ta" clause (P102435 has the identical structure).  Any
+        # entries never closed by a clause mid-loop are closed at the end of
+        # the function using the section's final issuer value, which
+        # correctly handles the more common case of a single "ki X-ta" at
+        # the top of a section with no further issuer clause below it.
+        entry_issuers: List[Optional[str]] = []
+        entries_pending_issuer: List[int] = []
         skip_carryforward = False
         # Disbursement-roll support ("N gur / kiszib3 PN" repeated): indices of
         # entries not yet closed by a seal line, and how many distinct seal
@@ -1511,10 +1527,17 @@ class StructureMixin:
                 pending_comm = None
                 prev_name = None  # section dividers are structural labels, not names
 
-            # Issuer patterns (ki NAME-ta, institution-ta, etc.)
+            # Issuer patterns (ki NAME-ta, institution-ta, etc.).  Update to
+            # each newly-recognised issuer rather than latching only the
+            # first, and close out any entries seen since the last issuer
+            # clause under this one — the common "quantities, then ki X-ta"
+            # closing convention (see entries_pending_issuer comment above).
             iss = self._extract_issuer(clean)
-            if iss and issuer is None:
+            if iss and iss != issuer:
                 issuer = iss
+                for _ei in entries_pending_issuer:
+                    entry_issuers[_ei] = iss
+                entries_pending_issuer = []
                 continue
 
             # Agent
@@ -1585,6 +1608,8 @@ class StructureMixin:
                     unit="sila3",
                     commodity=pending_comm or "barley",
                 ))
+                entry_issuers.append(issuer)
+                entries_pending_issuer.append(len(entries) - 1)
                 prev_name = None
                 continue
 
@@ -1640,6 +1665,8 @@ class StructureMixin:
                     unit=u,
                     commodity=comm,
                 ))
+                entry_issuers.append(issuer)
+                entries_pending_issuer.append(len(entries) - 1)
                 # An entry whose own line carried a kiszib3 clause already has
                 # its seal — even an illegible one (P102286: "8 gur kiszib3
                 # x-x-[...]") — and must never join the open window to be
@@ -1688,9 +1715,18 @@ class StructureMixin:
             # receipt to acknowledge they took the goods — they are the recipient.
             recipient = kiszib_name
 
+        # Entries never closed by a mid-loop "ki X-ta"/kiszib clause (the
+        # common case: a single issuer established before or with no further
+        # clause at all) take whichever issuer the section ended up with,
+        # including one determined only by the fallback logic just above.
+        if issuer is not None:
+            for _ei in range(len(entry_issuers)):
+                if entry_issuers[_ei] is None:
+                    entry_issuers[_ei] = issuer
+
         # Nothing at all — skip
         if not entries and issuer is None and recipient is None:
-            return None
+            return []
 
         if issuer and recipient:
             rtype = "transfer"
@@ -1709,16 +1745,43 @@ class StructureMixin:
                 if e.recipient is None:
                     e.recipient = recipient
 
-        rec = TabletRecord(
-            record_idx=0,
-            record_type=rtype,
-            issuer=issuer,
-            agent=agent,
-            date=date,
-            raw_date=raw_mu,
-            entries=entries,
-        )
-        return rec
+        # Split entries into one record per contiguous run of the same
+        # issuer.  When the whole section has a single issuer (or none),
+        # entry_issuers is uniform and this produces exactly one record,
+        # identical to prior behaviour; a section with 2+ distinct "ki
+        # X-ta" clauses (P109320, P102435; ~1,838 tablets corpus-wide) now
+        # correctly yields a separate record per issuer instead of forcing
+        # every entry under whichever issuer the section ended up with.
+        records: List[TabletRecord] = []
+        run_start = 0
+        for i in range(1, len(entries) + 1):
+            if i == len(entries) or entry_issuers[i] != entry_issuers[run_start]:
+                run_entries = entries[run_start:i]
+                run_issuer = entry_issuers[run_start]
+                run_rtype = "transfer" if (run_issuer and recipient) else rtype
+                records.append(TabletRecord(
+                    record_idx=len(records),
+                    record_type=run_rtype,
+                    issuer=run_issuer,
+                    agent=agent,
+                    date=date,
+                    raw_date=raw_mu,
+                    entries=run_entries,
+                ))
+                run_start = i
+        if not records:
+            # No entries at all (issuer/recipient-only record, e.g. a bare
+            # receipt with no quantity line).
+            records.append(TabletRecord(
+                record_idx=0,
+                record_type=rtype,
+                issuer=issuer,
+                agent=agent,
+                date=date,
+                raw_date=raw_mu,
+                entries=[],
+            ))
+        return records
 
     def extract_records(
         self, lines: List[str], tablet_id: str
@@ -1756,9 +1819,7 @@ class StructureMixin:
         else:
             for section in self._split_sections(lines):
                 try:
-                    rec = self._scan_section_quantity_first(section, tablet_id)
-                    if rec is not None:
-                        records.append(rec)
+                    records.extend(self._scan_section_quantity_first(section, tablet_id))
                 except Exception as exc:
                     logger.warning("Record extraction error %s: %s", tablet_id, exc)
 

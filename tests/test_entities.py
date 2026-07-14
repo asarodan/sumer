@@ -201,3 +201,64 @@ class TestKiszibRollDamagedSealBoundary:
         # recognised as a seal clause at all, not just rejected as an
         # unreadable name.
         assert ext._RE_KISZIB_INLINE.search("8(asz) gur kiszib3 x-x-[...]")
+
+
+class TestMultiIssuerSectionSplitting:
+    """A section can carry more than one distinct "ki X-ta" clause, each
+    retroactively closing the quantities that precede it -- the common ATF
+    convention of quantities first, then the issuer clause (P109320: barley
+    /emmer/wheat closed by "ki ARAD2-ta", then a separately-issued deficit
+    entry closed by "ki bi2-da-ta"; P102435 has the identical shape). A
+    single scalar issuer per record silently discarded the second clause
+    and its entries; this must now split into separate records."""
+
+    def test_two_issuer_clauses_split_into_two_groups(self, ext):
+        summ = ext.extract_records([
+            "@tablet", "@obverse",
+            "1. 1(gesz2) sze gur",
+            "2. ki ARAD2-ta",
+            "3. 3(asz) sze gur",
+            "4. ki bi2-da-ta",
+        ], "TEST-MULTI-ISSUER")
+        groups = {(r.issuer): [e.quantity for e in r.entries] for r in summ.records}
+        assert groups.get("ARAD2") == [18000.0]
+        assert groups.get("bi2-da") == [900.0]
+
+    def test_single_issuer_section_still_produces_one_record(self, ext):
+        # Regression guard: the common, simple case (one issuer, no split
+        # needed) must not be fragmented by this change.
+        summ = ext.extract_records([
+            "@tablet", "@obverse",
+            "1. 1(gesz2) sze gur",
+            "2. 3(asz) sze gur",
+            "3. ki ARAD2-ta",
+        ], "TEST-SINGLE-ISSUER")
+        assert len(summ.records) == 1
+        assert summ.records[0].issuer == "ARAD2"
+        assert [e.quantity for e in summ.records[0].entries] == [18000.0, 900.0]
+
+
+class TestInstitutionalIssuerInKiTaFrame:
+    """ka-guru7 ("granary-gate") is correctly excluded from personal-name
+    matching as a place, but inside the "ki X-ta" source frame it is a
+    legitimate institutional issuer (251 tablets; P102435's own translation:
+    "from the grain depot manager")."""
+
+    def test_ka_guru7_recognized_as_issuer(self, ext):
+        assert ext._extract_issuer("ki ka-guru7-ta") == "ka-guru7"
+
+    def test_ka_guru7_still_rejected_as_a_bare_name(self, ext):
+        # The general name filter is unchanged outside the ki-ta frame.
+        assert ext._looks_like_name("ka-guru7") is False
+
+
+class TestKiTaTrailingDamageMarker:
+    """A damage marker directly abutting "-ta" with no separating space
+    ("ki ka-guru7-ta#") must not silently fail the whole issuer match
+    (912 tablets corpus-wide)."""
+
+    def test_trailing_hash_after_ta(self, ext):
+        assert ext._extract_issuer("ki ka-guru7-ta#") == "ka-guru7"
+
+    def test_trailing_question_mark_after_ta(self, ext):
+        assert ext._extract_issuer("ki lugal-ku3-zu-ta?") == "lugal-ku3-zu"
