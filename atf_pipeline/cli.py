@@ -105,7 +105,11 @@ def main() -> None:
         print(f"  {comm:15s}: {cnt}")
 
     # Volume by commodity — grain (sila3), silver (gin2), animals (head), labor (worker-day)
-    GRAIN_COMMS = {"barley", "emmer", "wheat", "flour", "beer", "oil", "dates", "malt"}
+    # bran/groats are barley byproducts (see extract_quantity.py's "sze X"
+    # compound handling) and belong in the grain total; dairy (ga-sze-a,
+    # ga-UD) is milk-derived and does not.
+    GRAIN_COMMS = {"barley", "emmer", "wheat", "flour", "beer", "oil", "dates", "malt",
+                   "bran", "groats"}
     by_comm: Dict[str, float] = {}
     for tx in all_transactions:
         if tx.quantity and tx.commodity:

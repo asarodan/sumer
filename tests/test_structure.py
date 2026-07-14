@@ -480,3 +480,30 @@ class TestCrossSectionIssuerInheritance:
         ], "TEST-NOINHERIT")
         by_issuer = {t.issuer for t in txs if t.quantity}
         assert "ur-mes" in by_issuer and "ab-ba-saga" in by_issuer
+
+
+class TestCompositeLiteraryTextRejected:
+    """@object composite text (ETCSL-style literary editions) must be
+    rejected by both extraction paths, not just the flat one. Found via
+    translation cross-check: P469682, the "Lament for Sumer and Ur," a
+    mythological poem, yielded a phantom "1200 sila3 barley" transaction
+    whose "recipient" was a full line of poetry, because it carries no
+    #atf genre marker recognisable to the pre-existing check."""
+
+    LAMENT_LINES = [
+        "@object composite text",
+        "@surface a",
+        "1. u4 szu bala ak-de3 gesz-hur ha-lam-e-de3",
+        "#tr.en: To overturn the appointed times,",
+        "2. 1(gesz2) sze gur lugal",
+        "#tr.en: (incidental numeral+grain sequence within verse)",
+        "3. nig2-ur2-limmu2 szakkan2-ke4 ni2 nu-mu-ni-ib-te-en-te-en",
+        "#tr.en: that the four-legged creatures of Šakkan should lay no dung,",
+    ]
+
+    def test_flat_path_rejects_composite_text(self, ext):
+        assert ext.extract_transactions(self.LAMENT_LINES, "TEST-LAMENT") == []
+
+    def test_hierarchical_path_rejects_composite_text(self, ext):
+        summ = ext.extract_records(self.LAMENT_LINES, "TEST-LAMENT")
+        assert summ.records == []

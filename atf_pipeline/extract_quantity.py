@@ -484,6 +484,16 @@ class QuantityMixin:
         if re.search(r"\bku3-sig17\b", line, re.I): return "gold"
         if self._RE_SILVER.search(line):  return "silver"
         if self._RE_MALT.search(line):    return "malt"
+        # "sze X" byproduct-of-barley compounds ("sze" here means "barley
+        # product", not the raw grain): the qualifier, not the "sze" token,
+        # names the real commodity.  Found by cross-checking against the
+        # tablets' own embedded translations — "sze dabin", "sze duh", "sze
+        # nig2-ar3-ra" were all typed as plain barley (P102361: "3 barig,
+        # barley, bran" / "3 barig 2 ban2 barley, groats" / "5 ban2 barley,
+        # dabin-flour" — all inflating the barley total with byproducts).
+        if re.search(r"\bsze\s+dabin\b", line, re.I):        return "flour"
+        if re.search(r"\bsze\s+duh\b", line, re.I):          return "bran"
+        if re.search(r"\bsze\s+nig2-ar3-ra\b", line, re.I):  return "groats"
         if self._RE_BARLEY.search(line):
             # "sze" alongside a gin2/ma-na weight but no capacity unit is the
             # barleycorn weight sub-unit (1/180 shekel), not barley grain.

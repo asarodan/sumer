@@ -1042,6 +1042,31 @@ class StructureMixin:
             tx_type="labor",
         )]
 
+    @staticmethod
+    def _is_non_administrative_genre(lines: List[str]) -> bool:
+        """
+        True for lexical lists, bilingual glossaries, royal inscriptions,
+        literary/metrological texts, non-Sumerian tablets, and composite
+        literary editions (e.g. ETCSL compositions like "Lament for Sumer
+        and Ur") — genres whose prose/verse incidentally contains numeral-
+        classifier and administrative-verb sequences that the Ur III admin
+        parser misreads as phantom transactions.  Found via cross-check
+        against tablets with embedded translations: P469682, a mythological
+        lament, yielded a fictitious "1200 sila3 barley" transaction whose
+        "recipient" was a full line of poetry, because it carries no #atf
+        genre marker recognisable to the original check (@object composite
+        text instead) — 116 such tablets corpus-wide were affected.
+        """
+        for l in lines[:10]:
+            s = l.strip()
+            if re.match(r"#atf:\s+use\s+(lexical|bilingual|literary|emesal)", s, re.I):
+                return True
+            if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", s, re.I):
+                return True
+            if re.match(r"@object\s+composite", s, re.I):
+                return True
+        return False
+
     def extract_transactions(
         self, lines: List[str], tablet_id: str
     ) -> List[Transaction]:
@@ -1051,12 +1076,8 @@ class StructureMixin:
         # Skip non-administrative texts: lexical lists, bilingual glossaries,
         # royal inscriptions, literary/metrological texts, and non-Sumerian
         # tablets — these use formats incompatible with the Ur III admin parser.
-        for l in lines[:10]:
-            s = l.strip()
-            if re.match(r"#atf:\s+use\s+(lexical|bilingual|literary|emesal)", s, re.I):
-                return []
-            if re.match(r"#atf:\s+lang\s+(akk|ebl|sux-x-emesal|hit)\b", s, re.I):
-                return []
+        if self._is_non_administrative_genre(lines):
+            return []
         # Pre-Sargonic / Early Dynastic tablets use archaic curviform (@c) tokens
         # on capacity and area units (szar'u@c, szar2@c, gesz'u@c, gesz2@c,
         # asz@c, iku@c, ban2@c, barig@c).  The @c suffix is stripped during unit
@@ -1699,6 +1720,10 @@ class StructureMixin:
         a section with barley + emmer + wheat yields three entries, not one.
         """
         lines = self._strip_secondary_sections(lines)
+        if self._is_non_administrative_genre(lines):
+            return TabletSummary(
+                tablet_id=tablet_id, tablet_type="non-administrative", records=[]
+            )
         _ARCHAIC_C = re.compile(
             r"\((?:szar'u|szar2|gesz'u|gesz2|asz|iku|ban2|barig|sila)@c\)", re.I
         )

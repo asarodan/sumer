@@ -176,3 +176,22 @@ class TestOrchardYieldLines:
     def test_wooden_object_counts_still_blocked(self, ext):
         # "4(u) gesz {gesz}asal2" = 40 poplar logs — must stay non-grain.
         assert ext.extract_quantity("4(u) {gesz}asal2", context_gur=True) == (None, None)
+
+
+class TestSzeByproductCompounds:
+    """"sze X" names a barley byproduct (X), not raw barley — found via
+    translation cross-check (P102361: "3 barig, barley, bran" / "3 barig
+    2 ban2 barley, groats" / "5 ban2 barley, dabin-flour" were all typed
+    as plain barley)."""
+
+    def test_sze_duh_is_bran_not_barley(self, ext):
+        assert ext._detect_commodity("3(barig) sze duh") == "bran"
+
+    def test_sze_nig2_arra_is_groats_not_barley(self, ext):
+        assert ext._detect_commodity("3(barig) 2(ban2) sze nig2-ar3-ra") == "groats"
+
+    def test_sze_dabin_is_flour_not_barley(self, ext):
+        assert ext._detect_commodity("5(ban2) sze dabin") == "flour"
+
+    def test_plain_barley_unaffected(self, ext):
+        assert ext._detect_commodity("5(asz) sze gur") == "barley"
