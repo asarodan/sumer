@@ -1,0 +1,155 @@
+"""Generic ATF text helpers: line-number stripping, name cleaning, and the
+"is this a personal name?" heuristic."""
+
+import re
+from typing import Optional
+
+from atf_pipeline.patterns import ExtractorBase
+
+
+class TextMixin:
+    """Low-level string normalisation shared across all extraction passes."""
+
+    # Scribal corrections in CDLI ATF: <<deleted text>> marks text the scribe
+    # wrote and then crossed out.  It must be removed before quantity parsing
+    # so that the original (wrong) tokens are not summed alongside the correction.
+    _RE_SCRIBAL_CORR = re.compile(r"<<[^>]*>>")
+    # CDLI ATF italic markup: _text_ marks Sumerian logograms in Akkadian context.
+    # Strip the underscore delimiters but keep the textual content.
+    _RE_ATF_ITALIC = re.compile(r"_")
+
+    def _strip_linenum(self, line: str) -> str:
+        line = self._RE_LINENUM.sub("", line).strip()
+        line = self._RE_SCRIBAL_CORR.sub("", line).strip()
+        return self._RE_ATF_ITALIC.sub("", line).strip()
+
+    @staticmethod
+    def _is_content(line: str) -> bool:
+        s = line.strip()
+        return bool(s) and s[0].isdigit()
+
+    @staticmethod
+    def _clean_atf_name(name: str) -> str:
+        """Strip damage markers and trailing grammatical suffixes from a name."""
+        name = re.sub(r"\(\$[^)]*\$\)", "", name)   # CDLI editorial markers ($...$)
+        name = re.sub(r"\([A-Za-z][A-Za-z0-9\-]*\)", "", name)  # sign variant: ensi2(PA-TE), kas4(DU)
+        name = re.sub(r"\(\s*\)", "", name)          # empty parentheses () from parsing artifacts
+        # ATF editorial additions <word> — keep the content, strip the markers.
+        # "<sza3>" in "nam-<sza3>-tam" means the scribe omitted the sign but the
+        # reading is certain; we want "nam-sza3-tam", not "nam--tam".
+        name = re.sub(r"<([^>]*)>", r"\1", name)
+        name = re.sub(r"[!?*#]", "", name)
+        name = re.sub(r"\[.*?\]", "", name)
+        name = re.sub(r"\[[^\]]*$", "", name)    # unclosed bracket at end of string
+        name = re.sub(r"\]", "", name)            # lone closing bracket (no matching open)
+        # Strip all ATF determinatives ({d}, {gesz}, {ki}, {gar}, etc.) and
+        # phonetic complements that appear inside or after sign readings.
+        # Also handles unclosed braces ({gar without closing }) from damaged lines.
+        name = re.sub(r"\{[^}]*\}", "", name)
+        name = re.sub(r"\{[^}]*$", "", name)    # unclosed brace at end of string
+        # Strip sign-form modifier suffixes (@g, @c, @t, @v, @n …) on sign names.
+        # They encode alternative sign forms and are never part of personal names.
+        name = re.sub(r"@[A-Za-z0-9]+", "", name)
+        # Strip composite sign specifications: "uszurx(|.|)" → "uszur".
+        # In CDLI ATF, "x(|...|)" denotes an unusual sign reading via composite
+        # sign; the x and parenthetical are editorial notation, not part of the name.
+        name = re.sub(r"x\(\|[^)]*\)", "", name)
+        name = re.sub(r"\bx\b", "", name)            # ATF unknown-sign token
+        # CDLI sign catalog references (REC344, KWU147, LAK384, ZATU753, etc.)
+        # are sign-list index numbers, not readable syllables, and must be
+        # stripped from names.  Ordinary capitalized logogram readings with a
+        # phonetic-complement digit (ARAD2, GAN2, SIG7, IB2 …) look identical
+        # in form but are common, legitimate personal-name elements — corpus
+        # frequency analysis shows genuine catalog references always carry a
+        # 3+ digit index (KWU147, LAK384 …), while ordinary sign-reading
+        # digits never exceed 2 (ARAD2, SIG15, BARA10 …), so digit count is
+        # the reliable discriminator.  Requiring 3+ digits previously nuked
+        # ARAD2 as a standalone name in ~1,300 tablets (e.g. "ki ARAD2-ta"
+        # extracted no issuer at all, though the tablet's own translation
+        # reads "from ARAD").
+        # Exception: uppercase sign readings preceded by a hyphen are components
+        # of compound Sumerian words (e.g. "ug3-IL2", "nin-IL2") and should be
+        # kept so the compound name is not truncated.
+        # Also protect tokens followed by a hyphen (e.g. "ARAD2-mu") — these
+        # are logograms that form the first element of a compound personal name.
+        name = re.sub(r"(?<!-)\b[A-Z]{2,}[0-9]{3,}(?!-)\b", "", name)
+        # Collapse multiple hyphens left when damaged brackets are stripped
+        # e.g. "lugal-[gur8]-re" → bracket strip → "lugal--re" → "lugal-re"
+        name = re.sub(r"-{2,}", "-", name)
+        # A dangling hyphen before a space means the hyphenated segment was
+        # stripped (e.g. "nam-sza3-[tam] ur" → "nam-sza3- ur").
+        # Replace "hyphen + space" with just a space to rejoin cleanly.
+        name = re.sub(r"-\s+", " ", name)
+        name = re.sub(r"-ta\s*$", "", name)
+        name = re.sub(r"-sze3\s*$", "", name)        # terminative suffix — never part of a stored name
+        # Dangling hyphen left when a damaged bracket like "[ta]" is stripped:
+        # "dub-sar-[ta]" → after bracket strip → "dub-sar-" → strip trailing "-"
+        name = re.sub(r"-\s*$", "", name)
+        # Strip Sumerian conjunction "and" at either end: "u3 NAME" or "NAME u3"
+        name = re.sub(r"^u3\s+", "", name, flags=re.I)
+        name = re.sub(r"\s+u3\s*$", "", name, flags=re.I)
+        # Strip genealogy suffix: "NAME dumu FATHER" → "NAME"
+        name = re.sub(r"\s+dumu(?:-munus)?\b.+$", "", name, flags=re.I)
+        # Strip trailing administrative verb clauses that ride after a name or
+        # its title: "su-su-dam" (to be repaid), "i3-gal2" (is on deposit).
+        # They must go before title stripping so "NAME nu-banda3 su-su-dam"
+        # reduces to "NAME" (audit case P116018).
+        name = re.sub(r"\s+(?:su-su-dam|i3-gal2)\b.*$", "", name, flags=re.I)
+        # Strip leading title when followed by space: "nu-banda3 NAME" → "NAME"
+        name = ExtractorBase._RE_TITLE_PREFIX.sub("", name)
+        # Strip trailing administrative title: "NAME nu-banda3" → "NAME"
+        name = ExtractorBase._RE_TITLE_SUFFIX.sub("", name)
+        return re.sub(r"\s+", " ", name).strip()
+
+    def _looks_like_name(self, clean: str) -> bool:
+        """Heuristic: does this look like a standalone personal name line?"""
+        if self._RE_NOT_NAME.match(clean):
+            return False
+        # Lines that contain action verbs (received, given, expended) anywhere
+        # are administrative formulae, not personal name lines.
+        if self._RE_ACTION_FORMULA.search(clean):
+            return False
+        # Travel-clause lines from messenger texts: "[place/person]-sze3 gen-na"
+        # (went to X), "[place]-ta gen-na" (came from X), "X du-ni" (his coming).
+        # These describe a journey, not a person; when a standalone "szu ba-ti"
+        # follows, the clause would otherwise be captured as the recipient.
+        # The entity roster already blocks endswith(" gen-na"); this keeps the
+        # transaction-level recipient extraction consistent with it.
+        if re.search(r"\s(?:gen-na|gen-a|du-ni)\s*$", clean, re.I):
+            return False
+        # Damaged-bracket fragments like "[...]-mu" → after cleaning leave "-mu";
+        # a real name always starts with a letter or determinative brace.
+        if clean.startswith("-"):
+            return False
+        if re.search(r"\b(?:gur|barig|ban2|sila3|gin2|ninda)\b", clean):
+            return False
+        if re.search(r"\(\$", clean):      # CDLI editorial marker ($ blank space $)
+            return False
+        if len(clean) < 2 or len(clean) > 60:
+            return False
+        # 2-char non-hyphenated tokens are damage fragments (na-[...] → "na",
+        # da-[...] → "da") or function words — never standalone personal names.
+        if len(clean) == 2 and '-' not in clean:
+            return False
+        # Bare commodity/animal/material words cannot be standalone personal names.
+        # Compound names containing these syllables (e.g. "udu-ni-ba") are safe —
+        # the exact-match check only blocks the isolated word.
+        if clean.lower() in self._GRAIN_UNIT_WORDS:
+            return False
+        # If the FIRST word is a commodity/function word, the line cannot be a
+        # personal name even if other words follow (e.g. "ur ba-zi" = expended).
+        words = clean.split()
+        first_word = words[0] if words else clean
+        if first_word.lower() in self._GRAIN_UNIT_WORDS:
+            return False
+        # All-uppercase tokens are CDLI's notation for signs with uncertain reading
+        # (e.g. KA, SZIM, LAM) — never personal names.  A trailing digit changes
+        # this: it marks a determinate phonetic-complement/homophone index
+        # (ARAD2, GAN2, SIG7 …), the opposite of an uncertain reading, and such
+        # tokens are common legitimate personal names — str.isupper() is blind
+        # to this because digits aren't cased characters ("ARAD2".isupper() is
+        # True), so the digit must be checked for explicitly.
+        if (first_word.isupper() and len(first_word) >= 2
+                and not first_word[-1].isdigit()):
+            return False
+        return True

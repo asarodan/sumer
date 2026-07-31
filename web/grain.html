@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Weigh the Harvest — Ur III Grain</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg-dark:#0d0b07; --bg-mid:#161209; --bg-card:#1e1710;
+    --gold:#c9933a; --gold-light:#e8b85c; --gold-dim:#7a5820;
+    --text:#e8dcc8; --text-muted:#9e9080; --border:#3a2e1a; --accent:#8b1a1a;
+  }
+  body{background:var(--bg-dark);color:var(--text);
+    font-family:'Georgia','Times New Roman',serif;line-height:1.6;
+    min-height:100vh}
+  header{text-align:center;padding:2.5rem 1rem 1rem}
+  header h1{font-size:2.4rem;color:var(--gold-light);letter-spacing:.04em;font-weight:normal}
+  header h1 span{color:var(--accent)}
+  header p{color:var(--text-muted);max-width:640px;margin:.6rem auto 0;font-size:1.02rem}
+  .wrap{display:flex;gap:1.5rem;max-width:1200px;margin:1.5rem auto;padding:0 1.2rem;
+    align-items:flex-start;flex-wrap:wrap}
+  /* shelf */
+  .shelf{flex:1 1 340px;min-width:300px}
+  .controls{display:flex;gap:.5rem;margin-bottom:.9rem;flex-wrap:wrap}
+  .controls input{flex:1;min-width:160px;background:var(--bg-card);border:1px solid var(--border);
+    color:var(--text);padding:.55rem .7rem;border-radius:6px;font-family:inherit}
+  .chip{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);
+    padding:.4rem .7rem;border-radius:14px;cursor:pointer;font-size:.82rem;user-select:none}
+  .chip.on{background:var(--gold-dim);color:var(--text);border-color:var(--gold)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem;
+    max-height:62vh;overflow-y:auto;padding-right:.3rem}
+  .card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+    padding:.7rem;cursor:grab;transition:transform .12s,border-color .12s,box-shadow .12s}
+  .card:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 4px 14px #0008}
+  .card .glyph{font-size:1.5rem;color:var(--gold)}
+  .card .pid{font-size:.7rem;color:var(--text-muted);letter-spacing:.05em}
+  .card .comm{color:var(--gold-light);text-transform:capitalize;font-size:.95rem;margin-top:.1rem}
+  .card .amt{font-size:.78rem;color:var(--text-muted);margin-top:.15rem}
+  /* scale / drop zone */
+  .stage{flex:1 1 420px;min-width:320px;position:sticky;top:1rem}
+  .pan{background:linear-gradient(180deg,var(--bg-mid),var(--bg-card));
+    border:1px solid var(--border);border-radius:14px;padding:1.6rem;min-height:60vh;
+    transition:border-color .15s,box-shadow .15s}
+  .pan.drag{border-color:var(--gold-light);box-shadow:0 0 0 2px var(--gold-dim) inset}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    height:55vh;text-align:center;color:var(--text-muted)}
+  .empty .big{font-size:3.5rem;color:var(--gold-dim);margin-bottom:.6rem}
+  .head{border-bottom:1px solid var(--border);padding-bottom:.8rem;margin-bottom:1rem}
+  .head .pid{color:var(--text-muted);font-size:.8rem;letter-spacing:.06em}
+  .head .comm{font-size:1.9rem;color:var(--gold-light);text-transform:capitalize}
+  .head .desig{color:var(--text-muted);font-style:italic;font-size:.9rem}
+  .silaline{font-size:2.6rem;color:var(--gold);margin:.3rem 0 .1rem;font-variant-numeric:tabular-nums}
+  .silaline small{font-size:1rem;color:var(--text-muted);font-variant:normal}
+  .rows{margin-top:1.2rem;display:flex;flex-direction:column;gap:.7rem}
+  .row{display:flex;align-items:center;gap:.9rem;background:#00000030;border:1px solid var(--border);
+    border-radius:8px;padding:.7rem .9rem}
+  .row .ic{font-size:1.7rem;width:2.2rem;text-align:center}
+  .row .val{font-size:1.5rem;color:var(--text);font-variant-numeric:tabular-nums}
+  .row .lbl{color:var(--text-muted);font-size:.9rem}
+  .prov{margin-top:1.2rem;border-top:1px solid var(--border);padding-top:.9rem;
+    color:var(--text-muted);font-size:.92rem;line-height:1.8}
+  .prov b{color:var(--text);font-weight:normal}
+  .arrow{color:var(--gold);margin:0 .35rem}
+  .note{text-align:center;color:var(--text-muted);font-size:.78rem;max-width:760px;
+    margin:1.5rem auto 3rem;padding:0 1rem;font-style:italic}
+  .err{color:var(--accent);text-align:center;padding:2rem}
+  a{color:var(--gold)}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Weigh the <span>Harvest</span></h1>
+    <p>Drag a 4,000-year-old clay tablet onto the granary scale — and watch its
+       grain become litres, kilograms, and the people it could feed. Every
+       number is parsed from the original Ur III account.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="shelf">
+      <div class="controls">
+        <input id="search" type="text" placeholder="Search by tablet, place, or person…" />
+      </div>
+      <div class="controls" id="chips"></div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <div class="stage">
+      <div class="pan" id="pan">
+        <div class="empty" id="empty">
+          <div class="big">𒁾</div>
+          <div>Drag a tablet here — or tap one — to weigh its grain.</div>
+        </div>
+        <div id="detail" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note" id="note"></p>
+
+<script>
+const COMMS = ["barley","emmer","wheat","flour","bread","beer","dates"];
+const GLYPH = "𒊺"; // cuneiform "barley/grain"
+let DATA = [], FILTER = {q:"", comm:null};
+
+function fmt(n){ return n.toLocaleString("en-US"); }
+
+function render(){
+  const box = document.getElementById("cards");
+  const q = FILTER.q.toLowerCase();
+  const list = DATA.filter(r=>{
+    if(FILTER.comm && r.commodity!==FILTER.comm) return false;
+    if(!q) return true;
+    return (r.id+" "+r.designation+" "+(r.issuer||"")+" "+(r.recipient||"")).toLowerCase().includes(q);
+  });
+  box.innerHTML = "";
+  list.slice(0,200).forEach(r=>{
+    const c = document.createElement("div");
+    c.className="card"; c.draggable=true; c.dataset.id=r.id;
+    c.innerHTML = `<div class="glyph">${GLYPH}</div>
+      <div class="pid">${r.id}</div>
+      <div class="comm">${r.commodity}</div>
+      <div class="amt">${fmt(r.sila3)} sila₃</div>`;
+    c.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",r.id));
+    c.addEventListener("click",()=>show(r));
+    box.appendChild(c);
+  });
+}
+
+function animateCount(el, target, suffix){
+  const dur=750, t0=performance.now();
+  function step(t){
+    const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+    el.textContent = fmt(Math.round(target*e)) + (suffix||"");
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function show(r){
+  document.getElementById("empty").style.display="none";
+  const d = document.getElementById("detail");
+  d.style.display="block";
+  const prov = [];
+  if(r.issuer)    prov.push(`from <b>${r.issuer}</b>`);
+  if(r.recipient) prov.push(`to <b>${r.recipient}</b>`);
+  const provLine = prov.length ? prov.join('<span class="arrow">→</span>') : "";
+  d.innerHTML = `
+    <div class="head">
+      <div class="pid">${r.id} · <span class="desig">${r.designation||""}</span></div>
+      <div class="comm">${r.commodity}</div>
+    </div>
+    <div class="silaline"><span id="sila">0</span> <small>sila₃ (the original unit)</small></div>
+    <div class="rows">
+      <div class="row"><span class="ic">🏺</span><div><span class="val" id="v-l">0</span>
+        <span class="lbl">litres of grain</span></div></div>
+      <div class="row"><span class="ic">⚖️</span><div><span class="val" id="v-k">0</span>
+        <span class="lbl">kilograms</span></div></div>
+      <div class="row"><span class="ic">🥣</span><div><span class="val" id="v-d">0</span>
+        <span class="lbl">days of rations (1 person)</span></div></div>
+      <div class="row"><span class="ic">👥</span><div><span class="val" id="v-p">0</span>
+        <span class="lbl">people fed for a whole year</span></div></div>
+    </div>
+    <div class="prov">
+      ${provLine ? provLine+"<br>" : ""}
+      ${r.date ? `dated <b>${r.date}</b><br>` : `<b>Ur III period</b> (c. 2100–2000 BCE)<br>`}
+      <span style="font-size:.85rem">${r.commodity} · ${fmt(r.sila3)} sila₃ recorded on this tablet</span>
+    </div>`;
+  animateCount(document.getElementById("sila"), r.sila3);
+  animateCount(document.getElementById("v-l"), r.litres);
+  animateCount(document.getElementById("v-k"), r.kg);
+  animateCount(document.getElementById("v-d"), r.person_days);
+  document.getElementById("v-p").textContent =
+    r.people_year < 10 ? r.people_year.toFixed(1) : fmt(Math.round(r.people_year));
+}
+
+function setupDrop(){
+  const pan = document.getElementById("pan");
+  pan.addEventListener("dragover",e=>{e.preventDefault();pan.classList.add("drag");});
+  pan.addEventListener("dragleave",()=>pan.classList.remove("drag"));
+  pan.addEventListener("drop",e=>{
+    e.preventDefault();pan.classList.remove("drag");
+    const id=e.dataTransfer.getData("text/plain");
+    const r=DATA.find(x=>x.id===id); if(r) show(r);
+  });
+}
+
+function setupChips(){
+  const box=document.getElementById("chips");
+  COMMS.forEach(c=>{
+    const el=document.createElement("span");
+    el.className="chip"; el.textContent=c;
+    el.onclick=()=>{
+      FILTER.comm = FILTER.comm===c ? null : c;
+      [...box.children].forEach(x=>x.classList.toggle("on",x.textContent===FILTER.comm));
+      render();
+    };
+    box.appendChild(el);
+  });
+}
+
+fetch("tablets.json").then(r=>r.json()).then(p=>{
+  DATA = p.tablets;
+  const m=p.meta;
+  document.getElementById("note").innerHTML =
+    `Quantities are parsed from CDLI ATF transliterations. Equivalents are approximate: `+
+    `1 sila₃ ≈ 1 litre ≈ ${m.conversions.litre_to_kg_barley} kg of barley; `+
+    `1 person’s daily ration ≈ ${m.conversions.ration_sila3_per_day} sila₃; year = ${m.conversions.year_days} days. `+
+    `Showing the ${m.count} grain tablets with the most complete records.`;
+  setupChips(); setupDrop(); render();
+  document.getElementById("search").addEventListener("input",e=>{FILTER.q=e.target.value;render();});
+}).catch(err=>{
+  document.getElementById("cards").innerHTML =
+    `<div class="err">Couldn’t load <b>tablets.json</b>.<br>`+
+    `If you opened this file directly, run a local server instead:<br>`+
+    `<code>cd web &amp;&amp; python -m http.server</code><br>then visit `+
+    `<a href="http://localhost:8000/grain.html">localhost:8000/grain.html</a></div>`;
+});
+</script>
+</body>
+</html>
