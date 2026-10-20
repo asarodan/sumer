@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reconstructing the Ur III Grain Economy from 135,000 Cuneiform Tablets</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#f4f1ea;color:#16130d;font-family:"Palatino Linotype","Book Antiqua",Georgia,serif;
+       font-size:11.6pt;line-height:1.62;}
+  .page{max-width:7.6in;margin:0 auto;background:#fff;padding:0.9in 0.95in 1in;
+        box-shadow:0 0 22px rgba(0,0,0,0.10);}
+  h1{font-size:19pt;line-height:1.25;text-align:center;margin-bottom:8pt;font-weight:600;}
+  .sub{text-align:center;font-size:11pt;color:#5a5443;margin-bottom:4pt;font-style:italic;}
+  .auth{text-align:center;font-size:10.5pt;margin:10pt 0 2pt;}
+  .aff{text-align:center;font-size:9.5pt;color:#6a6453;margin-bottom:20pt;}
+  h2{font-size:13pt;margin:22pt 0 7pt;padding-bottom:3pt;border-bottom:1.5px solid #b8860b;
+     color:#5a3a12;font-weight:600;}
+  h3{font-size:11.5pt;margin:15pt 0 5pt;color:#7a3a1a;font-weight:600;}
+  p{margin-bottom:9pt;text-align:justify;}
+  .abstract{background:#faf7f0;border-left:3px solid #b8860b;padding:13pt 17pt;margin:0 0 8pt;
+            font-size:10.6pt;}
+  .abstract h2{border:none;margin:0 0 5pt;font-size:11pt;color:#5a3a12;}
+  .kw{font-size:9.6pt;color:#6a6453;margin-top:6pt;}
+  figure{margin:15pt 0;text-align:center;}
+  figure img{max-width:100%;border:1px solid #ddd6c5;background:#fff;padding:4px;}
+  figcaption{font-size:9.3pt;color:#5a5443;margin-top:5pt;text-align:left;padding:0 6pt;}
+  table{border-collapse:collapse;width:100%;margin:12pt 0;font-size:9.7pt;}
+  th,td{border:1px solid #d8d1c0;padding:4.5pt 8pt;text-align:left;}
+  th{background:#efe9da;font-weight:600;}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;}
+  tr:nth-child(even) td{background:#faf8f2;}
+  .small{font-size:9.4pt;color:#6a6453;}
+  code{font-family:"DejaVu Sans Mono",Consolas,monospace;font-size:9.2pt;background:#f0ece1;
+       padding:1px 4px;border-radius:2px;}
+  .refs p{font-size:9.6pt;text-indent:-22pt;padding-left:22pt;margin-bottom:5pt;text-align:left;}
+  .note{font-size:9.4pt;color:#6a6453;font-style:italic;}
+  hr{border:none;border-top:1px solid #ddd6c5;margin:18pt 0;}
+  .tag{display:inline-block;background:#5a3a12;color:#f4ecd8;font-size:8pt;padding:1px 6px;
+       border-radius:3px;vertical-align:middle;letter-spacing:0.4px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Reconstructing the Ur III Grain Economy from 135,000 Cuneiform Tablets:<br>
+A Rule-Based Extraction Pipeline and Exploratory Analysis</h1>
+<div class="sub">A computational study of the CDLI Ur III administrative corpus (c. 2100–2000 BCE)</div>
+<div class="auth">Daniel Asaro</div>
+<div class="aff">Computational Assyriology &middot; <code>asarodan/sumer</code></div>
+
+<div class="abstract">
+<h2>Abstract</h2>
+<p>The Third Dynasty of Ur (Ur III, c. 2112–2004 BCE) produced one of the most
+densely documented administrative economies of the ancient world. We present a
+deterministic, rule-based pipeline that parses the full Cuneiform Digital
+Library Initiative (CDLI) bulk export of <strong>135,199 Ur III tablets</strong>
+in transliterated ATF form and extracts <strong>254,600 quantified economic
+transactions</strong> across nine commodity classes, together with a hierarchical
+record structure (82,767 records, 316,454 line-entries) and a prosopographic
+index of 55,664 named agents. Converting the Sumerian sexagesimal capacity
+system to a common unit, the corpus accounts for <strong>2.27 million
+<em>gur</em></strong> of cereal grain (on the order of 400,000 metric tonnes),
+of which barley alone constitutes 2.01 million <em>gur</em> (72% of all
+capacity-measured volume). Exploratory data analysis shows that transaction
+sizes are approximately log-normal in their body (median = 300 sila&#8323; =
+1 <em>gur</em>) with an extreme heavy tail: the largest 1% of transactions carry
+over half of all volume, and grain holdings are distributed with a Gini
+coefficient of 0.93. A barley-flow network of 2,105 agents reveals a single
+dominant component organised around provincial household managers
+(<em>&scaron;abra</em>) acting as brokers and the royal granary as principal
+sink. We give particular attention to the <em>methodology of false-positive
+control</em>: the chief technical difficulty in mass cuneiform extraction is not
+parsing grain lines but distinguishing them from the orthographically identical
+lines that record onions, reed bundles, livestock, silver, and balance
+carry-forwards. We document a corpus of 120 filtering rules, validated by 88
+regression tests, that reduced spurious grain volume by roughly 0.96 million
+<em>gur</em> (26%) relative to a naïve baseline.</p>
+<div class="kw"><strong>Keywords:</strong> Ur III, computational Assyriology, information
+extraction, economic history, cuneiform, ATF, network analysis, log-normal distribution</div>
+</div>
+
+<h2>1.&ensp;Introduction</h2>
+<p>The Ur III state bequeathed posterity an administrative habit of almost
+pathological thoroughness. Scribes recorded the issue of a single sheep, the
+seed-grain for a field, the beer ration of a messenger, and the annual balance
+of a granary on small clay tablets, tens of thousands of which survive. The
+Cuneiform Digital Library Initiative (CDLI) has transliterated this material
+into the machine-readable ATF (ASCII Transliteration Format) standard, creating
+an opportunity to study an ancient economy at a transaction-level granularity
+that is unavailable for any other period before the late medieval era.</p>
+
+<p>Yet the corpus resists naïve quantification. A line such as
+<code>2(a&scaron;) gur</code> denotes two <em>gur</em> of barley; the
+visually parallel <code>2(a&scaron;) sa gi</code> denotes two bundles of reed,
+and <code>2(a&scaron;) gu&#8324;</code> two head of cattle. The same numeral
+classifiers, the same sexagesimal place-values, and the same scribal hand
+serve grain, garlic, silver, and labour alike. A parser that simply harvests
+every numeral followed by a capacity unit over-counts grain by hundreds of
+thousands of <em>gur</em>. The central methodological claim of this paper is
+that <em>reliable extraction is dominated by the problem of negative
+classification</em>—of knowing what is <em>not</em> grain—and that this problem
+is tractable with a disciplined, test-driven body of linguistic rules.</p>
+
+<p>We make three contributions. First, a complete and reproducible extraction
+pipeline (§3) that turns raw ATF into typed, dated, attributed transactions.
+Second, an exploratory statistical portrait of the Ur III grain economy (§4–§5)
+covering volume, concentration, temporality, and exchange structure. Third, an
+explicit account of the false-positive-control methodology (§6) that we believe
+generalises to other mass-extraction efforts on noisy historical corpora.</p>
+
+<h2>2.&ensp;The Corpus and the Measurement System</h2>
+<p>Our source is the CDLI bulk ATF export, comprising 135,199 tablets
+classified as Ur III. Each tablet is a sequence of transliterated lines
+organised by surface (<code>@obverse</code>, <code>@reverse</code>) and column,
+with editorial markers for damage (<code>[&hellip;]</code>), uncertain readings
+(<code>?</code>, <code>!</code>), and determinatives (<code>{d}</code> divine,
+<code>{ki}</code> place, <code>{gesz}</code> wood).</p>
+
+<p>Capacity is recorded in the Sumerian sexagesimal grain system. The base unit
+is the <em>sila&#8323;</em> (&#8776;1 litre); the principal accounting unit is
+the <em>gur</em> = 300 <em>sila&#8323;</em>. Larger granary quantities use a
+nested sexagesimal scaffold (Table 1). Because these tokens multiply the gur by
+factors up to 216,000, a single mis-classified large-denomination line can
+inject tens of thousands of phantom <em>gur</em>—a fact that shapes the entire
+extraction strategy.</p>
+
+<table>
+<caption class="small" style="text-align:left;margin-bottom:4pt;">
+<strong>Table 1.</strong> The Ur III sexagesimal capacity system and its
+conversion to sila&#8323;.</caption>
+<tr><th>Token</th><th>Reading</th><th class="n">in gur</th><th class="n">in sila&#8323;</th><th>Role</th></tr>
+<tr><td><code>sila3</code></td><td>sila&#8323;</td><td class="n">1/300</td><td class="n">1</td><td>base (litre)</td></tr>
+<tr><td><code>ban2</code></td><td>ban</td><td class="n">1/30</td><td class="n">10</td><td>sub-gur</td></tr>
+<tr><td><code>barig</code></td><td>barig</td><td class="n">1/5</td><td class="n">60</td><td>sub-gur</td></tr>
+<tr><td><code>asz / gur</code></td><td>gur</td><td class="n">1</td><td class="n">300</td><td>unit gur</td></tr>
+<tr><td><code>u</code></td><td>u</td><td class="n">10</td><td class="n">3,000</td><td>&times;10</td></tr>
+<tr><td><code>gesz2</code></td><td>ge&scaron;</td><td class="n">60</td><td class="n">18,000</td><td>&times;60</td></tr>
+<tr><td><code>gesz'u</code></td><td>ge&scaron;u</td><td class="n">600</td><td class="n">180,000</td><td>&times;600</td></tr>
+<tr><td><code>szar2</code></td><td>&scaron;ar</td><td class="n">3,600</td><td class="n">1,080,000</td><td>&times;3,600</td></tr>
+<tr><td><code>szar'u</code></td><td>&scaron;aru</td><td class="n">36,000</td><td class="n">10,800,000</td><td>&times;36,000</td></tr>
+<tr><td><code>szargal</code></td><td>&scaron;argal</td><td class="n">216,000</td><td class="n">64,800,000</td><td>&times;216,000</td></tr>
+</table>
+
+<h2>3.&ensp;Extraction Pipeline</h2>
+<p>The pipeline is implemented in pure Python with no machine-learning
+dependency; every decision is auditable and deterministic. Processing proceeds
+in five stages.</p>
+
+<h3>3.1&ensp;Structural segmentation</h3>
+<p>Each tablet is split into sections at structural keywords—
+<code>&scaron;unigin</code> (subtotal), <code>sza&#8323;-bi-ta</code>
+("therefrom", opening an expenditure block), <code>sag-nig&#8322;-gur&#8321;&#8321;</code>
+("capital", opening an income block). Secondary surfaces (<code>@seal</code>,
+<code>@envelope</code>) are stripped, and non-administrative genres (lexical
+lists, royal inscriptions, literary and non-Sumerian texts) are rejected on
+header inspection.</p>
+
+<h3>3.2&ensp;Quantity parsing</h3>
+<p>Within a line, the numeral-classifier grammar <code>N(unit)</code> is parsed
+and each token mapped through Table 1. Crucially, a line yields a grain quantity
+only if it passes the negative-classification filters of §6; otherwise it is
+routed to the appropriate non-grain channel (animals in <em>head</em>, silver
+in <em>gin&#8322;</em>, labour in <em>worker-days</em>) or discarded.</p>
+
+<h3>3.3&ensp;Attribution and dating</h3>
+<p>Issuer, recipient, and intermediary (<em>giri&#8323;</em>, "via") are resolved
+from prepositional frames (<code>ki &hellip;-ta</code> "from", <code>&hellip;
+&scaron;u ba-ti</code> "received"). Year-names are matched against a
+reign-by-reign almanac and reduced to (king, regnal year, month, day).</p>
+
+<h3>3.4&ensp;Normalisation and prosopography</h3>
+<p>Personal names are normalised by stripping grammatical case suffixes only
+when the bare form is independently attested, guarding against over-merging.
+A patronymic scanner (<code>X dumu Y</code>, "X son of Y") yields 7,560
+father–son pairs and flags 790 homonyms (identical names with distinct
+fathers).</p>
+
+<h3>3.5&ensp;Output</h3>
+<p>The pipeline emits typed transaction tables, a three-level
+tablet&rarr;record&rarr;entry hierarchy, an entity index, and a barley-flow
+network in GEXF. Summary statistics appear in Table 2.</p>
+
+<table>
+<caption class="small" style="text-align:left;margin-bottom:4pt;">
+<strong>Table 2.</strong> Pipeline yield over the 135,199-tablet corpus.</caption>
+<tr><th>Quantity</th><th class="n">Value</th></tr>
+<tr><td>Tablets processed</td><td class="n">135,199</td></tr>
+<tr><td>Tablets yielding &ge;1 transaction</td><td class="n">50,599</td></tr>
+<tr><td>Total transactions extracted</td><td class="n">254,600</td></tr>
+<tr><td>Tablets with structured records</td><td class="n">78,408</td></tr>
+<tr><td>Records / line-entries</td><td class="n">82,767 / 316,454</td></tr>
+<tr><td>Unique named entities</td><td class="n">55,664</td></tr>
+<tr><td>Entity appearances</td><td class="n">336,453</td></tr>
+<tr><td>Patronymic (kinship) pairs</td><td class="n">7,560</td></tr>
+<tr><td>Transactions with a reign date</td><td class="n">88,064 (34.6%)</td></tr>
+</table>
+
+<h2>4.&ensp;Exploratory Data Analysis: Volume and Composition</h2>
+
+<p>Aggregating all capacity-measured transactions and converting to a common
+<em>gur</em> base yields the commodity profile of Table 3 and Fig. 1c. Cereal
+grains—barley, emmer, wheat, and the flour milled from them—dominate at
+2.27 million <em>gur</em>, with barley alone supplying 72% of all capacity
+volume. The "untyped" residue (385,000 <em>gur</em>) comprises capacity lines
+whose commodity word was lost to damage or stood in an elliptical subtotal; on
+internal evidence the overwhelming majority is also barley, so the cereal figure
+is a conservative lower bound.</p>
+
+<table>
+<caption class="small" style="text-align:left;margin-bottom:4pt;">
+<strong>Table 3.</strong> Capacity-measured volume by commodity (in <em>gur</em>).
+Cereal grains in bold.</caption>
+<tr><th>Commodity</th><th class="n">Volume (gur)</th><th class="n">Share</th><th>Unit basis</th></tr>
+<tr><td><strong>Barley</strong></td><td class="n">2,006,590</td><td class="n">72.5%</td><td>capacity</td></tr>
+<tr><td>(untyped capacity)</td><td class="n">384,589</td><td class="n">13.9%</td><td>capacity</td></tr>
+<tr><td><strong>Flour</strong></td><td class="n">159,493</td><td class="n">5.8%</td><td>capacity</td></tr>
+<tr><td><strong>Emmer</strong></td><td class="n">76,527</td><td class="n">2.8%</td><td>capacity</td></tr>
+<tr><td>Bread (ninda)</td><td class="n">38,989</td><td class="n">1.4%</td><td>capacity-equiv.</td></tr>
+<tr><td>Dates</td><td class="n">27,240</td><td class="n">1.0%</td><td>capacity-equiv.</td></tr>
+<tr><td>Beer (ka&scaron;)</td><td class="n">26,810</td><td class="n">1.0%</td><td>capacity-equiv.</td></tr>
+<tr><td><strong>Wheat</strong></td><td class="n">23,717</td><td class="n">0.9%</td><td>capacity</td></tr>
+<tr><td>Oil (i&#8323;)</td><td class="n">23,439</td><td class="n">0.8%</td><td>capacity-equiv.</td></tr>
+<tr><td colspan="4" class="small"><strong>Total capacity:</strong> 2,767,393 <em>gur</em>;
+<strong>cereal grains:</strong> 2,266,327 <em>gur</em>. Non-capacity channels:
+weighed metals &amp; commodities 166,128 <em>gin&#8322;</em>; livestock 120,289
+head; labour 238,942 worker-days.</td></tr>
+</table>
+
+<figure>
+  <img src="figures/fig3_commodity.png" alt="Commodity composition">
+  <figcaption><strong>Figure 1c.</strong> Capacity-measured commodity volume on a
+  logarithmic axis. Cereal grains (gold) eclipse all other capacity commodities
+  by more than an order of magnitude, consistent with barley's role as the unit
+  of account and principal ration medium of the Ur III economy.</figcaption>
+</figure>
+
+<h2>5.&ensp;Exploratory Data Analysis: Distribution and Structure</h2>
+
+<h3>5.1&ensp;Transaction sizes are log-normal with a heavy tail</h3>
+<p>The size distribution of the 51,632 barley capacity-transactions spans eight
+orders of magnitude, from fractional-sila&#8323; messenger rations to a single
+134,007-<em>gur</em> threshing-floor receipt. On a logarithmic axis (Fig. 1a)
+the body of the distribution is strikingly bell-shaped: a log-normal fit gives
+&mu; = 5.76, &sigma; = 2.77 (natural log of sila&#8323;), and the modal class
+sits exactly at the institutional default of one <em>gur</em> (300 sila&#8323;),
+which is also the median. The geometric mean, 318 sila&#8323;, is nearly two
+orders of magnitude below the arithmetic mean (11,659 sila&#8323;)—the signature
+of strong right-skew driven by a small number of granary-scale entries.</p>
+
+<figure>
+  <img src="figures/fig1_txsize.png" alt="Transaction size distribution">
+  <figcaption><strong>Figure 1a.</strong> Distribution of barley transaction
+  sizes (log&#8321;&#8320; sila&#8323;). The body is approximately log-normal; the
+  median coincides with the one-<em>gur</em> ration unit. The long right shoulder
+  reflects institutional granary and harvest receipts.</figcaption>
+</figure>
+
+<h3>5.2&ensp;Extreme concentration of grain</h3>
+<p>Grain volume is concentrated to a degree that would be remarkable in any
+economy. The Lorenz curves of Fig. 1b yield a Gini coefficient of
+<strong>0.934</strong> over individual transactions and <strong>0.913</strong>
+over per-tablet totals. The top 1% of transactions carry 53.5% of all barley by
+volume, and the top 10% carry 91.3%. This is not an artefact of small-record
+noise: 53% of grain-bearing tablets record 10 <em>gur</em> or less (everyday
+disbursements; the per-tablet median is just 8 <em>gur</em>), while only 19
+tablets exceed 10,000 <em>gur</em> each—the institutional granary and harvest
+accounts that dominate the aggregate. The Ur III grain economy was,
+statistically, a two-regime system: a vast substrate of small rationing
+transactions overlaid by a thin stratum of enormous institutional flows.</p>
+
+<figure>
+  <img src="figures/fig2_lorenz.png" alt="Lorenz curves">
+  <figcaption><strong>Figure 1b.</strong> Lorenz curves for barley volume across
+  transactions (steel) and tablets (red). Both lie far below the equality
+  diagonal; Gini &asymp; 0.93. Over half of all recorded barley moves through 1%
+  of transactions.</figcaption>
+</figure>
+
+<figure>
+  <img src="figures/fig5_pertablet.png" alt="Per-tablet barley totals">
+  <figcaption><strong>Figure 1e.</strong> Per-tablet barley totals
+  (log&#8321;&#8320; <em>gur</em>). The bulk of tablets sit near the one-<em>gur</em>
+  ration scale; a separate cluster beyond 10,000 <em>gur</em> (gold line) marks the
+  provincial granary inventories and threshing-floor harvest receipts.</figcaption>
+</figure>
+
+<h3>5.3&ensp;Temporal structure follows the surviving archives</h3>
+<p>One third of transactions carry a recoverable reign date, overwhelmingly from
+the reign of &Scaron;ulgi (69,982 transactions), reflecting the great Drehem,
+Umma, and Girsu archives. Within &Scaron;ulgi's reign the dated barley record
+peaks sharply in years 45–48 (Fig. 1d), the period of the bala
+redistributive system's fullest documentation. The temporal signal therefore
+indexes <em>archival survival and bureaucratic intensity</em> rather than any
+simple economic cycle—an important caveat for any longitudinal reading of the
+series.</p>
+
+<figure>
+  <img src="figures/fig4_temporal.png" alt="Temporal distribution">
+  <figcaption><strong>Figure 1d.</strong> Dated barley transactions across
+  &Scaron;ulgi's regnal years. The years 45–48 (shaded) supply the densest
+  documentation, coinciding with the maturity of the provincial bala accounting
+  apparatus.</figcaption>
+</figure>
+
+<h3>5.4&ensp;The exchange network and its brokers</h3>
+<p>Restricting to barley transactions with both a resolved issuer and recipient
+(8,503 edges) yields a directed network of 2,105 agents. The graph is sparse
+(density 0.00076) but cohesive: a single giant weakly-connected component spans
+1,730 of the 2,105 nodes (82%), the remaining mass fragmenting into 168 small
+components. Betweenness centrality (Fig. 1f) identifies the structural brokers,
+and they are precisely the figures Assyriology would predict: provincial
+household managers (<em>&scaron;abra</em>) and high stewards such as
+<em>Ur-Baba</em> and <em>Ur-Nan&scaron;e</em>, who relay grain between
+cultivators and the central administration. The single largest <em>sink</em> by
+in-degree—and the top node by PageRank—is the royal granary (in-degree 82), the
+institutional terminus toward which provincial surpluses flow. The network thus
+recovers, from raw transliteration alone, the textbook redistributive
+architecture of the Ur III state: a hub-and-spoke system mediated by named
+household officers.</p>
+
+<figure>
+  <img src="figures/fig6_network.png" alt="Barley network">
+  <figcaption><strong>Figure 1f.</strong> Giant component of the barley-exchange
+  network (top-120 agents by weighted degree shown). Node size and colour encode
+  betweenness centrality. High-brokerage nodes correspond to provincial stewards
+  mediating between producers and the royal granary.</figcaption>
+</figure>
+
+<table>
+<caption class="small" style="text-align:left;margin-bottom:4pt;">
+<strong>Table 4.</strong> Leading brokers (betweenness) and recipients
+(in-degree) in the barley network.</caption>
+<tr><th>Rank</th><th>Broker (betweenness)</th><th class="n">BC</th><th>Recipient (in-degree)</th><th class="n">deg&#8315;</th></tr>
+<tr><td>1</td><td>Ur-Baba</td><td class="n">0.039</td><td>royal granary</td><td class="n">82</td></tr>
+<tr><td>2</td><td>Ur-Nan&scaron;e</td><td class="n">0.035</td><td>Ur-Baba</td><td class="n">44</td></tr>
+<tr><td>3</td><td>overseer (<em>ugula</em>)</td><td class="n">0.029</td><td>Lu-Nin&scaron;ubur</td><td class="n">41</td></tr>
+<tr><td>4</td><td>Ba-zi</td><td class="n">0.024</td><td>Ur-Nan&scaron;e</td><td class="n">35</td></tr>
+<tr><td>5</td><td>Ur-&Scaron;ulpae</td><td class="n">0.023</td><td>overseer (<em>ugula</em>)</td><td class="n">34</td></tr>
+</table>
+
+<h2>6.&ensp;Methodology: Controlling False Positives <span class="tag">CORE</span></h2>
+<p>We now turn to the paper's principal methodological contribution. In a corpus
+where grain, garlic, reeds, cattle, silver, and accounting balances all share a
+numeral-classifier grammar, the dominant source of error is not the failure to
+parse grain (false negatives) but the eager parsing of non-grain (false
+positives). Because a single large-denomination misread can inject up to
+64.8 million sila&#8323; (Table 1), <em>precision on the tail dominates the
+aggregate</em>. Our strategy is a layered body of negative-classification rules,
+each motivated by a specific scribal idiom and each pinned by a regression test.</p>
+
+<h3>6.1&ensp;Taxonomy of false positives</h3>
+<table>
+<tr><th>Class</th><th>Example line</th><th>Why it is not grain</th></tr>
+<tr><td>Place / personal names</td><td><code>sza&#8323; e2-duru5 1(szargal){gal}</code></td>
+    <td>a village name ("&Scaron;argal hamlet"), not 216,000 <em>gur</em></td></tr>
+<tr><td>Counted commodities</td><td><code>N(szar2) sa za-ha-din</code></td>
+    <td>bundles of shallots, not <em>gur</em> of grain</td></tr>
+<tr><td>Fodder / reed</td><td><code>N(gesz2) in-bul5</code> / <code>in-nu</code></td>
+    <td>thatch &amp; straw measured by bulk, non-cereal</td></tr>
+<tr><td>Livestock</td><td><code>N(asz) gu&#8324; / udu</code></td>
+    <td>head of cattle/sheep &rarr; routed to <em>head</em></td></tr>
+<tr><td>Weight / silver</td><td><code>N(disz) gin&#8322; ku&#8323;-babbar</code></td>
+    <td>shekels of silver &rarr; routed to <em>gin&#8322;</em></td></tr>
+<tr><td>Artisan item-counts</td><td><code>N(gesz2) nig&#8322; PERSON</code></td>
+    <td>manufactured-object tallies, not capacity</td></tr>
+<tr><td>Balance carry-forward</td><td><code>N gur su-su</code> / <code>la&#8322;-ia&#8323;</code> / <code>diri</code></td>
+    <td>repayment/deficit/surplus lines double-count the principal</td></tr>
+<tr><td>Grand-total restatement</td><td><code>&scaron;unigin2 &hellip; sag-nig&#8322;-gur&#8321;&#8321;</code></td>
+    <td>re-states entries already counted within the section</td></tr>
+<tr><td>Ration mis-scaling</td><td><code>3(gesz'u) 4(gesz2) 2(u) 3(disz) PERSON</code></td>
+    <td>sila&#8323;-scale worker ration, not <em>gur</em>-scale</td></tr>
+<tr><td>Archaic curviform</td><td><code>szar2@c</code>, <code>gesz'u@c</code></td>
+    <td>pre-Sargonic sign forms 100–10,000&times; too large</td></tr>
+</table>
+
+<h3>6.2&ensp;The large-denomination ration trap</h3>
+<p>The most instructive false positive is the worker-ration list. On
+brewer- and weaver-ration tablets, an individual entry such as
+<code>3(gesz'u) 4(gesz2) 2(u) 3(disz) ARAD&#8322;</code> uses the large
+sexagesimal tokens to count <em>sila&#8323;</em>, not <em>gur</em>: the entry is
+&#8776;7 <em>gur</em>, and the section's closing <em>&scaron;unigin</em> performs
+the gur conversion. A parser that applies the gur factor to the
+<code>gesz'u</code>/<code>gesz2</code> tokens inflates the line by &times;300,
+turning 7 <em>gur</em> into 2,063. Our guard encodes the diagnostic linguistic
+fact precisely: a line carrying a large-denomination token but <em>no sub-gur
+anchor</em> (<code>asz</code>, <code>barig</code>, or <code>ban2</code>) is in
+sila&#8323; scale and must not be promoted to gur scale. Because the sub-gur
+anchors are themselves grain indicators, their presence is detected earlier in
+the pipeline; their <em>absence</em> beside a <code>gesz2+</code> token is the
+signature of a mis-scaled ration. This single rule removed &#8776;0.80 million
+phantom <em>gur</em>.</p>
+
+<h3>6.3&ensp;Context-sensitive recovery (false-negative control)</h3>
+<p>Negative filtering, pursued alone, would discard legitimate elliptical grain
+lines (e.g. <code>4(u) 5(disz) PERSON</code> within a proven grain section,
+where the unit word is elided). We therefore pair the filters with a
+<em>context</em> mechanism: a section that contains at least one explicit grain
+line activates a guarded retry that recovers unit-elided lines, but only when
+none of the §6.1 disqualifiers is present. The two mechanisms are adversarial by
+design—every loosening of recovery is checked against the full false-positive
+test suite, and vice versa.</p>
+
+<h3>6.4&ensp;Validation and net effect</h3>
+<p>The rule body comprises 120 distinct pattern terms, exercised by 88
+regression tests (all passing) that encode both the lines that <em>must</em>
+parse and the lines that <em>must not</em>. Developed test-first across more than
+eighty revisions, the filters reduced spurious grain volume from a permissive
+baseline of roughly 3.73 million <em>gur</em> to the present 2.77 million—a
+reduction of about <strong>0.96 million <em>gur</em> (26%)</strong>—while the
+regression suite guarantees that no documented legitimate line was lost in the
+process. We regard the test corpus itself, rather than any single rule, as the
+durable artefact: it freezes hundreds of adjudicated scribal idioms into
+executable specifications.</p>
+
+<h2>7.&ensp;Limitations</h2>
+<p>Several caveats bound the analysis. (i) <em>Damage.</em> Bracketed lacunae
+suppress quantities and attributions; coverage is therefore a lower bound, and
+the 385,000 <em>gur</em> of untyped capacity reflects lost commodity words.
+(ii) <em>Prosopographic noise.</em> The entity index conflates frequent
+commodity words (<em>ka&scaron;</em>, <em>ninda</em>, <em>udu</em>) with personal
+names at the head of the frequency table; genuine-person analysis should work
+from the patronymic-anchored subset. (iii) <em>Survivorship.</em> The temporal
+and provincial distribution tracks which archives were excavated and published,
+not the ancient economy's true shape. (iv) <em>Double-counting at the margin.</em>
+Multi-section balanced accounts that re-state sub-section totals at several
+levels remain the hardest residual case; we suppress the canonical
+<em>&scaron;unigin</em>/<em>sag-nig&#8322;-gur&#8321;&#8321;</em> restatements but
+cannot guarantee zero leakage on idiosyncratic ledgers.</p>
+
+<h2>8.&ensp;Conclusion</h2>
+<p>A deterministic, test-driven pipeline can convert 135,199 raw cuneiform
+transliterations into a quantitatively coherent picture of the Ur III grain
+economy: 2.27 million <em>gur</em> of cereal moving through a sharply
+two-regime, Gini-0.93 distribution, organised as a broker-mediated
+redistributive network terminating at the royal granary. The decisive technical
+lesson is that mass extraction from such corpora is governed by negative
+classification—by the disciplined, linguistically-grounded refusal to count what
+merely looks like grain. The accompanying 88-test regression suite operationalises
+that discipline and is, we argue, the methodology's most transferable component.
+Future work will extend context-sensitive recovery to the untyped-capacity
+residue and apply the same negative-classification framework to the silver and
+livestock channels.</p>
+
+<hr>
+<h2 style="border:none;font-size:11.5pt;">Data and Code Availability</h2>
+<p class="small">All extraction code, the 88-test regression suite, and the
+derived transaction/record/entity tables are available in the repository
+<code>asarodan/sumer</code>. Figures in this paper are regenerated from
+<code>output/figures/</code> by <code>tools/make_paper_figures.py</code> and
+<code>tools/make_network_figure.py</code> over the CDLI bulk ATF export. The
+CDLI corpus is distributed by the Cuneiform Digital Library Initiative under its
+data-sharing terms.</p>
+
+<div class="refs">
+<h2 style="border:none;font-size:11.5pt;">Selected References</h2>
+<p>Cuneiform Digital Library Initiative (CDLI). <em>Ur III administrative
+corpus, ATF bulk export.</em> cdli.mpiwg-berlin.mpg.de.</p>
+<p>Englund, R. K. (2012). "Equivalency Values and the Command Economy of the Ur
+III Period in Mesopotamia." In <em>The Construction of Value in the Ancient
+World</em>, 427–458.</p>
+<p>Garfinkle, S. J. (2015). "Ur III Administrative Texts: Building Blocks of
+State Community." In <em>From the 21st Century B.C. to the 21st Century A.D.</em></p>
+<p>Molina, M. (2008). "The Corpus of Neo-Sumerian Tablets: An Overview." In
+<em>The Growth of an Early State in Mesopotamia</em>, 19–53.</p>
+<p>Sallaberger, W. (1999). "Ur III-Zeit." In <em>Mesopotamien: Akkade-Zeit und
+Ur III-Zeit</em>, OBO 160/3, 121–390.</p>
+<p>Widell, M. (2004). "Reflections on Some Households and their Receiving
+Officials in the City of Ur in the Ur III Period." <em>JNES</em> 63, 283–290.</p>
+</div>
+
+<p class="note" style="margin-top:18pt;text-align:center;">
+Manuscript compiled from pipeline output &middot; corpus snapshot:
+135,199 tablets &middot; 254,600 transactions &middot; 2.77 M <em>gur</em> capacity.</p>
+
+</div>
+</body>
+</html>
